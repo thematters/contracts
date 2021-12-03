@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /**
- * @dev interface of a market using Harberger tax and UBI.
+ * @dev Market with Harberger tax and UBI. Market attaches to one property contract that implements HarbergerProperty and one currency contract that implements ERC20.
  */
 interface IHarbergerMarket {
   /**

@@ -1,0 +1,67 @@
+## `{{name}}`
+
+{{{natspec.userdoc}}}
+
+{{{natspec.devdoc}}}
+
+{{#if ownModifiers}}
+  {{#each ownModifiers}}
+    ### `{{name}}({{args}})`
+
+    {{{natspec.userdoc}}}
+
+    {{{natspec.devdoc}}}
+
+  {{/each}}
+{{/if}}
+
+{{#if ownFunctions}}
+  ## Functions
+  {{#each ownFunctions}}
+    ### `{{name}}({{args}}){{#if outputs}} → {{outputs}}{{/if}}` ({{visibility}})
+
+    {{{natspec.userdoc}}}
+
+    {{{natspec.devdoc}}}
+
+  {{/each}}
+{{/if}}
+
+{{#if ownEvents}}
+  ## Events
+  {{#each ownEvents}}
+    ### `{{name}}({{args}})`
+
+    {{{natspec.userdoc}}}
+
+    {{{natspec.devdoc}}}
+
+  {{/each}}
+{{/if}}
+
+{{#if ownStructs}}
+  {{#each ownStructs}}
+    ### `{{name}}`
+
+    {{#each members}}
+
+      {{type}}
+      {{name}}
+
+    {{/each}}
+
+  {{/each}}
+{{/if}}
+
+{{#if ownEnums}}
+  {{#each ownEnums}}
+    ### `{{name}}`
+
+    {{#each members}}
+
+      {{name}}
+
+    {{/each}}
+
+  {{/each}}
+{{/if}}

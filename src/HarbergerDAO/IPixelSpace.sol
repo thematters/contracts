@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 import "./IHarbergerProperty.sol";
 
+/**
+ * @dev Pixel space where pixels can have collors and content and can form Harberger properties.
+ */
 interface IPixelSpace is IHarbergerProperty {
   /**
    * @dev Emitted when a pixels included in a token is updated.

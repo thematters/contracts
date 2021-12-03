@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /**
- * @dev interface of an property contract that can be traded under Harberger tax.
+ * @dev Properties that are traded using Harberger tax.
  */
 interface IHarbergerProperty is IERC721 {
   /**
@@ -30,7 +30,7 @@ interface IHarbergerProperty is IERC721 {
   function ownerByIndex(uint256 index) external view returns (address owner);
 
   /**
-   * @dev Return property share by owner, unit with 1 / giga (1 ^ -9)
+   * @dev Return property share by owner, unit with 1 / giga (1 ^ -9). Useful for purposes such as UBI (universal basic income).
    */
   function shareByOwner(address owner) external view returns (uint32 share);
 
