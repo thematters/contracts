@@ -5,7 +5,7 @@ import "./IHarbergerMarket.sol";
 import "./IDividendDAO.sol";
 
 /**
- * @dev Pixel land where uses can tokenize pixels, trade tokens, and color pixels.
+ * @dev Pixel land where uses can tokenize pixels, trade tokens, and color pixels, inherits from `IHarbergerMarket` and `IDividendDAO`.
  */
 interface ISpaceDAO is IHarbergerMarket, IDividendDAO {
 

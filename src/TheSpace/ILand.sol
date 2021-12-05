@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /**
- * @dev ERC721 contract representing land. Allow owner to set token uri for each token, and emits an event to record the uri as token content.
+ * @dev ERC721 contract representing land, inherits from openzeppelin ERC721. Allow owner to set token uri for each token, and emits an event to record the uri as token content.
  */
 interface ILand is IERC721 {
   event TokenContent(

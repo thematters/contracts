@@ -2,7 +2,7 @@
 
 
 
-Market place with Harberger tax. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
+Market place with Harberger tax, inherits from `IPixelCanvas`. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
 
 
 ## Functions

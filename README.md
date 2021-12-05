@@ -6,7 +6,7 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 
 ### Contract Interfaces
 
-- [`ISpaceDAO`](./docs/TheSpace/ISpace.md): main contract of the DAO, inherit from [`IHarbergerMarket`](./docs/TheSpace/IHarbergerMarket.md) and [`IDividendDAO`](./docs/TheSpace/IDividendDAO.md).
+- [`ISpaceDAO`](./docs/TheSpace/ISpaceDAO.md): main contract of the DAO, inherit from [`IHarbergerMarket`](./docs/TheSpace/IHarbergerMarket.md) and [`IDividendDAO`](./docs/TheSpace/IDividendDAO.md).
 - [`IDividendDAO`](./docs/TheSpace/IDividendDAO.md): interface of a DAO that pays dividend based on user share.
 - [`IHarbergerMarket`](./docs/TheSpace/IHarbergerMarket.md): interface of a market place that trades ERC721 tokens with Harberger tax, inherit from [`IPixelCanvas`](./docs/TheSpace/IPixelCanvas.md).
   - It needs to set an ERC20 contract as currency. An ERC721 contract is set to be property, deployed by `IPixelCanvas`.
