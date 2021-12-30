@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 interface IPaymentSplitter {
     event SplitPayment(
         uint256 indexed tokenId,
-        address indexed donor,
+        address indexed sender,
         address indexed recipient,
         string purpose, // fork or donate
         uint256 amount
