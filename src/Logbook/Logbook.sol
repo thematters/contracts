@@ -42,6 +42,11 @@ contract Logbook is ERC721 {
 
     // function getLogbook
 
-    // function _mintLogbook
+    // function tokenURI override
+    // Base64:SVG?
 
+    // function _baseURI override
+
+    // function _mintLogbook
+    // - copy logContentHashes
 }
