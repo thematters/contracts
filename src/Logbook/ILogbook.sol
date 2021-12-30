@@ -17,6 +17,7 @@ interface ILogbook is IPaymentSplitter, IERC721 {
         uint256 indexed tokenId,
         uint256 indexed newTokenId,
         address indexed owner,
+        uint256 logContentHash,
         uint256 amount
     );
     event Donate(
