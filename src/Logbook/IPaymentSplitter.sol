@@ -7,6 +7,7 @@ interface IPaymentSplitter {
         uint256 indexed tokenId,
         address indexed donor,
         address indexed recipient,
+        string purpose, // fork or donate
         uint256 amount
     );
     event Withdraw(address indexed payee, uint256 amount);
