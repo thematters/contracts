@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "format": "prettier --write \"{,!(node_modules|build|coverage|artifacts|assets|cache)/**/}*.{sol,js,jsx,ts,tsx,json}\"",
     "gen:doc": "solidity-docgen -i src -t docs --solc-module solc-0.8"
   },
   "repository": {

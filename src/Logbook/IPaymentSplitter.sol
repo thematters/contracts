@@ -1,33 +1,46 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
-
 interface IPaymentSplitter {
-    event SplitPayment(
+    /**
+     * @notice Emitted when a royalty payment is made
+     * @param tokenId token id
+     * @param sender sender address
+     * @param recipient recipient address
+     * @param purpose purpose of the payment, e.g. fork, donate
+     * @param amount amount of the payment
+     */
+    event Pay(
         uint256 indexed tokenId,
         address indexed sender,
         address indexed recipient,
         string purpose, // fork or donate
         uint256 amount
     );
-    event Withdraw(address indexed payee, uint256 amount);
 
     /**
-     * @dev Withdraws owner and co-creation fees.
-     *
-     * Emits a {Withdraw} event.
+     * @notice Emitted when a withdrawal is made
+     * @param account address that receives the withdrawal
+     * @param amount amount of the withdrawal
+     */
+    event Withdraw(address indexed account, uint256 amount);
+
+    /**
+     * @notice Withdraw royalty fee
+     * @dev Emits a {Withdraw} event
      */
     function withdraw() external;
 
     /**
-     * @dev Withdraws royalty fees.
-     *
+     * @notice Withdraw contract royalty fee
+     * @dev Only contract owner can call 
+     * @dev Emits a {Withdraw} event
      */
-    function _withdrawRoyaltyFees() external;
+    function _withdrawContractFees() external;
 
     /**
-     * @dev Get balance of a given address.
-     *
+     * @notice Get balance of a given address
+     * @param account_ address
      */
-    function getBalance(address account) external returns (uint256);
+    function getBalance(address account_) external returns (uint256);
 }
