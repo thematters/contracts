@@ -2,40 +2,40 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "./IPaymentSplitter.sol";
+import "./IRoyalty.sol";
 
 /**
  * @title The interface for Logbook core contract
- * @dev The interface is inherited from IERC721 (for logbook as NFT) and IPaymentSplitter (for royalty)
+ * @dev The interface is inherited from IERC721 (for logbook as NFT) and IRoyalty (for royalty)
  */
-interface ILogbook is IPaymentSplitter, IERC721 {
+interface ILogbook is IRoyalty, IERC721 {
     /**
      * @notice Emitted when logbook title was set
-     * @param tokenId logbook token id
-     * @param title logbook title
+     * @param tokenId Logbook token id
+     * @param title Logbook title
      */
     event SetTitle(uint256 indexed tokenId, string title);
 
     /**
      * @notice Emitted when logbook description was set
-     * @param tokenId logbook token id
-     * @param description logbook description
+     * @param tokenId Logbook token id
+     * @param description Logbook description
      */
     event SetDescription(uint256 indexed tokenId, string description);
 
     /**
      * @notice Emitted when logbook fork price was set
-     * @param tokenId logbook token id
-     * @param amount logbook fork price
+     * @param tokenId Logbook token id
+     * @param amount Logbook fork price
      */
     event SetForkPrice(uint256 indexed tokenId, uint256 amount);
 
     /**
      * @notice Emitted when logbook owner publish a new log
-     * @param tokenId logbook token id
-     * @param author logbook owner address
-     * @param contentHash deterministic unique ID, hash of the content
-     * @param content content string
+     * @param tokenId Logbook token id
+     * @param author Logbook owner address
+     * @param contentHash Deterministic unique ID, hash of the content
+     * @param content Content string
      */
     event Publish(
         uint256 indexed tokenId,
@@ -46,11 +46,11 @@ interface ILogbook is IPaymentSplitter, IERC721 {
 
     /**
      * @notice Emitted when a logbook was forked
-     * @param tokenId logbook token id
-     * @param newTokenId new logbook token id
-     * @param owner new logbook owner address
-     * @param contentHash end position of a range of logs in the old logbook
-     * @param amount fork price
+     * @param tokenId Logbook token id
+     * @param newTokenId New logbook token id
+     * @param owner New logbook owner address
+     * @param contentHash End position of a range of logs in the old logbook
+     * @param amount Fork price
      */
     event Fork(
         uint256 indexed tokenId,
@@ -62,9 +62,9 @@ interface ILogbook is IPaymentSplitter, IERC721 {
 
     /**
      * @notice Emitted when a logbook received a donation
-     * @param tokenId logbook token id
-     * @param donor donor address
-     * @param amount fork price
+     * @param tokenId Logbook token id
+     * @param donor Donor address
+     * @param amount Fork price
      */
     event Donate(
         uint256 indexed tokenId,
@@ -83,8 +83,8 @@ interface ILogbook is IPaymentSplitter, IERC721 {
     /**
      * @notice Set logbook description
      * @dev Emits a {SetDescription} event
-     * @param tokenId_ logbook token id
-     * @param description_ logbook description
+     * @param tokenId_ Logbook token id
+     * @param description_ Logbook description
      */
     function setDescription(uint256 tokenId_, string calldata description_)
         external;
@@ -92,14 +92,14 @@ interface ILogbook is IPaymentSplitter, IERC721 {
     /**
      * @notice Set logbook fork price
      * @dev Emits a {SetForkPrice} event
-     * @param tokenId_ logbook token id
-     * @param amount_ fork price
+     * @param tokenId_ Logbook token id
+     * @param amount_ Fork price
      */
     function setForkPrice(uint256 tokenId_, uint256 amount_) external;
 
     /**
      * @notice Batch calling methods of this contract
-     * @param data array of calldata
+     * @param data Array of calldata
      */
     function multicall(bytes[] calldata data)
         external
@@ -108,47 +108,63 @@ interface ILogbook is IPaymentSplitter, IERC721 {
     /**
      * @notice Publish a new log in a logbook
      * @dev Emits a {Publish} event
-     * @param tokenId_ logbook token id
-     * @param content_ log content
+     * @param tokenId_ Logbook token id
+     * @param content_ Log content
      */
     function publish(uint256 tokenId_, string calldata content_) external;
 
     /**
      * @notice Pay to fork a logbook
-     * @dev Payment will be splited into three parts as royalty fees:
-     *     1. 80% to logbook owner
-     *     2. 17.5% to logs' authors
-     *     3. 2.5% to this contract
      * @dev Emits {Fork} and {Pay} events
-     * @param tokenId_ logbook token id
-     * @param contentHash_ end position of a range of logs in the old logbook
+     * @param tokenId_ Logbook token id
+     * @param contentHash_ End position of a range of logs in the old logbook
      */
-    function fork(uint256 tokenId_, uint256 contentHash_) external payable;
+    function fork(uint256 tokenId_, bytes32 contentHash_) external payable;
 
     /**
      * @notice Donate to a logbook
-     * @dev Payment will be splited into three parts as royalty fees:
-     *     1. 80% to logbook owner
-     *     2. 17.5% to logs' authors
-     *     3. 2.5% to this contract
      * @dev Emits {Donate} and {Pay} events
-     * @param tokenId_ logbook token id
+     * @param tokenId_ Logbook token id
      */
     function donate(uint256 tokenId_) external payable;
 
     /**
-     * @notice Get a logbook
-     * @param tokenId_ logbook token id
-     * @return forkPrice fork price
-     * @return contentHashes all logs' content hashes
-     * @return authors all logs' authors
+     * @notice Set royalty basis points of logbook owner
+     * @param bps_ Basis points
      */
-    function getLogbookLogs(uint256 tokenId_)
-        external
-        view
-        returns (
-            uint256 forkPrice,
-            bytes32[] memory contentHashes,
-            address[] memory authors
-        );
+    function setRoyaltyBPSLogbookOwner(uint128 bps_) external;
+
+    /**
+     * @notice Set royalty basis points of contract
+     * @param bps_ Basis points
+     */
+    function setRoyaltyBPSContract(uint128 bps_) external;
+
+    /**
+     * @notice Get a logbook
+     * @param tokenId_ Logbook token id
+     * @return forkPrice Fork price
+     * @return contentHashes All logs' content hashes
+     * @return authors All logs' authors
+     */
+    // function getLogbookLogs(uint256 tokenId_)
+    //     external
+    //     view
+    //     returns (
+    //         uint256 forkPrice,
+    //         bytes32[] memory contentHashes,
+    //         address[] memory authors
+    //     );
+    // TBD: interfaces for UBI
+
+    /**
+     * @notice Mint a logbook
+     * @dev Only contract owner can call
+     * @param to_ Receiver address
+     * @return TokenId
+     */
+    // function mint(address to_) external returns (uint256 tokenId);
+    // TBD: mint by sending ether, can be turn off/on
+    // TBD: mint by airdop
+    // TBD: variable for setting price and totalSupply
 }
