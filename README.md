@@ -44,6 +44,11 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 
 Install [Forge](https://github.com/gakonst/foundry)
 
+Build
+```
+forge build
+```
+
 Run tests
 ```
 forge test
