@@ -15,4 +15,8 @@ contract LogbookTest is DSTest {
     function testPrint() public {
         console.log("test done.");
     }
+
+    function testFail() public {
+        assert(false);
+    }
 }
