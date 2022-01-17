@@ -115,3 +115,7 @@ artifacts
 
 # System
 .DS_Store
+
+# Foundry
+cache/
+out/

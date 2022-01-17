@@ -15,6 +15,7 @@ abstract contract Royalty is IRoyalty, ReentrancyGuard, Ownable {
         _balances[msg.sender] = 0;
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success);
+        emit Withdraw(msg.sender, amount);
     }
 
     /// @inheritdoc IRoyalty
@@ -23,6 +24,7 @@ abstract contract Royalty is IRoyalty, ReentrancyGuard, Ownable {
         _balances[address(this)] = 0;
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success);
+        emit Withdraw(msg.sender, amount);
     }
 
     /// @inheritdoc IRoyalty

@@ -38,3 +38,18 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 
 - User combine multiple token into one: call [`groupTokens` function](./docs/TheSpace/IPixelCanvas.md) on `SpaceDAO` contract.
 - User seperate pixels in one token into multiple tokens: call [`ungroupToken` function](./docs/TheSpace/IPixelCanvas.md) on `SpaceDAO` contract.
+
+
+## Development
+
+Install [Forge](https://github.com/gakonst/foundry)
+
+Run tests
+```
+forge test
+```
+
+Deploy
+```
+Follow the `forge create` instructions ([CLI README](https://github.com/gakonst/foundry/blob/master/cli/README.md#build)).
+```

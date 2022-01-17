@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./ILogbook.sol";
 import "./Royalty.sol";
 
-contract Logbook is Royalty, ILogbook, ERC721, Ownable {
+contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     struct Log {
         address author;
         uint256 tokenId;
