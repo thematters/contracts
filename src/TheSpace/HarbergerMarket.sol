@@ -2,199 +2,223 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./Asset.sol";
+import "@openzeppelin/contracts/utils/Multicall.sol";
+
+import "./Property.sol";
 
 /**
  * @dev Market place with Harberger tax, inherits from `IPixelCanvas`. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
  */
-abstract contract HarbergerMarket {
-  /**
-   * @dev Emitted when a token changes price.
-   */
-  event Price(uint64 indexed tokenId, uint256 price);
+abstract contract HarbergerMarket is Multicall {
+    /**
+     * @dev Emitted when a token changes price.
+     */
+    event Price(uint256 indexed tokenId, uint256 price);
 
-  /**
-   * @dev Emitted when tax is collected.
-   */
-  event Tax(address indexed from, uint256 amount);
+    /**
+     * @dev Emitted when tax is collected.
+     */
+    event Tax(uint256 indexed tokenId, uint256 amount);
 
-  /**
-   * @dev Emitted when tax is collected.
-   */
-  event Dividend(address indexed to, uint256 amount);
+    /**
+     * @dev Emitted when UBI is distributed.
+     */
+    event UBI(uint256 indexed tokenId, uint256 amount);
 
-  /**
-   * @dev Mapping from asset token id to price.
-   */
-  mapping(uint64 => uint256) public assetPrice;
-
-  /**
-   * @dev Mapping from owner addresses to timestamp of last tax collection.
-   */
-  mapping(address => uint256) public taxTime;
-
-  /**
-   * @dev Owner address list to iterate upon.
-   */
-  address[] public assetOwnerList;
-
-  /**
-   * @dev Total market capitalization
-   */
-  uint256 public marketCap;
-
-  /**
-   * @dev Tradable assets created by this contract.
-   */
-  Asset public asset;
-
-  /**
-   * @dev ERC20 token used as currency
-   */
-  ERC20 public currency;
-
-  // TBD: restrict minting tokens outside of canvas?
-  // uint64 public totalSupply = 20000000000;
-
-  /**
-   * @dev Tax rate in percentage.
-   */
-  uint8 public taxRate;
-
-  /**
-   * @dev Create Asset contract, setup attached currency contract, setup tax rate
-   */
-  constructor(
-    string memory assetName_,
-    string memory assetSymbol_,
-    address currencyAddress_,
-    uint8 taxRate_
-  ) {
-    // initialize Asset contract with current contract as market
-    asset = new Asset(assetName_, assetSymbol_, address(this));
-
-    // initialize currency contract
-    currency = ERC20(currencyAddress_);
-
-    // TBD: shall we allow changes of tax rate?
-    taxRate = taxRate_;
-  }
-
-  // /**
-  //  * @dev Set address for attached currency contract.
-  //  *
-  //  */
-  // function setCurrencyAddress(address _currencyAddress) external {
-  //   require(_currencyAddress != address(0), "Address cannot be null");
-
-  //   currency = ERC20(_currencyAddress);
-  // }
-
-  /**
-   * @dev Set the current price of an Harberger property with token id.
-   *
-   * Emits a {Price} event.
-   */
-  function setPrice(uint64 _tokenId, uint256 _price) external {
-    require(asset.ownerOf(_tokenId) == msg.sender, "Sender does not own asset");
-
-    // update asset price
-    assetPrice[_tokenId] = _price;
-
-    // update market price
-    marketCap += _price;
-
-    // emit events
-    emit Price(_tokenId, _price);
-  }
-
-  /**
-   * @dev Returns the current price of an Harberger property with token id.
-   */
-  function getPrice(uint64 tokenId) external view returns (uint256 price) {
-    return assetPrice[tokenId];
-  }
-
-  /**
-   * @dev Purchase property with bid higher than current price. Clear tax for owner before transfer.
-   * TODO: check security implications
-   */
-  function bid(uint64 tokenId, uint256 price) external {
-    // TODO: mint token if not already exists, assign resource if needed
-
-    require(price >= this.getPrice(tokenId), "Price too low");
-
-    // collect tax
-    this.collectTax(asset.ownerOf(tokenId));
-
-    // TODO: handle default scenario
-    // transfer currency
-    currency.transferFrom(msg.sender, asset.ownerOf(tokenId), price);
-
-    // transfer asset
-    asset.safeTransferByMarket(asset.ownerOf(tokenId), msg.sender, tokenId);
-  }
-
-  /**
-   * @dev Collect outstanding property tax for a given address, put property on tax sale if obligation not met.
-   *
-   * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
-   */
-  function collectTax(address taxpayer) external {
-    uint256 totalAssetValue = _getAssetValue(taxpayer);
-    if (totalAssetValue > 0) {
-      // address(this).balance
-      currency.transferFrom(
-        taxpayer,
-        address(this),
-        (totalAssetValue * taxRate) / 100
-      );
-
-      // TODO: default asset if owner does not have enough
-      taxTime[taxpayer] = block.timestamp;
+    /**
+     * @dev Tax record of token.
+     *
+     * TODO: more efficient storage scheme, see: https://medium.com/@novablitz/storing-structs-is-costing-you-gas-774da988895e
+     */
+    struct TaxRecord {
+        uint256 price;
+        uint256 lastTaxCollection;
+        uint256 ubiWithdrawn;
     }
-  }
 
-  /**
-   * @dev Collect all outstanding property tax, put property on tax sale if obligation not met.
-   *
-   * Emits {Tax} events and {Price} events (when properties are put on tax sale).
-   */
-  function collectTaxForAll() external {
-    // TODO: collect tax for all users with old enough tax timestamp, and reward caller
-  }
+    /**
+     * @dev Mapping from token id to tax record.
+     */
+    mapping(uint256 => TaxRecord) public taxRecord;
 
-  /**
-   * @dev Payout all dividends from current balance.
-   *
-   * Emits {Dividend} events.
-   */
-  function distributeDividendForAll() external {
-    // TODO: rewards caller, keep part as community pool
-    for (uint64 i = 0; i < assetOwnerList.length; i++) {
-      uint256 dividend = (_getAssetValue(assetOwnerList[i]) *
-        currency.balanceOf(address(this))) / marketCap;
+    /**
+     * @dev Tax rate in percentage.
+     */
+    uint256 public taxRate;
 
-      // transfer dividend
-      currency.transfer(assetOwnerList[i], dividend);
+    /**
+     * @dev Share for community treasury in percentage.
+     */
+    uint256 public treasuryShare;
 
-      // emit events
-      emit Dividend(assetOwnerList[i], dividend);
+    uint256 public accumulatedUBI;
+
+    uint256 public totalSupply;
+
+    /**
+     * @dev Tradable propertys created by this contract.
+     */
+    Property public property;
+
+    /**
+     * @dev ERC20 token used as currency
+     */
+    ERC20 public currency;
+
+    /**
+     * @dev Create Property contract, setup attached currency contract, setup tax rate
+     */
+    constructor(
+        string memory propertyName_,
+        string memory propertySymbol_,
+        address currencyAddress_,
+        uint256 taxRate_,
+        uint256 totalSupply_
+    ) {
+        // initialize Property contract with current contract as market
+        property = new Property(
+            propertyName_,
+            propertySymbol_,
+            address(this),
+            totalSupply_
+        );
+
+        // initialize currency contract
+        currency = ERC20(currencyAddress_);
+
+        // TODO: tax rate setter
+        totalSupply = totalSupply_;
+        taxRate = taxRate_;
     }
-  }
 
-  /**
-   * @dev Get total asset value of a given address.
-   */
-  function _getAssetValue(address owner) internal view returns (uint256) {
-    uint256 balance = asset.balanceOf(owner);
-    uint256 totalAssetValue = 0;
-    if (balance > 0) {
-      for (uint256 i = 0; i < balance; i++) {
-        uint256 tokenId = asset.tokenOfOwnerByIndex(owner, i);
-        totalAssetValue += assetPrice[uint64(tokenId)];
-      }
+    /**
+     * @dev Set the current price of an Harberger property with token id.
+     *
+     * Emits a {Price} event.
+     */
+    function setPrice(uint256 tokenId_, uint256 price_) external {
+        require(
+            property.ownerOf(tokenId_) == msg.sender,
+            "Sender does not own property"
+        );
+
+        _setPrice(tokenId_, price_);
     }
-    return totalAssetValue;
-  }
+
+    /**
+     * @dev Returns the current price of an Harberger property with token id.
+     */
+    function getPrice(uint256 tokenId_) external view returns (uint256 price) {
+        return taxRecord[tokenId_].price;
+    }
+
+    /**
+     * @dev Purchase property with bid higher than current price. Clear tax for owner before transfer.
+     * TODO: check security implications
+     */
+    function bid(uint256 tokenId_, uint256 price_) external {
+        // TODO: mint token if not already exists
+
+        require(price_ >= this.getPrice(tokenId_), "Price too low");
+
+        // collect tax
+        bool success = this.collectTax(tokenId_);
+
+        if (success) {
+            // successfully clear tax
+            currency.transferFrom(
+                msg.sender,
+                property.ownerOf(tokenId_),
+                price_
+            );
+            property.safeTransferByMarket(
+                property.ownerOf(tokenId_),
+                msg.sender,
+                tokenId_
+            );
+        } else {
+            // if failed, mint to current bidder
+            property.mint(msg.sender, tokenId_);
+        }
+    }
+
+    /**
+     * @dev Collect outstanding property tax for a given token, put token on tax sale if obligation not met.
+     *
+     * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
+     */
+    function collectTax(uint256 _tokenId) external returns (bool) {
+        uint256 price = this.getPrice(_tokenId);
+        if (price > 0) {
+            // TODO: time window for tax rate
+
+            // calculate tax
+            uint256 tax = (price *
+                taxRate *
+                (block.timestamp - taxRecord[_tokenId].lastTaxCollection)) /
+                100;
+
+            // calculate collectable amount
+            address taxpayer = property.ownerOf(_tokenId);
+            uint256 allowance = currency.allowance(taxpayer, address(this));
+            uint256 balance = currency.balanceOf(taxpayer);
+
+            uint256 collectable = _min(allowance, balance);
+
+            // collect tax or default
+            if (tax < collectable) {
+                // default
+                currency.transferFrom(
+                    property.ownerOf(_tokenId),
+                    address(this),
+                    collectable
+                );
+                _default(_tokenId);
+                return false;
+            } else {
+                // collect tax
+                currency.transferFrom(
+                    property.ownerOf(_tokenId),
+                    address(this),
+                    tax
+                );
+                return true;
+            }
+        } else {
+            // no tax for price 0
+            return true;
+        }
+    }
+
+    function withdrawUBI(uint256 _tokenId) external {
+        uint256 ubi = (accumulatedUBI * (100 - treasuryShare)) /
+            totalSupply -
+            taxRecord[_tokenId].ubiWithdrawn;
+
+        if (ubi > 0) {
+            currency.transferFrom(
+                address(this),
+                property.ownerOf(_tokenId),
+                ubi
+            );
+            emit UBI(_tokenId, ubi);
+        }
+    }
+
+    function _default(uint256 tokenId_) internal {
+        property.burn(tokenId_);
+        _setPrice(tokenId_, 0);
+    }
+
+    function _setPrice(uint256 tokenId_, uint256 price_) internal {
+        // update price in tax record
+        taxRecord[tokenId_].price = price_;
+
+        // emit events
+        emit Price(tokenId_, price_);
+    }
+
+    function _min(uint256 a, uint256 b) private pure returns (uint256) {
+        return a < b ? a : b;
+    }
 }

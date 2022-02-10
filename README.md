@@ -28,22 +28,24 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 - User combine multiple token into one: call [`groupTokens` function](./docs/TheSpace/Asset.md) on `Asset` contract.
 - User seperate pixels in one token into multiple tokens: call [`ungroupToken` function](./docs/TheSpace/Asset.md) on `Asset` contract.
 
-
 ## Development
 
 Install [Forge](https://github.com/gakonst/foundry)
 
 Build
+
 ```
 forge build
 ```
 
 Run tests
+
 ```
 forge test
 ```
 
 Deploy
+
 ```
 Follow the `forge create` instructions ([CLI README](https://github.com/gakonst/foundry/blob/master/cli/README.md#build)).
 ```
