@@ -1,39 +1,51 @@
 {
     "name": "@thematters/contracts",
     "version": "0.0.1",
+    "private": false,
     "description": "Solidity contracts for Matters",
-    "scripts": {
-        "build": "forge build",
-        "test": "forge test -vvvv",
-        "prettier": "prettier --write 'src/**/*.sol'",
-        "prettier:list": "prettier --list-different 'src/**/*.sol'",
-        "prettier:check": "prettier --check 'src/**/*.sol'",
-        "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
-        "solhint:check": "solhint --config ./.solhint.json 'src/**/*.sol'",
-        "lint": "npm run prettier && npm run solhint",
-        "lint:check": "npm run prettier:check && npm run solhint:check",
-        "gen:doc": "solidity-docgen -i src/contracts -t docs --solc-module solc-0.8"
+    "keywords": [
+        "solidity",
+        "contract"
+    ],
+    "homepage": "https://github.com/thematters/contracts#readme",
+    "bugs": {
+        "url": "https://github.com/thematters/contracts/issues"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/thematters/contracts.git"
     },
-    "keywords": [
-        "solidity",
-        "contract"
-    ],
-    "author": "Matters Lab",
     "license": "Apache-2.0",
-    "bugs": {
-        "url": "https://github.com/thematters/contracts/issues"
+    "author": "Matters Lab",
+    "scripts": {
+        "build": "forge build",
+        "clean": "forge clean && rm -rf dist/typechain",
+        "gen:doc": "solidity-docgen -i src/contracts -t docs --solc-module solc-0.8",
+        "lint": "npm run format && npm run solhint",
+        "lint:check": "npm run format:check && npm run solhint:check",
+        "format": "prettier --write 'src/**/*.sol'",
+        "format:check": "prettier --check 'src/**/*.sol'",
+        "format:list": "prettier --list-different 'src/**/*.sol'",
+        "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
+        "solhint:check": "solhint --config ./.solhint.json 'src/**/*.sol'",
+        "test": "forge test -vvvv",
+        "prepare": "husky install"
     },
-    "homepage": "https://github.com/thematters/contracts#readme",
+    "lint-staged": {
+        "*.{ts,js,css,md,sol}": "prettier --write",
+        "*.sol": "solhint"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.4.2"
+    },
     "devDependencies": {
-        "@openzeppelin/contracts": "^4.4.2",
+        "husky": "^7.0.4",
+        "lint-staged": "^12.3.3",
         "prettier": "^2.5.1",
         "prettier-plugin-solidity": "^1.0.0-beta.19",
         "solc-0.8": "npm:solc@^0.8.11",
         "solhint": "^3.3.6",
+        "solhint-plugin-prettier": "^0.0.5",
         "solidity-docgen": "^0.5.16"
     }
 }
