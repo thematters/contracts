@@ -37,12 +37,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param contentHash Deterministic unique ID, hash of the content
      * @param content Content string
      */
-    event Publish(
-        uint256 indexed tokenId,
-        address indexed author,
-        bytes32 indexed contentHash,
-        string content
-    );
+    event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
 
     /**
      * @notice Emitted when a logbook was forked
@@ -66,14 +61,11 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param donor Donor address
      * @param amount Fork price
      */
-    event Donate(
-        uint256 indexed tokenId,
-        address indexed donor,
-        uint256 amount
-    );
+    event Donate(uint256 indexed tokenId, address indexed donor, uint256 amount);
 
     /**
      * @notice Set logbook title
+     * @dev Access Control: logbook owner
      * @dev Emits a {SetTitle} event
      * @param tokenId_ logbook token id
      * @param title_ logbook title
@@ -82,15 +74,16 @@ interface ILogbook is IRoyalty, IERC721 {
 
     /**
      * @notice Set logbook description
+     * @dev Access Control: logbook owner
      * @dev Emits a {SetDescription} event
      * @param tokenId_ Logbook token id
      * @param description_ Logbook description
      */
-    function setDescription(uint256 tokenId_, string calldata description_)
-        external;
+    function setDescription(uint256 tokenId_, string calldata description_) external;
 
     /**
      * @notice Set logbook fork price
+     * @dev Access Control: logbook owner
      * @dev Emits a {SetForkPrice} event
      * @param tokenId_ Logbook token id
      * @param amount_ Fork price
@@ -101,12 +94,11 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Batch calling methods of this contract
      * @param data Array of calldata
      */
-    function multicall(bytes[] calldata data)
-        external
-        returns (bytes[] memory results);
+    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
 
     /**
      * @notice Publish a new log in a logbook
+     * @dev Access Control: logbook owner
      * @dev Emits a {Publish} event
      * @param tokenId_ Logbook token id
      * @param content_ Log content
@@ -122,6 +114,27 @@ interface ILogbook is IRoyalty, IERC721 {
     function fork(uint256 tokenId_, bytes32 contentHash_) external payable;
 
     /**
+     * @notice Pay to fork a logbook
+     * @dev Emits {Fork} and {Pay} events
+     * @param tokenId_ Logbook token id
+     * @param contentHash_ End position of a range of logs in the old logbook
+     * @param commission_ Address (frontend operator) to earn commission
+     */
+    function fork(
+        uint256 tokenId_,
+        bytes32 contentHash_,
+        address commission_
+    ) external payable;
+
+    /**
+     * @notice Donate to a logbook
+     * @dev Emits {Donate} and {Pay} events
+     * @param tokenId_ Logbook token id
+     * @param commission_ Address (frontend operator) to earn commission
+     */
+    function donate(uint256 tokenId_, address commission_) external payable;
+
+    /**
      * @notice Donate to a logbook
      * @dev Emits {Donate} and {Pay} events
      * @param tokenId_ Logbook token id
@@ -130,12 +143,14 @@ interface ILogbook is IRoyalty, IERC721 {
 
     /**
      * @notice Set royalty basis points of logbook owner
+     * @dev Access Control: contract deployer
      * @param bps_ Basis points
      */
     function setRoyaltyBPSLogbookOwner(uint128 bps_) external;
 
     /**
      * @notice Set royalty basis points of contract
+     * @dev Access Control: contract deployer
      * @param bps_ Basis points
      */
     function setRoyaltyBPSContract(uint128 bps_) external;
@@ -158,13 +173,27 @@ interface ILogbook is IRoyalty, IERC721 {
     // TBD: interfaces for UBI
 
     /**
-     * @notice Mint a logbook
-     * @dev Only contract owner can call
-     * @param to_ Receiver address
-     * @return TokenId
+     * @notice Claim a logbook with a Traveloggers token
+     * @dev Access Control: contract deployer
+     * @param to_ Traveloggers token owner
+     * @param logrsId_ Traveloggers token id (1-1500)
      */
-    // function mint(address to_) external returns (uint256 tokenId);
-    // TBD: mint by sending ether, can be turn off/on
-    // TBD: mint by airdop
-    // TBD: variable for setting price and totalSupply
+    function claim(address to_, uint256 logrsId_) external;
+
+    /**
+     * @notice Mint a logbook
+     */
+    function publicSaleMint() external payable returns (uint256 tokenId);
+
+    /**
+     * @notice Set public sale
+     * @dev Access Control: contract deployer
+     */
+    function setPublicSalePrice(uint256 price_) external;
+
+    /**
+     * @notice Toggle public sale state
+     * @dev Access Control: contract deployer
+     */
+    function togglePublicSale() external returns (uint256 publicSale);
 }

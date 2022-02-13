@@ -19,15 +19,6 @@ abstract contract Royalty is IRoyalty, ReentrancyGuard, Ownable {
     }
 
     /// @inheritdoc IRoyalty
-    function withdrawContractFees() public nonReentrant onlyOwner {
-        uint256 amount = _balances[address(this)];
-        _balances[address(this)] = 0;
-        (bool success, ) = msg.sender.call{value: amount}("");
-        require(success);
-        emit Withdraw(msg.sender, amount);
-    }
-
-    /// @inheritdoc IRoyalty
     function getBalance(address account_) public view returns (uint256) {
         return _balances[account_];
     }

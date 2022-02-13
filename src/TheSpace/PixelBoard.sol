@@ -16,15 +16,7 @@ abstract contract PixelBoard is HarbergerMarket {
         address currencyAddress_,
         uint8 taxRate_,
         uint256 totalSupply_
-    )
-        HarbergerMarket(
-            assetName_,
-            assetSymbol_,
-            currencyAddress_,
-            taxRate_,
-            totalSupply_
-        )
-    {}
+    ) HarbergerMarket(assetName_, assetSymbol_, currencyAddress_, taxRate_, totalSupply_) {}
 
     /**
      * @dev Set colors in batch for an array of pixels.
@@ -32,10 +24,7 @@ abstract contract PixelBoard is HarbergerMarket {
      * Emits {Color} events.
      */
     function setColor(uint256 tokenId_, uint256 color_) external {
-        require(
-            asset.ownerOf(tokenId_) == msg.sender,
-            "Pixel not owned by caller."
-        );
+        require(asset.ownerOf(tokenId_) == msg.sender, "Pixel not owned by caller.");
         emit Color(tokenId_, color_);
     }
 }

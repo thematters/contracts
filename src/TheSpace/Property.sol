@@ -68,10 +68,7 @@ contract Property is ERC721Enumerable {
      *
      * - `tokenId` must exist.
      */
-    function setTokenURI(uint256 tokenId_, string memory tokenURI_)
-        internal
-        virtual
-    {
+    function setTokenURI(uint256 tokenId_, string memory tokenURI_) internal virtual {
         require(_exists(tokenId_), "URI set of nonexistent token");
         require(msg.sender == this.ownerOf(tokenId_), "Only owner can set URI");
         _tokenURIs[tokenId_] = tokenURI_;
@@ -80,13 +77,7 @@ contract Property is ERC721Enumerable {
     /**
      * @dev Return token URI
      */
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "URI query for nonexistent token");
         string memory _tokenURI = _tokenURIs[tokenId];
 

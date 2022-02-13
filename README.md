@@ -35,17 +35,25 @@ Install [Forge](https://github.com/gakonst/foundry)
 Build
 
 ```
-forge build
+make build
 ```
 
-Run tests
+Testing
 
 ```
-forge test
+make test
 ```
 
-Deploy
+## Deployment
+
+Deploy on Polygon Mainnet:
 
 ```
-Follow the `forge create` instructions ([CLI README](https://github.com/gakonst/foundry/blob/master/cli/README.md#build)).
+make deploy-polygon-mainnet
+```
+
+Deploy on Polygon Mumbai:
+
+```
+make deploy-polygon-mumbai
 ```

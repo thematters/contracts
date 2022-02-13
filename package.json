@@ -29,6 +29,7 @@
         "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
         "solhint:check": "solhint --config ./.solhint.json 'src/**/*.sol'",
         "test": "forge test -vvvv",
+        "ganache": "ganache",
         "prepare": "husky install"
     },
     "lint-staged": {
@@ -39,6 +40,7 @@
         "@openzeppelin/contracts": "^4.4.2"
     },
     "devDependencies": {
+        "ganache": "^7.0.2",
         "husky": "^7.0.4",
         "lint-staged": "^12.3.3",
         "prettier": "^2.5.1",

@@ -76,12 +76,7 @@ abstract contract HarbergerMarket is Multicall {
         uint256 totalSupply_
     ) {
         // initialize Property contract with current contract as market
-        property = new Property(
-            propertyName_,
-            propertySymbol_,
-            address(this),
-            totalSupply_
-        );
+        property = new Property(propertyName_, propertySymbol_, address(this), totalSupply_);
 
         // initialize currency contract
         currency = ERC20(currencyAddress_);
@@ -97,10 +92,7 @@ abstract contract HarbergerMarket is Multicall {
      * Emits a {Price} event.
      */
     function setPrice(uint256 tokenId_, uint256 price_) external {
-        require(
-            property.ownerOf(tokenId_) == msg.sender,
-            "Sender does not own property"
-        );
+        require(property.ownerOf(tokenId_) == msg.sender, "Sender does not own property");
 
         _setPrice(tokenId_, price_);
     }
@@ -126,16 +118,8 @@ abstract contract HarbergerMarket is Multicall {
 
         if (success) {
             // successfully clear tax
-            currency.transferFrom(
-                msg.sender,
-                property.ownerOf(tokenId_),
-                price_
-            );
-            property.safeTransferByMarket(
-                property.ownerOf(tokenId_),
-                msg.sender,
-                tokenId_
-            );
+            currency.transferFrom(msg.sender, property.ownerOf(tokenId_), price_);
+            property.safeTransferByMarket(property.ownerOf(tokenId_), msg.sender, tokenId_);
         } else {
             // if failed, mint to current bidder
             property.mint(msg.sender, tokenId_);
@@ -153,10 +137,7 @@ abstract contract HarbergerMarket is Multicall {
             // TODO: time window for tax rate
 
             // calculate tax
-            uint256 tax = (price *
-                taxRate *
-                (block.timestamp - taxRecord[_tokenId].lastTaxCollection)) /
-                100;
+            uint256 tax = (price * taxRate * (block.timestamp - taxRecord[_tokenId].lastTaxCollection)) / 100;
 
             // calculate collectable amount
             address taxpayer = property.ownerOf(_tokenId);
@@ -168,20 +149,12 @@ abstract contract HarbergerMarket is Multicall {
             // collect tax or default
             if (tax < collectable) {
                 // default
-                currency.transferFrom(
-                    property.ownerOf(_tokenId),
-                    address(this),
-                    collectable
-                );
+                currency.transferFrom(property.ownerOf(_tokenId), address(this), collectable);
                 _default(_tokenId);
                 return false;
             } else {
                 // collect tax
-                currency.transferFrom(
-                    property.ownerOf(_tokenId),
-                    address(this),
-                    tax
-                );
+                currency.transferFrom(property.ownerOf(_tokenId), address(this), tax);
                 return true;
             }
         } else {
@@ -191,16 +164,10 @@ abstract contract HarbergerMarket is Multicall {
     }
 
     function withdrawUBI(uint256 _tokenId) external {
-        uint256 ubi = (accumulatedUBI * (100 - treasuryShare)) /
-            totalSupply -
-            taxRecord[_tokenId].ubiWithdrawn;
+        uint256 ubi = (accumulatedUBI * (100 - treasuryShare)) / totalSupply - taxRecord[_tokenId].ubiWithdrawn;
 
         if (ubi > 0) {
-            currency.transferFrom(
-                address(this),
-                property.ownerOf(_tokenId),
-                ubi
-            );
+            currency.transferFrom(address(this), property.ownerOf(_tokenId), ubi);
             emit UBI(_tokenId, ubi);
         }
     }

@@ -19,8 +19,14 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint256 forkPrice;
     }
 
+    // TODO: starting with 1501 since 1-1500 are reseved for Traveloggers
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter;
+
+    uint256 private constant _PUBLIC_SALE_ON = 1;
+    uint256 private constant _PUBLIC_SALE_OFF = 2;
+    uint256 public publicSale;
+    uint256 public publicSalePrice;
 
     // contentHash to log
     mapping(bytes32 => Log) public logs;
@@ -35,52 +41,33 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
      * @dev Throws if called by any account other than the logbook owner.
      */
     modifier onlyLogbookOwner(uint256 tokenId_) {
-        require(
-            _isApprovedOrOwner(msg.sender, tokenId_),
-            "caller is not owner nor approved"
-        );
+        require(_isApprovedOrOwner(msg.sender, tokenId_), "caller is not owner nor approved");
         _;
     }
 
-    constructor(string memory name_, string memory symbol_)
-        ERC721(name_, symbol_)
-    {}
+    constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
     /// @inheritdoc ILogbook
-    function setTitle(uint256 tokenId_, string calldata title_)
-        public
-        onlyLogbookOwner(tokenId_)
-    {
+    function setTitle(uint256 tokenId_, string calldata title_) public onlyLogbookOwner(tokenId_) {
         emit SetTitle(tokenId_, title_);
     }
 
     /// @inheritdoc ILogbook
-    function setDescription(uint256 tokenId_, string calldata description_)
-        public
-        onlyLogbookOwner(tokenId_)
-    {
+    function setDescription(uint256 tokenId_, string calldata description_) public onlyLogbookOwner(tokenId_) {
         emit SetDescription(tokenId_, description_);
     }
 
     /// @inheritdoc ILogbook
-    function setForkPrice(uint256 tokenId_, uint256 amount_)
-        public
-        onlyLogbookOwner(tokenId_)
-    {
+    function setForkPrice(uint256 tokenId_, uint256 amount_) public onlyLogbookOwner(tokenId_) {
         emit SetForkPrice(tokenId_, amount_);
     }
 
     /// @inheritdoc ILogbook
-    function multicall(bytes[] calldata data)
-        external
-        returns (bytes[] memory results)
-    {
+    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
         results = new bytes[](data.length);
 
         for (uint256 i = 0; i < data.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(
-                data[i]
-            );
+            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
             require(success);
             results[i] = result;
         }
@@ -89,20 +76,14 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function publish(uint256 tokenId_, string calldata content_)
-        public
-        onlyLogbookOwner(tokenId_)
-    {
+    function publish(uint256 tokenId_, string calldata content_) public onlyLogbookOwner(tokenId_) {
         bytes32 contentHash = keccak256(abi.encodePacked(content_));
         emit Publish(tokenId_, msg.sender, contentHash, content_);
     }
 
     /// @inheritdoc ILogbook
     function fork(uint256 tokenId_, bytes32 contentHash_) public payable {
-        require(
-            _exists(tokenId_),
-            "ERC721: operator query for nonexistent token"
-        );
+        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         Book memory book = books[tokenId_];
         uint256 logCount = book.contentHashes.length;
@@ -125,10 +106,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
             }
         }
 
-        Book memory newBook = Book({
-            contentHashes: newContentHashes,
-            forkPrice: 0 ether
-        });
+        Book memory newBook = Book({contentHashes: newContentHashes, forkPrice: 0 ether});
 
         books[newTokenId] = newBook;
 
@@ -140,10 +118,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function donate(uint256 tokenId_) public payable {
-        require(
-            _exists(tokenId_),
-            "ERC721: operator query for nonexistent token"
-        );
+        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         Book memory book = books[tokenId_];
         uint256 logCount = book.contentHashes.length;
@@ -164,25 +139,51 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setRoyaltyBPSContract(uint128 bps_) public onlyOwner {
-        require(
-            bps_ + basisPointsLogbookOwner <= 10000,
-            "invalid basis points"
-        );
+        require(bps_ + basisPointsLogbookOwner <= 10000, "invalid basis points");
         basisPointsContract = bps_;
     }
 
     // function getLogbook
 
     // function tokenURI override
-    // Base64:SVG?
+    // inline SVG
 
     // function _baseURI override
 
-    // function mint(address to) public onlyOwner returns (uint256 tokenId) {
-    //     _tokenIdCounter.increment();
-    //     tokenId = _tokenIdCounter.current();
-    //     _safeMint(to, tokenId);
-    // }
+    /// @inheritdoc ILogbook
+    function claim(address to_, uint256 logrsId_) external {
+        require(logrsId_ >= 1 && logrsId_ <= 1500, "invalid logrs id");
+
+        _safeMint(to_, logrsId_);
+    }
+
+    /// @inheritdoc ILogbook
+    function publicSaleMint() external payable returns (uint256 tokenId) {
+        require(publicSale == _PUBLIC_SALE_ON && publicSalePrice > 0, "public sale is not started");
+        require(msg.value >= publicSalePrice, "value too small");
+
+        // forward value
+        address deployer = owner();
+        (bool success, ) = deployer.call{value: msg.value}("");
+        require(success);
+
+        // mint
+        _mint(msg.sender);
+    }
+
+    /// @inheritdoc ILogbook
+    function setPublicSalePrice(uint256 price_) external onlyOwner {
+        require(price_ > 0, "zero amount");
+
+        publicSalePrice = price_;
+    }
+
+    /// @inheritdoc ILogbook
+    function togglePublicSale() external onlyOwner returns (uint256 newPublicSale) {
+        newPublicSale = publicSale == _PUBLIC_SALE_ON ? _PUBLIC_SALE_OFF : _PUBLIC_SALE_ON;
+
+        publicSale = newPublicSale;
+    }
 
     function _mint(address to) internal returns (uint256 tokenId) {
         _tokenIdCounter.increment();
@@ -209,8 +210,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         uint256 feesLogbookOwner = (amount_ * basisPointsLogbookOwner) / 10000;
         uint256 feesContract = (amount_ * basisPointsContract) / 10000;
-        uint256 feesPerLogAuthor = (amount_ - feesLogbookOwner - feesContract) /
-            logCount;
+        uint256 feesPerLogAuthor = (amount_ - feesLogbookOwner - feesContract) / logCount;
 
         // -> logbook owner
         _balances[logbookOwner] += feesLogbookOwner;
