@@ -24,7 +24,7 @@ abstract contract PixelBoard is HarbergerMarket {
      * Emits {Color} events.
      */
     function setColor(uint256 tokenId_, uint256 color_) external {
-        require(asset.ownerOf(tokenId_) == msg.sender, "Pixel not owned by caller.");
+        // require(asset.ownerOf(tokenId_) == msg.sender, "Pixel not owned by caller.");
         emit Color(tokenId_, color_);
     }
 }

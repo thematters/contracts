@@ -1,8 +1,7 @@
-# include .env file and export its env vars
-# (-include to ignore error if it does not exist)
--include .env
+NETWORK ?= local # defaults to local node with ganache
+include .env.$(NETWORK)
 
-# deps
+# Deps
 update:; forge update
 
 # Build & test
@@ -12,11 +11,11 @@ clean    :; npm run clean
 snapshot :; forge snapshot
 
 # Deployments
-deploy :; @./scripts/deploy.sh
 
-# polygon mainnet
-deploy-polygon-mainnet:; echo deploying to polygon mainnet
+## Logbook
+deploy-logbook: clean
+	@forge create Logbook --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args Logbook --constructor-args LOGK --legacy
 
-# polygon mumbai
-deploy-polygon-mumbai:; echo deploying to polygon mumbai
-
+## The Space
+deploy-the-space: clean
+	@echo "TODO"

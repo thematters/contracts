@@ -32,28 +32,46 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 
 Install [Forge](https://github.com/gakonst/foundry)
 
+Environment
+
+```bash
+cp .env.local.example .env.local
+```
+
 Build
 
-```
+```bash
 make build
 ```
 
 Testing
 
-```
+```bash
 make test
 ```
 
 ## Deployment
 
-Deploy on Polygon Mainnet:
+Deploy on Local Node:
 
-```
-make deploy-polygon-mainnet
-```
+```bash
+# Run local node
+npm run ganache
 
-Deploy on Polygon Mumbai:
+# Preprare environment
+cp .env.local.example .env.local
+cp .env.polygon-mainnet.example .env.polygon-mainnet
+cp .env.polygon-mumbai.example .env.polygon-mumbai
 
-```
-make deploy-polygon-mumbai
+# Deploy Logbook contract (defaults to local node)
+make deploy-logbook
+
+# Deploy The Space contract
+make deploy-the-space
+
+# Deploy to Poygon Mainnet
+make deploy-the-space NETWORK=polygon-mainnet
+
+# Deploy to Polygon Mumbai
+make deploy-the-space NETWORK=polygon-mainnet
 ```

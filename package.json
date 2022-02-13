@@ -33,7 +33,7 @@
         "prepare": "husky install"
     },
     "lint-staged": {
-        "*.{ts,js,css,md,sol}": "prettier --write",
+        "*.{ts,js,css,md,sol}": "npm run format",
         "*.sol": "solhint"
     },
     "dependencies": {
