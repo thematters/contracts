@@ -40,13 +40,6 @@ interface IRoyalty {
     function withdraw() external;
 
     /**
-     * @notice Withdraw contract royalty fees
-     * @dev Only contract owner can call
-     * @dev Emits a {Withdraw} event
-     */
-    function withdrawContractFees() external;
-
-    /**
      * @notice Get balance of a given address
      * @param account_ Address
      */

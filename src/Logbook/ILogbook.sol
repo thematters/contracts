@@ -114,13 +114,13 @@ interface ILogbook is IRoyalty, IERC721 {
     function fork(uint256 tokenId_, bytes32 contentHash_) external payable;
 
     /**
-     * @notice Pay to fork a logbook
+     * @notice Pay to fork a logbook with commission
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
      * @param contentHash_ End position of a range of logs in the old logbook
      * @param commission_ Address (frontend operator) to earn commission
      */
-    function fork(
+    function forkWithCommission(
         uint256 tokenId_,
         bytes32 contentHash_,
         address commission_
@@ -130,16 +130,16 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Donate to a logbook
      * @dev Emits {Donate} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param commission_ Address (frontend operator) to earn commission
-     */
-    function donate(uint256 tokenId_, address commission_) external payable;
-
-    /**
-     * @notice Donate to a logbook
-     * @dev Emits {Donate} and {Pay} events
-     * @param tokenId_ Logbook token id
      */
     function donate(uint256 tokenId_) external payable;
+
+    /**
+     * @notice Donate to a logbook with commission
+     * @dev Emits {Donate} and {Pay} events
+     * @param tokenId_ Logbook token id
+     * @param commission_ Address (frontend operator) to earn commission
+     */
+    function donateWithCommission(uint256 tokenId_, address commission_) external payable;
 
     /**
      * @notice Set royalty basis points of logbook owner
@@ -153,7 +153,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @dev Access Control: contract deployer
      * @param bps_ Basis points
      */
-    function setRoyaltyBPSContract(uint128 bps_) external;
+    function setRoyaltyBPSCommission(uint128 bps_) external;
 
     /**
      * @notice Get a logbook
