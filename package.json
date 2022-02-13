@@ -1,59 +1,53 @@
 {
-  "name": "@thematters/contracts",
-  "version": "0.0.1",
-  "description": "Solidity contracts for Matters",
-  "main": "index.js",
-  "scripts": {
-    "test": "hardhat test",
-    "gen:doc": "solidity-docgen -i src -t docs --solc-module solc-0.8"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/thematters/contracts.git"
-  },
-  "keywords": [
-    "solidity",
-    "contract"
-  ],
-  "author": "Matters Lab",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/thematters/contracts/issues"
-  },
-  "homepage": "https://github.com/thematters/contracts#readme",
-  "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.7",
-    "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@openzeppelin/contracts": "^4.3.3",
-    "@typechain/ethers-v5": "^7.2.0",
-    "@typechain/hardhat": "^2.3.1",
-    "@types/chai": "^4.2.22",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "^16.11.9",
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
-    "chai": "^4.3.4",
-    "dotenv": "^10.0.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^3.4.1",
-    "eslint-plugin-promise": "^5.1.1",
-    "ethereum-waffle": "^3.4.0",
-    "ethers": "^5.5.1",
-    "hardhat": "^2.6.8",
-    "hardhat-gas-reporter": "^1.0.4",
-    "prettier": "^2.4.1",
-    "prettier-plugin-solidity": "^1.0.0-beta.13",
-    "solc-0.8": "npm:solc@^0.8.10",
-    "solhint": "^3.3.6",
-    "solidity-coverage": "^0.7.17",
-    "solidity-docgen": "^0.5.16",
-    "ts-node": "^10.4.0",
-    "typechain": "^5.2.0",
-    "typescript": "^4.5.2"
-  }
+    "name": "@thematters/contracts",
+    "version": "0.0.1",
+    "private": false,
+    "description": "Solidity contracts for Matters",
+    "keywords": [
+        "solidity",
+        "contract"
+    ],
+    "homepage": "https://github.com/thematters/contracts#readme",
+    "bugs": {
+        "url": "https://github.com/thematters/contracts/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thematters/contracts.git"
+    },
+    "license": "Apache-2.0",
+    "author": "Matters Lab",
+    "scripts": {
+        "build": "forge build",
+        "clean": "forge clean && rm -rf dist/typechain",
+        "gen:doc": "solidity-docgen -i src/contracts -t docs --solc-module solc-0.8",
+        "lint": "npm run format && npm run solhint",
+        "lint:check": "npm run format:check && npm run solhint:check",
+        "format": "prettier --write 'src/**/*.sol'",
+        "format:check": "prettier --check 'src/**/*.sol'",
+        "format:list": "prettier --list-different 'src/**/*.sol'",
+        "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
+        "solhint:check": "solhint --config ./.solhint.json 'src/**/*.sol'",
+        "test": "forge test -vvvv",
+        "ganache": "ganache",
+        "prepare": "husky install"
+    },
+    "lint-staged": {
+        "*.{ts,js,css,md,sol}": "npm run format",
+        "*.sol": "solhint"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^4.4.2"
+    },
+    "devDependencies": {
+        "ganache": "^7.0.2",
+        "husky": "^7.0.4",
+        "lint-staged": "^12.3.3",
+        "prettier": "^2.5.1",
+        "prettier-plugin-solidity": "^1.0.0-beta.19",
+        "solc-0.8": "npm:solc@^0.8.11",
+        "solhint": "^3.3.6",
+        "solhint-plugin-prettier": "^0.0.5",
+        "solidity-docgen": "^0.5.16"
+    }
 }
