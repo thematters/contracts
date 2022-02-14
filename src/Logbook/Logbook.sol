@@ -19,14 +19,14 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint256 forkPrice;
     }
 
-    // TODO: starting with 1501 since 1-1500 are reseved for Traveloggers
+    // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
-    Counters.Counter internal _tokenIdCounter;
+    Counters.Counter internal _tokenIdCounter = Counters.Counter(1501);
 
     uint256 private constant _PUBLIC_SALE_ON = 1;
     uint256 private constant _PUBLIC_SALE_OFF = 2;
-    uint256 public publicSale;
-    uint256 public publicSalePrice;
+    uint256 public publicSale = _PUBLIC_SALE_OFF;
+    uint256 public publicSalePrice = 0;
 
     // contentHash to log
     mapping(bytes32 => Log) public logs;
@@ -164,7 +164,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         require(success);
 
         // mint
-        _mint(msg.sender);
+        tokenId = _mint(msg.sender);
     }
 
     /// @inheritdoc ILogbook
