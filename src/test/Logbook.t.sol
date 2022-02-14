@@ -14,12 +14,32 @@ contract LogbookTest is DSTest {
     address constant DEPLOYER = address(176);
     address constant TRAVELOGGERS_OWNER = address(177);
     address constant PUBLIC_SALE_MINTER = address(178);
+    address constant ATTACKER = address(179);
+    address constant APPROVED = address(180);
 
     uint256 constant _PUBLIC_SALE_ON = 1;
     uint256 constant _PUBLIC_SALE_OFF = 2;
 
     uint256 constant CLAIM_TOKEN_START_ID = 1;
     uint256 constant CLAIM_TOKEN_END_ID = 1500;
+
+    event SetTitle(uint256 indexed tokenId, string title);
+
+    event SetDescription(uint256 indexed tokenId, string description);
+
+    event SetForkPrice(uint256 indexed tokenId, uint256 amount);
+
+    event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
+
+    event Fork(
+        uint256 indexed tokenId,
+        uint256 indexed newTokenId,
+        address indexed owner,
+        bytes32 contentHash,
+        uint256 amount
+    );
+
+    event Donate(uint256 indexed tokenId, address indexed donor, uint256 amount);
 
     function setUp() public {
         vm.prank(DEPLOYER);
@@ -29,6 +49,13 @@ contract LogbookTest is DSTest {
     /**
      * Claim
      */
+    function _claimToTraveloggersOwner() private {
+        vm.prank(DEPLOYER);
+        logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_START_ID);
+        assertEq(logbook.ownerOf(CLAIM_TOKEN_START_ID), TRAVELOGGERS_OWNER);
+        assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 1);
+    }
+
     function testClaim() public {
         // only owner
         vm.prank(PUBLIC_SALE_MINTER);
@@ -42,10 +69,7 @@ contract LogbookTest is DSTest {
         assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 0);
 
         // claim
-        vm.prank(DEPLOYER);
-        logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_START_ID);
-        assertEq(logbook.ownerOf(CLAIM_TOKEN_START_ID), TRAVELOGGERS_OWNER);
-        assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 1);
+        _claimToTraveloggersOwner();
 
         // token can't be claimed again
         vm.prank(DEPLOYER);
@@ -98,6 +122,34 @@ contract LogbookTest is DSTest {
         vm.expectRevert("value too small");
         vm.prank(PUBLIC_SALE_MINTER);
         logbook.publicSaleMint{value: price - 0.01 ether}();
+    }
+
+    /**
+     * Title, Description, Fork Price, Publish...
+     */
+    function testSetTitle() public {
+        _claimToTraveloggersOwner();
+        string memory title = "Sit deserunt nulla aliqua ex nisi";
+
+        // set title
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, false, false);
+        emit SetTitle(CLAIM_TOKEN_START_ID, title);
+        logbook.setTitle(CLAIM_TOKEN_START_ID, title);
+
+        // only logbook owner
+        vm.prank(ATTACKER);
+        vm.expectRevert("caller is not owner nor approved");
+        logbook.setTitle(CLAIM_TOKEN_START_ID, title);
+
+        // approve other address
+        vm.startPrank(TRAVELOGGERS_OWNER);
+        logbook.approve(APPROVED, CLAIM_TOKEN_START_ID);
+        logbook.getApproved(CLAIM_TOKEN_START_ID);
+        vm.stopPrank();
+
+        vm.prank(APPROVED);
+        logbook.setTitle(CLAIM_TOKEN_START_ID, title);
     }
 
     // Publish: gas?

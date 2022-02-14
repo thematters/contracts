@@ -59,6 +59,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setForkPrice(uint256 tokenId_, uint256 amount_) public onlyLogbookOwner(tokenId_) {
+        Book memory book = books[tokenId_];
+        book.forkPrice = amount_;
         emit SetForkPrice(tokenId_, amount_);
     }
 
@@ -161,7 +163,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         // forward value
         address deployer = owner();
         (bool success, ) = deployer.call{value: msg.value}("");
-        require(success, "call failed");
+        require(success, "failed to transfer");
 
         // mint
         tokenId = _mint(msg.sender);
