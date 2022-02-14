@@ -162,15 +162,16 @@ interface ILogbook is IRoyalty, IERC721 {
      * @return contentHashes All logs' content hashes
      * @return authors All logs' authors
      */
-    // function getLogbookLogs(uint256 tokenId_)
-    //     external
-    //     view
-    //     returns (
-    //         uint256 forkPrice,
-    //         bytes32[] memory contentHashes,
-    //         address[] memory authors
-    //     );
-    // TBD: interfaces for UBI
+    function getLogbook(uint256 tokenId_)
+        external
+        view
+        returns (
+            uint256 forkPrice,
+            bytes32[] memory contentHashes,
+            address[] memory authors
+        );
+
+    // TODO: interfaces for UBI
 
     /**
      * @notice Claim a logbook with a Traveloggers token

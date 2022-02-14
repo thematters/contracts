@@ -152,7 +152,59 @@ contract LogbookTest is DSTest {
         logbook.setTitle(CLAIM_TOKEN_START_ID, title);
     }
 
-    // Publish: gas?
+    function testSetDescription() public {
+        _claimToTraveloggersOwner();
+        string
+            memory description = "Quis commodo sunt ea est aliquip enim aliquip ullamco eu. Excepteur aliquip enim irure dolore deserunt fugiat consectetur esse in deserunt commodo in eiusmod esse. Cillum cupidatat dolor voluptate in id consequat nulla aliquip. Deserunt sunt aute eu aliqua consequat nulla aliquip excepteur exercitation. Lorem ex magna deserunt duis dolor dolore mollit.";
+
+        // set description
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, false, false);
+        emit SetDescription(CLAIM_TOKEN_START_ID, description);
+        logbook.setDescription(CLAIM_TOKEN_START_ID, description);
+
+        // only logbook owner
+        vm.prank(ATTACKER);
+        vm.expectRevert("caller is not owner nor approved");
+        logbook.setTitle(CLAIM_TOKEN_START_ID, description);
+    }
+
+    function testSetForkPrice() public {
+        _claimToTraveloggersOwner();
+        uint256 forkPrice = 0.06 ether;
+
+        // set fork price
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, false, false);
+        emit SetForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+        logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+        (forkPrice, , ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(forkPrice, forkPrice);
+
+        // only logbook owner
+        vm.prank(ATTACKER);
+        vm.expectRevert("caller is not owner nor approved");
+        logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+    }
+
+    function testPublish() public {
+        _claimToTraveloggersOwner();
+        string
+            memory content = "Elit ea minim aliqua dolor aliquip cillum occaecat duis sunt sunt do eu dolore. Veniam ullamco aliquip id nisi nostrud sint fugiat veniam sint ullamco quis commodo laborum pariatur eiusmod. Exercitation aliquip nostrud aliqua elit pariatur magna eu excepteur labore dolore anim. Dolore dolor proident aliquip anim Lorem do magna duis adipisicing aliquip. Incididunt aliqua ut proident sint cillum occaecat sit mollit proident do aliqua aliquip. Exercitation est aliqua qui eu incididunt enim mollit minim voluptate culpa duis sunt. Exercitation dolor non aliquip fugiat esse ea mollit minim sit excepteur laborum ea anim. Occaecat eiusmod eu ex fugiat aliquip veniam non incididunt sunt culpa elit enim. Fugiat ipsum commodo culpa sit esse id ut excepteur anim ut dolor do. Eu occaecat ea sunt commodo consectetur sunt sint culpa labore.";
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+
+        // publish
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit Publish(CLAIM_TOKEN_START_ID, TRAVELOGGERS_OWNER, contentHash, content);
+        logbook.publish(CLAIM_TOKEN_START_ID, content);
+
+        // only logbook owner
+        vm.prank(ATTACKER);
+        vm.expectRevert("caller is not owner nor approved");
+        logbook.publish(CLAIM_TOKEN_START_ID, content);
+    }
+
     // Donate: gas? (long list)
     // Fork: gas? (long list)
     // Withdraw

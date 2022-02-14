@@ -141,7 +141,25 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         basisPointsCommission = bps_;
     }
 
-    // function getLogbook
+    /// @inheritdoc ILogbook
+    function getLogbook(uint256 tokenId_)
+        external
+        view
+        returns (
+            uint256 forkPrice,
+            bytes32[] memory contentHashes,
+            address[] memory authors
+        )
+    {
+        Book memory book = books[tokenId_];
+
+        forkPrice = book.forkPrice;
+        contentHashes = book.contentHashes;
+
+        for (uint256 i = 0; i < contentHashes.length; i++) {
+            authors[i] = logs[contentHashes[i]].author;
+        }
+    }
 
     // function tokenURI override
     // inline SVG
