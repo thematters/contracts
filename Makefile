@@ -9,10 +9,10 @@ clean    :; forge clean
 snapshot :; forge snapshot
 build: clean
 	forge build
-test: clean
+test:
 	forge test -vvv
 trace: clean
-	forge test -vvvv
+	forge test -vvvvv
 
 # Deployments
 ## Logbook

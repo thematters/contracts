@@ -21,7 +21,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
-    Counters.Counter internal _tokenIdCounter = Counters.Counter(1501);
+    Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
     uint256 private constant _PUBLIC_SALE_ON = 1;
     uint256 private constant _PUBLIC_SALE_OFF = 2;
@@ -147,7 +147,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     // function _baseURI override
 
     /// @inheritdoc ILogbook
-    function claim(address to_, uint256 logrsId_) external {
+    function claim(address to_, uint256 logrsId_) external onlyOwner {
         require(logrsId_ >= 1 && logrsId_ <= 1500, "invalid logrs id");
 
         _safeMint(to_, logrsId_);
@@ -161,7 +161,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         // forward value
         address deployer = owner();
         (bool success, ) = deployer.call{value: msg.value}("");
-        require(success);
+        require(success, "call failed");
 
         // mint
         tokenId = _mint(msg.sender);
