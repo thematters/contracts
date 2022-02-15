@@ -280,10 +280,9 @@ contract LogbookTest is DSTest {
         logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
     }
 
-    function testFork(uint256 amount) public {
+    function testFork(uint256 amount, string calldata content) public {
         _claimToTraveloggersOwner();
 
-        string memory content = "Magna fugiat enim ullamco minim ea aliquip incididunt amet.";
         bytes32 contentHash = keccak256(abi.encodePacked(content));
 
         // no logbook
@@ -308,13 +307,41 @@ contract LogbookTest is DSTest {
         vm.expectRevert("value too small");
         logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, contentHash);
 
-        // fork
+        // fork, no arithmetic overflow and underflow
         if (amount <= type(uint256).max / 10000) {
             _setForkPrice(amount);
             vm.deal(PUBLIC_SALE_MINTER, amount);
             vm.prank(PUBLIC_SALE_MINTER);
             vm.expectEmit(true, true, true, true);
             emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, contentHash, amount);
+            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, contentHash);
+        }
+    }
+
+    function testForkWithCommission(
+        uint256 amount,
+        string calldata content,
+        uint128 bps
+    ) public {
+        _claimToTraveloggersOwner();
+        _publish(content);
+        _setForkPrice(amount);
+
+        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+
+        vm.deal(PUBLIC_SALE_MINTER, amount);
+        vm.prank(PUBLIC_SALE_MINTER);
+
+        // no arithmetic overflow and underflow
+        if (amount <= type(uint256).max / 10000) {
+            if (isInvalidBPS) {
+                vm.expectRevert("invalid BPS");
+            } else {
+                vm.expectEmit(true, true, true, true);
+                emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, contentHash, amount);
+            }
+
             logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, contentHash);
         }
     }
