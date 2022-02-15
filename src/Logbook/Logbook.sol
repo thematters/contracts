@@ -91,8 +91,9 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function fork(uint256 tokenId_, bytes32 contentHash_) public payable {
-        Book memory book = _fork(tokenId_, contentHash_);
+    function fork(uint256 tokenId_, uint256 end_) public payable returns (uint256 tokenId) {
+        (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
+        tokenId = newTokenId;
 
         if (msg.value > 0) {
             _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, address(0), 0);
@@ -102,13 +103,14 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     /// @inheritdoc ILogbook
     function forkWithCommission(
         uint256 tokenId_,
-        bytes32 contentHash_,
+        uint256 end_,
         address commission_,
         uint128 commissionBPS_
-    ) public payable {
+    ) public payable returns (uint256 tokenId) {
         require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
 
-        Book memory book = _fork(tokenId_, contentHash_);
+        (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
+        tokenId = newTokenId;
 
         if (msg.value > 0) {
             _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, commission_, commissionBPS_);
@@ -210,17 +212,18 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         _safeMint(to, tokenId);
     }
 
-    function _fork(uint256 tokenId_, bytes32 contentHash_) internal returns (Book memory book) {
+    function _fork(uint256 tokenId_, uint256 end_) internal returns (Book memory book, uint256 newTokenId) {
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         book = books[tokenId_];
         uint256 logCount = book.contentHashes.length;
 
         require(logCount > 0, "no content");
+        require(logCount >= end_, "invalid end_");
         require(msg.value >= book.forkPrice, "value too small");
 
         // mint new logbook
-        uint256 newTokenId = _mint(msg.sender);
+        newTokenId = _mint(msg.sender);
 
         // copy content hashes to the new logbook
         bytes32[] memory newContentHashes = new bytes32[](logCount);
@@ -229,7 +232,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
             bytes32 contentHash = book.contentHashes[i];
             newContentHashes[i] = contentHash;
 
-            if (contentHash == contentHash_) {
+            if (i == end_) {
                 break;
             }
         }
@@ -238,7 +241,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         books[newTokenId] = newBook;
 
-        emit Fork(tokenId_, newTokenId, msg.sender, contentHash_, msg.value);
+        emit Fork(tokenId_, newTokenId, msg.sender, end_, msg.value);
     }
 
     /**
@@ -283,8 +286,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
             tokenId: tokenId_,
             sender: msg.sender,
             recipient: logbookOwner,
-            purpose: purpose_,
-            amount: feesLogbookOwner
+            amount: feesLogbookOwner,
+            purpose: purpose_
         });
 
         // -> commission
@@ -294,8 +297,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                 tokenId: tokenId_,
                 sender: msg.sender,
                 recipient: commission_,
-                purpose: purpose_,
-                amount: feesCommission
+                amount: feesCommission,
+                purpose: purpose_
             });
         }
 
@@ -308,8 +311,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                     tokenId: tokenId_,
                     sender: msg.sender,
                     recipient: log.author,
-                    purpose: purpose_,
-                    amount: feesPerLogAuthor
+                    amount: feesPerLogAuthor,
+                    purpose: purpose_
                 });
             }
         }

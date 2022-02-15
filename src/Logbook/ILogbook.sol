@@ -44,16 +44,10 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param tokenId Logbook token id
      * @param newTokenId New logbook token id
      * @param owner New logbook owner address
-     * @param contentHash End position of a range of logs in the old logbook
+     * @param end End position of a range of logs in the old logbook (zero-based)
      * @param amount Fork price
      */
-    event Fork(
-        uint256 indexed tokenId,
-        uint256 indexed newTokenId,
-        address indexed owner,
-        bytes32 contentHash,
-        uint256 amount
-    );
+    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
 
     /**
      * @notice Emitted when a logbook received a donation
@@ -109,24 +103,26 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Pay to fork a logbook
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param contentHash_ End position of a range of logs in the old logbook
+     * @param end_ End position of a range of logs in the old logbook (zero-based)
+     * @return tokenId New logobok token id
      */
-    function fork(uint256 tokenId_, bytes32 contentHash_) external payable;
+    function fork(uint256 tokenId_, uint256 end_) external payable returns (uint256 tokenId);
 
     /**
      * @notice Pay to fork a logbook with commission
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param contentHash_ End position of a range of logs in the old logbook
+     * @param end_ End position of a range of logs in the old logbook (zero-based)
      * @param commission_ Address (frontend operator) to earn commission
      * @param commissionBPS_ Basis points of the commission
+     * @return tokenId New logobok token id
      */
     function forkWithCommission(
         uint256 tokenId_,
-        bytes32 contentHash_,
+        uint256 end_,
         address commission_,
         uint128 commissionBPS_
-    ) external payable;
+    ) external payable returns (uint256 tokenId);
 
     /**
      * @notice Donate to a logbook

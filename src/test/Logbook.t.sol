@@ -33,15 +33,23 @@ contract LogbookTest is DSTest {
 
     event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
 
-    event Fork(
+    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
+
+    event Donate(uint256 indexed tokenId, address indexed donor, uint256 amount);
+
+    enum RoyaltyPurpose {
+        Fork,
+        Donate
+    }
+    event Pay(
         uint256 indexed tokenId,
-        uint256 indexed newTokenId,
-        address indexed owner,
-        bytes32 contentHash,
+        address indexed sender,
+        address indexed recipient,
+        RoyaltyPurpose purpose,
         uint256 amount
     );
 
-    event Donate(uint256 indexed tokenId, address indexed donor, uint256 amount);
+    event Withdraw(address indexed account, uint256 amount);
 
     function setUp() public {
         vm.prank(DEPLOYER);
@@ -228,7 +236,7 @@ contract LogbookTest is DSTest {
     // function testMulticall() public {}
 
     /**
-     * Donate, Fork, Withdraw...
+     * Donate, Fork
      */
     function testDonate(uint256 amount) public {
         _claimToTraveloggersOwner();
@@ -283,19 +291,17 @@ contract LogbookTest is DSTest {
     function testFork(uint256 amount, string calldata content) public {
         _claimToTraveloggersOwner();
 
-        bytes32 contentHash = keccak256(abi.encodePacked(content));
-
         // no logbook
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert("ERC721: operator query for nonexistent token");
-        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, contentHash);
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, 0);
 
         // no content
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert("no content");
-        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, contentHash);
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, 0);
 
         _publish(content);
 
@@ -305,7 +311,7 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert("value too small");
-        logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, contentHash);
+        logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, 0);
 
         // fork, no arithmetic overflow and underflow
         if (amount <= type(uint256).max / 10000) {
@@ -313,8 +319,8 @@ contract LogbookTest is DSTest {
             vm.deal(PUBLIC_SALE_MINTER, amount);
             vm.prank(PUBLIC_SALE_MINTER);
             vm.expectEmit(true, true, true, true);
-            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, contentHash, amount);
-            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, contentHash);
+            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
+            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
         }
     }
 
@@ -328,7 +334,6 @@ contract LogbookTest is DSTest {
         _setForkPrice(amount);
 
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
-        bytes32 contentHash = keccak256(abi.encodePacked(content));
 
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
@@ -339,12 +344,65 @@ contract LogbookTest is DSTest {
                 vm.expectRevert("invalid BPS");
             } else {
                 vm.expectEmit(true, true, true, true);
-                emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, contentHash, amount);
+                emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
             }
 
-            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, contentHash);
+            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
         }
     }
 
-    // royalties
+    /**
+     * Split Royalty, Withdraw
+     */
+    function testSplitRoyalty() public {
+        uint256 forkPrice = 0.1 ether;
+        uint256 logCount = 64;
+
+        // no arithmetic overflow and underflow
+        _claimToTraveloggersOwner();
+        _setForkPrice(forkPrice);
+
+        // append logs
+        for (uint256 i = 0; i < logCount; i++) {
+            // transfer to new owner
+            address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
+            address newOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
+            assertTrue(currentOwner != newOwner);
+            vm.deal(currentOwner, forkPrice);
+            vm.prank(currentOwner);
+            logbook.transferFrom(currentOwner, newOwner, CLAIM_TOKEN_START_ID);
+
+            // append log
+            string memory content = string(abi.encodePacked(i));
+            vm.deal(newOwner, forkPrice);
+            vm.prank(newOwner);
+            logbook.publish(CLAIM_TOKEN_START_ID, content);
+        }
+
+        (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(logCount, contentHashes.length);
+        assertEq(logCount, authors.length);
+
+        // fork
+        vm.deal(PUBLIC_SALE_MINTER, forkPrice);
+        vm.prank(PUBLIC_SALE_MINTER);
+
+        vm.expectEmit(true, true, true, true);
+        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, logCount, forkPrice);
+
+        // check content count
+        uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, logCount);
+        (, bytes32[] memory forkedContentHashes, ) = logbook.getLogbook(newTokenId);
+        assertEq(logCount, forkedContentHashes.length);
+
+        // check content hashes
+        string memory firstContent = string(abi.encodePacked(uint256(0)));
+        bytes32 firstContentHash = keccak256(abi.encodePacked(firstContent));
+        assertEq(firstContentHash, forkedContentHashes[0]);
+        string memory lastContent = string(abi.encodePacked(uint256(logCount - 1)));
+        bytes32 lastContentHash = keccak256(abi.encodePacked(lastContent));
+        assertEq(lastContentHash, forkedContentHashes[logCount - 1]);
+    }
+
+    // transfer
 }

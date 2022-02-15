@@ -22,8 +22,8 @@ interface IRoyalty {
         uint256 indexed tokenId,
         address indexed sender,
         address indexed recipient,
-        RoyaltyPurpose purpose,
-        uint256 amount
+        uint256 amount,
+        RoyaltyPurpose purpose
     );
 
     /**
