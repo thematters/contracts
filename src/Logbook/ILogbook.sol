@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./IRoyalty.sol";
@@ -119,11 +119,13 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param tokenId_ Logbook token id
      * @param contentHash_ End position of a range of logs in the old logbook
      * @param commission_ Address (frontend operator) to earn commission
+     * @param commissionBPS_ Basis points of the commission
      */
     function forkWithCommission(
         uint256 tokenId_,
         bytes32 contentHash_,
-        address commission_
+        address commission_,
+        uint128 commissionBPS_
     ) external payable;
 
     /**
@@ -138,22 +140,13 @@ interface ILogbook is IRoyalty, IERC721 {
      * @dev Emits {Donate} and {Pay} events
      * @param tokenId_ Logbook token id
      * @param commission_ Address (frontend operator) to earn commission
+     * @param commissionBPS_ Basis points of the commission
      */
-    function donateWithCommission(uint256 tokenId_, address commission_) external payable;
-
-    /**
-     * @notice Set royalty basis points of logbook owner
-     * @dev Access Control: contract deployer
-     * @param bps_ Basis points
-     */
-    function setRoyaltyBPSLogbookOwner(uint128 bps_) external;
-
-    /**
-     * @notice Set royalty basis points of contract
-     * @dev Access Control: contract deployer
-     * @param bps_ Basis points
-     */
-    function setRoyaltyBPSCommission(uint128 bps_) external;
+    function donateWithCommission(
+        uint256 tokenId_,
+        address commission_,
+        uint128 commissionBPS_
+    ) external payable;
 
     /**
      * @notice Get a logbook
@@ -170,8 +163,6 @@ interface ILogbook is IRoyalty, IERC721 {
             bytes32[] memory contentHashes,
             address[] memory authors
         );
-
-    // TODO: interfaces for UBI
 
     /**
      * @notice Claim a logbook with a Traveloggers token
@@ -196,5 +187,5 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Toggle public sale state
      * @dev Access Control: contract deployer
      */
-    function togglePublicSale() external returns (uint256 publicSale);
+    function togglePublicSale() external returns (uint128 publicSale);
 }

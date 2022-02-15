@@ -1,10 +1,10 @@
 name: Lint & Test
 on:
   push:
-    branches:
+    branches-ignore:
       - master
       - main
-  pull_request:
+      - develop
 
 jobs:
   run-ci:

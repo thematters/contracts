@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -23,19 +23,17 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
-    uint256 private constant _PUBLIC_SALE_ON = 1;
-    uint256 private constant _PUBLIC_SALE_OFF = 2;
-    uint256 public publicSale = _PUBLIC_SALE_OFF;
-    uint256 public publicSalePrice = 0;
+    uint128 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint128 private constant _PUBLIC_SALE_ON = 1;
+    uint128 private constant _PUBLIC_SALE_OFF = 2;
+    uint128 public publicSale = _PUBLIC_SALE_OFF;
+    uint256 public publicSalePrice;
 
     // contentHash to log
     mapping(bytes32 => Log) public logs;
 
     // tokenId to logbook
     mapping(uint256 => Book) public books;
-
-    uint128 public basisPointsLogbookOwner = 8000;
-    uint128 public basisPointsCommission = 250;
 
     /**
      * @dev Throws if called by any account other than the logbook owner.
@@ -59,8 +57,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setForkPrice(uint256 tokenId_, uint256 amount_) public onlyLogbookOwner(tokenId_) {
-        Book memory book = books[tokenId_];
-        book.forkPrice = amount_;
+        books[tokenId_].forkPrice = amount_;
         emit SetForkPrice(tokenId_, amount_);
     }
 
@@ -80,6 +77,16 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     /// @inheritdoc ILogbook
     function publish(uint256 tokenId_, string calldata content_) public onlyLogbookOwner(tokenId_) {
         bytes32 contentHash = keccak256(abi.encodePacked(content_));
+
+        // update book
+        books[tokenId_].contentHashes.push(contentHash);
+
+        // update log
+        Log memory log = logs[contentHash];
+        if (log.author == address(0)) {
+            logs[contentHash] = Log(msg.sender, tokenId_);
+        }
+
         emit Publish(tokenId_, msg.sender, contentHash, content_);
     }
 
@@ -87,58 +94,52 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     function fork(uint256 tokenId_, bytes32 contentHash_) public payable {
         Book memory book = _fork(tokenId_, contentHash_);
 
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, address(0));
+        if (msg.value > 0) {
+            _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, address(0), 0);
+        }
     }
 
     /// @inheritdoc ILogbook
     function forkWithCommission(
         uint256 tokenId_,
         bytes32 contentHash_,
-        address commission_
+        address commission_,
+        uint128 commissionBPS_
     ) public payable {
+        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
+
         Book memory book = _fork(tokenId_, contentHash_);
 
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, commission_);
+        if (msg.value > 0) {
+            _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, commission_, commissionBPS_);
+        }
     }
 
     /// @inheritdoc ILogbook
     function donate(uint256 tokenId_) public payable {
+        require(msg.value > 0, "zero value");
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         Book memory book = books[tokenId_];
-        uint256 logCount = book.contentHashes.length;
-
-        require(logCount > 0, "Empty logbook");
+        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, address(0), 0);
 
         emit Donate(tokenId_, msg.sender, msg.value);
-
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, address(0));
     }
 
     /// @inheritdoc ILogbook
-    function donateWithCommission(uint256 tokenId_, address commission_) public payable {
+    function donateWithCommission(
+        uint256 tokenId_,
+        address commission_,
+        uint128 commissionBPS_
+    ) public payable {
+        require(msg.value > 0, "zero value");
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
 
         Book memory book = books[tokenId_];
-        uint256 logCount = book.contentHashes.length;
-
-        require(logCount > 0, "Empty logbook");
+        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
 
         emit Donate(tokenId_, msg.sender, msg.value);
-
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, commission_);
-    }
-
-    /// @inheritdoc ILogbook
-    function setRoyaltyBPSLogbookOwner(uint128 bps_) public onlyOwner {
-        require(bps_ + basisPointsCommission <= 10000, "invalid basis points");
-        basisPointsLogbookOwner = bps_;
-    }
-
-    /// @inheritdoc ILogbook
-    function setRoyaltyBPSCommission(uint128 bps_) public onlyOwner {
-        require(bps_ + basisPointsLogbookOwner <= 10000, "invalid basis points");
-        basisPointsCommission = bps_;
     }
 
     /// @inheritdoc ILogbook
@@ -156,8 +157,10 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         forkPrice = book.forkPrice;
         contentHashes = book.contentHashes;
 
+        authors = new address[](contentHashes.length);
         for (uint256 i = 0; i < contentHashes.length; i++) {
-            authors[i] = logs[contentHashes[i]].author;
+            bytes32 contentHash = contentHashes[i];
+            authors[i] = logs[contentHash].author;
         }
     }
 
@@ -175,13 +178,13 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function publicSaleMint() external payable returns (uint256 tokenId) {
-        require(publicSale == _PUBLIC_SALE_ON && publicSalePrice > 0, "public sale is not started");
+        require(publicSale == _PUBLIC_SALE_ON && publicSalePrice > 0, "not started");
         require(msg.value >= publicSalePrice, "value too small");
 
         // forward value
         address deployer = owner();
         (bool success, ) = deployer.call{value: msg.value}("");
-        require(success, "failed to transfer");
+        require(success, "transfer failed");
 
         // mint
         tokenId = _mint(msg.sender);
@@ -189,13 +192,13 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setPublicSalePrice(uint256 price_) external onlyOwner {
-        require(price_ > 0, "zero amount");
+        require(price_ > 0, "zero value");
 
         publicSalePrice = price_;
     }
 
     /// @inheritdoc ILogbook
-    function togglePublicSale() external onlyOwner returns (uint256 newPublicSale) {
+    function togglePublicSale() external onlyOwner returns (uint128 newPublicSale) {
         newPublicSale = publicSale == _PUBLIC_SALE_ON ? _PUBLIC_SALE_OFF : _PUBLIC_SALE_ON;
 
         publicSale = newPublicSale;
@@ -213,14 +216,14 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         book = books[tokenId_];
         uint256 logCount = book.contentHashes.length;
 
-        require(logCount > 0, "No content to fork");
-        require(msg.value >= book.forkPrice, "Not enough value to fork");
+        require(logCount > 0, "no content");
+        require(msg.value >= book.forkPrice, "value too small");
 
         // mint new logbook
         uint256 newTokenId = _mint(msg.sender);
 
         // copy content hashes to the new logbook
-        bytes32[] memory newContentHashes;
+        bytes32[] memory newContentHashes = new bytes32[](logCount);
 
         for (uint256 i = 0; i < logCount; i++) {
             bytes32 contentHash = book.contentHashes[i];
@@ -240,28 +243,41 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /**
      * @notice Split royalty payments
-     * @dev No repetitive checks, please making sure the logbook is valid before calling it
+     * @dev No repetitive checks, please make sure all arguments are valid
+     * @param tokenId_ Logbook token id
+     * @param book_ Logbook to be split royalty
+     * @param amount_ Total amount to split royalty
      * @param purpose_ Payment purpose
-     * @param book_ Logbook to be split
-     * @param amount_ Total amount to split
+     * @param commission_ commission_ Address (frontend operator) to earn commission
+     * @param commissionBPS_ Basis points of the commission
      */
     function _splitRoyalty(
         uint256 tokenId_,
         Book memory book_,
         uint256 amount_,
         RoyaltyPurpose purpose_,
-        address commission_
+        address commission_,
+        uint128 commissionBPS_
     ) internal {
-        address logbookOwner = ERC721.ownerOf(tokenId_);
-        bool isNoCommission = commission_ == address(0);
+        uint256 feesCommission;
+        uint256 feesLogbookOwner;
+        uint256 feesPerLogAuthor;
+
+        bool isNoCommission = commission_ == address(0) || commissionBPS_ == 0;
+        if (!isNoCommission) {
+            feesCommission = (amount_ * commissionBPS_) / 10000;
+        }
 
         uint256 logCount = book_.contentHashes.length;
-
-        uint256 feesLogbookOwner = (amount_ * basisPointsLogbookOwner) / 10000;
-        uint256 feesCommission = isNoCommission ? 0 : (amount_ * basisPointsCommission) / 10000;
-        uint256 feesPerLogAuthor = (amount_ - feesLogbookOwner - feesCommission) / logCount;
+        if (logCount <= 0) {
+            feesLogbookOwner = amount_ - feesCommission;
+        } else {
+            feesLogbookOwner = (amount_ * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+            feesPerLogAuthor = (amount_ - feesLogbookOwner - feesCommission) / logCount;
+        }
 
         // -> logbook owner
+        address logbookOwner = ERC721.ownerOf(tokenId_);
         _balances[logbookOwner] += feesLogbookOwner;
         emit Pay({
             tokenId: tokenId_,
@@ -284,17 +300,18 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
 
         // -> logs' authors
-        for (uint256 i = 0; i < logCount; i++) {
-            bytes32 contentHash = book_.contentHashes[i];
-            Log memory log = logs[contentHash];
-            _balances[log.author] += feesPerLogAuthor;
-            emit Pay({
-                tokenId: tokenId_,
-                sender: msg.sender,
-                recipient: log.author,
-                purpose: purpose_,
-                amount: feesPerLogAuthor
-            });
+        if (logCount > 0) {
+            for (uint256 i = 0; i < logCount; i++) {
+                Log memory log = logs[book_.contentHashes[i]];
+                _balances[log.author] += feesPerLogAuthor;
+                emit Pay({
+                    tokenId: tokenId_,
+                    sender: msg.sender,
+                    recipient: log.author,
+                    purpose: purpose_,
+                    amount: feesPerLogAuthor
+                });
+            }
         }
     }
 }

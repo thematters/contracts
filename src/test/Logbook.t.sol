@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import {DSTest} from "ds-test/test.sol";
 import {console} from "./utils/Console.sol";
@@ -16,9 +16,11 @@ contract LogbookTest is DSTest {
     address constant PUBLIC_SALE_MINTER = address(178);
     address constant ATTACKER = address(179);
     address constant APPROVED = address(180);
+    address constant FRONTEND_OPERATOR = address(181);
 
-    uint256 constant _PUBLIC_SALE_ON = 1;
-    uint256 constant _PUBLIC_SALE_OFF = 2;
+    uint128 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint128 constant _PUBLIC_SALE_ON = 1;
+    uint128 constant _PUBLIC_SALE_OFF = 2;
 
     uint256 constant CLAIM_TOKEN_START_ID = 1;
     uint256 constant CLAIM_TOKEN_END_ID = 1500;
@@ -90,26 +92,32 @@ contract LogbookTest is DSTest {
      * Public Sale
      */
     function testPublicSale() public {
+        uint256 price = 1 ether;
+
         // not started
-        vm.expectRevert("public sale is not started");
+        vm.expectRevert("not started");
         logbook.publicSaleMint();
 
         // turn on: set state (1/2)
         vm.prank(DEPLOYER);
         logbook.togglePublicSale();
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("public sale is not started");
+        vm.expectRevert("not started");
         logbook.publicSaleMint();
 
         // turn on: set price (2/2)
         vm.prank(DEPLOYER);
-        uint256 price = 0.03 ether;
         logbook.setPublicSalePrice(price);
         assertEq(logbook.publicSalePrice(), price);
 
+        // zero value
+        vm.prank(DEPLOYER);
+        vm.expectRevert("zero value");
+        logbook.setPublicSalePrice(0);
+
         // mint
         uint256 deployerBalanceBefore = DEPLOYER.balance;
-        vm.deal(PUBLIC_SALE_MINTER, 1 ether);
+        vm.deal(PUBLIC_SALE_MINTER, price + 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         uint256 tokenId = logbook.publicSaleMint{value: price}();
         assertEq(tokenId, CLAIM_TOKEN_END_ID + 1);
@@ -120,6 +128,7 @@ contract LogbookTest is DSTest {
 
         // not engough ether to mint
         vm.expectRevert("value too small");
+        vm.deal(PUBLIC_SALE_MINTER, price + 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         logbook.publicSaleMint{value: price - 0.01 ether}();
     }
@@ -127,6 +136,24 @@ contract LogbookTest is DSTest {
     /**
      * Title, Description, Fork Price, Publish...
      */
+    function _setForkPrice(uint256 forkPrice) private {
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, false, false);
+        emit SetForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+        logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+        (uint256 returnForkPrice, , ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(returnForkPrice, forkPrice);
+    }
+
+    function _publish(string memory content) private returns (bytes32 contentHash) {
+        contentHash = keccak256(abi.encodePacked(content));
+
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit Publish(CLAIM_TOKEN_START_ID, TRAVELOGGERS_OWNER, contentHash, content);
+        logbook.publish(CLAIM_TOKEN_START_ID, content);
+    }
+
     function testSetTitle() public {
         _claimToTraveloggersOwner();
         string memory title = "Sit deserunt nulla aliqua ex nisi";
@@ -171,15 +198,10 @@ contract LogbookTest is DSTest {
 
     function testSetForkPrice() public {
         _claimToTraveloggersOwner();
-        uint256 forkPrice = 0.06 ether;
 
         // set fork price
-        vm.prank(TRAVELOGGERS_OWNER);
-        vm.expectEmit(true, true, false, false);
-        emit SetForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
-        logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
-        (forkPrice, , ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        assertEq(forkPrice, forkPrice);
+        uint256 forkPrice = 0.1 ether;
+        _setForkPrice(forkPrice);
 
         // only logbook owner
         vm.prank(ATTACKER);
@@ -187,17 +209,15 @@ contract LogbookTest is DSTest {
         logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
     }
 
-    function testPublish() public {
+    function testPublish(string calldata content) public {
         _claimToTraveloggersOwner();
-        string
-            memory content = "Elit ea minim aliqua dolor aliquip cillum occaecat duis sunt sunt do eu dolore. Veniam ullamco aliquip id nisi nostrud sint fugiat veniam sint ullamco quis commodo laborum pariatur eiusmod. Exercitation aliquip nostrud aliqua elit pariatur magna eu excepteur labore dolore anim. Dolore dolor proident aliquip anim Lorem do magna duis adipisicing aliquip. Incididunt aliqua ut proident sint cillum occaecat sit mollit proident do aliqua aliquip. Exercitation est aliqua qui eu incididunt enim mollit minim voluptate culpa duis sunt. Exercitation dolor non aliquip fugiat esse ea mollit minim sit excepteur laborum ea anim. Occaecat eiusmod eu ex fugiat aliquip veniam non incididunt sunt culpa elit enim. Fugiat ipsum commodo culpa sit esse id ut excepteur anim ut dolor do. Eu occaecat ea sunt commodo consectetur sunt sint culpa labore.";
         bytes32 contentHash = keccak256(abi.encodePacked(content));
 
         // publish
-        vm.prank(TRAVELOGGERS_OWNER);
-        vm.expectEmit(true, true, true, true);
-        emit Publish(CLAIM_TOKEN_START_ID, TRAVELOGGERS_OWNER, contentHash, content);
-        logbook.publish(CLAIM_TOKEN_START_ID, content);
+        bytes32 returnContentHash = _publish(content);
+        assertEq(contentHash, returnContentHash);
+        (, bytes32[] memory contentHashes, ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(contentHashes.length, 1);
 
         // only logbook owner
         vm.prank(ATTACKER);
@@ -205,8 +225,99 @@ contract LogbookTest is DSTest {
         logbook.publish(CLAIM_TOKEN_START_ID, content);
     }
 
-    // Donate: gas? (long list)
-    // Fork: gas? (long list)
-    // Withdraw
-    // BPS
+    // function testMulticall() public {}
+
+    /**
+     * Donate, Fork, Withdraw...
+     */
+    function testDonate(uint256 amount) public {
+        _claimToTraveloggersOwner();
+
+        // donate
+        vm.deal(PUBLIC_SALE_MINTER, amount);
+        vm.prank(PUBLIC_SALE_MINTER);
+        if (amount > 0) {
+            vm.expectEmit(true, true, true, false);
+            emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
+            logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
+        } else {
+            vm.expectRevert("zero value");
+            logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
+        }
+
+        // no logbook
+        vm.deal(PUBLIC_SALE_MINTER, 1 ether);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectRevert("ERC721: operator query for nonexistent token");
+        logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
+    }
+
+    function testDonateWithCommission(uint256 amount, uint128 bps) public {
+        _claimToTraveloggersOwner();
+
+        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+
+        // donate
+        vm.deal(PUBLIC_SALE_MINTER, amount);
+        vm.prank(PUBLIC_SALE_MINTER);
+        if (amount > 0) {
+            if (isInvalidBPS) {
+                vm.expectRevert("invalid BPS");
+            } else {
+                vm.expectEmit(true, true, true, false);
+                emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
+            }
+            logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
+        } else {
+            vm.expectRevert("zero value");
+            logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
+        }
+
+        // no logbook
+        vm.deal(PUBLIC_SALE_MINTER, 1 ether);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectRevert("ERC721: operator query for nonexistent token");
+        logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
+    }
+
+    function testFork(uint256 amount) public {
+        _claimToTraveloggersOwner();
+
+        string memory content = "Magna fugiat enim ullamco minim ea aliquip incididunt amet.";
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+
+        // no logbook
+        vm.deal(PUBLIC_SALE_MINTER, 1 ether);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectRevert("ERC721: operator query for nonexistent token");
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, contentHash);
+
+        // no content
+        vm.deal(PUBLIC_SALE_MINTER, 1 ether);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectRevert("no content");
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, contentHash);
+
+        _publish(content);
+
+        // value too small
+        uint256 forkPrice = 0.1 ether;
+        _setForkPrice(forkPrice);
+        vm.deal(PUBLIC_SALE_MINTER, forkPrice);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectRevert("value too small");
+        logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, contentHash);
+
+        // fork
+        if (amount <= type(uint256).max / 10000) {
+            _setForkPrice(amount);
+            vm.deal(PUBLIC_SALE_MINTER, amount);
+            vm.prank(PUBLIC_SALE_MINTER);
+            vm.expectEmit(true, true, true, true);
+            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, contentHash, amount);
+            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, contentHash);
+        }
+    }
+
+    // royalties
 }
