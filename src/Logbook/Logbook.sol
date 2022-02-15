@@ -226,15 +226,11 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         newTokenId = _mint(msg.sender);
 
         // copy content hashes to the new logbook
-        bytes32[] memory newContentHashes = new bytes32[](logCount);
+        bytes32[] memory newContentHashes = new bytes32[](end_);
+        bytes32[] memory contentHashes = book.contentHashes;
 
-        for (uint256 i = 0; i < logCount; i++) {
-            bytes32 contentHash = book.contentHashes[i];
-            newContentHashes[i] = contentHash;
-
-            if (i == end_) {
-                break;
-            }
+        for (uint256 i = 0; i < end_; i++) {
+            newContentHashes[i] = contentHashes[i];
         }
 
         Book memory newBook = Book({contentHashes: newContentHashes, forkPrice: 0 ether});
