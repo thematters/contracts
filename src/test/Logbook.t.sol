@@ -124,7 +124,7 @@ contract LogbookTest is DSTest {
         logbook.setPublicSalePrice(0);
 
         // mint
-        uint256 deployerBalanceBefore = DEPLOYER.balance;
+        uint256 deployerWalletBalance = DEPLOYER.balance;
         vm.deal(PUBLIC_SALE_MINTER, price + 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         uint256 tokenId = logbook.publicSaleMint{value: price}();
@@ -132,7 +132,7 @@ contract LogbookTest is DSTest {
         assertEq(logbook.ownerOf(tokenId), PUBLIC_SALE_MINTER);
 
         // deployer receives ether
-        assertEq(DEPLOYER.balance, deployerBalanceBefore + price);
+        assertEq(DEPLOYER.balance, deployerWalletBalance + price);
 
         // not engough ether to mint
         vm.expectRevert("value too small");
@@ -233,7 +233,7 @@ contract LogbookTest is DSTest {
         logbook.publish(CLAIM_TOKEN_START_ID, content);
     }
 
-    // function testMulticall() public {}
+    // TODO: function testMulticall() public {}
 
     /**
      * Donate, Fork
@@ -245,9 +245,11 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
         if (amount > 0) {
+            // uint256 contractBalance = address(this).balance;
             vm.expectEmit(true, true, true, false);
             emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
             logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
+            // assertEq(address(this).balance, contractBalance + amount);
         } else {
             vm.expectRevert("zero value");
             logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
@@ -288,8 +290,10 @@ contract LogbookTest is DSTest {
         logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
     }
 
-    function testFork(uint256 amount, string calldata content) public {
+    function testFork(string calldata content) public {
         _claimToTraveloggersOwner();
+
+        uint256 amount = 1.342 ether;
 
         // no logbook
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
@@ -313,42 +317,35 @@ contract LogbookTest is DSTest {
         vm.expectRevert("value too small");
         logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, 0);
 
-        // fork, no arithmetic overflow and underflow
-        if (amount <= type(uint256).max / 10000) {
-            _setForkPrice(amount);
-            vm.deal(PUBLIC_SALE_MINTER, amount);
-            vm.prank(PUBLIC_SALE_MINTER);
-            vm.expectEmit(true, true, true, true);
-            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
-            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
-        }
+        _setForkPrice(amount);
+        // uint256 contractBalance = address(this).balance;
+        vm.deal(PUBLIC_SALE_MINTER, amount);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectEmit(true, true, true, true);
+        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
+        logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
+        // assertEq(address(this).balance, contractBalance + amount);
     }
 
-    function testForkWithCommission(
-        uint256 amount,
-        string calldata content,
-        uint128 bps
-    ) public {
+    function testForkWithCommission(string calldata content, uint128 bps) public {
+        uint256 amount = 1.342 ether;
+        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+
         _claimToTraveloggersOwner();
         _publish(content);
         _setForkPrice(amount);
 
-        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
-
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
 
-        // no arithmetic overflow and underflow
-        if (amount <= type(uint256).max / 10000) {
-            if (isInvalidBPS) {
-                vm.expectRevert("invalid BPS");
-            } else {
-                vm.expectEmit(true, true, true, true);
-                emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
-            }
-
-            logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
+        if (isInvalidBPS) {
+            vm.expectRevert("invalid BPS");
+        } else {
+            vm.expectEmit(true, true, true, true);
+            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
         }
+
+        logbook.forkWithCommission{value: amount}(CLAIM_TOKEN_START_ID, 0, FRONTEND_OPERATOR, bps);
     }
 
     /**
@@ -379,6 +376,7 @@ contract LogbookTest is DSTest {
             logbook.publish(CLAIM_TOKEN_START_ID, content);
         }
 
+        // check logs
         (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
         assertEq(logCount, contentHashes.length);
         assertEq(logCount, authors.length);
@@ -386,11 +384,10 @@ contract LogbookTest is DSTest {
         // fork
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
         vm.prank(PUBLIC_SALE_MINTER);
-
         vm.expectEmit(true, true, true, true);
         emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, logCount, forkPrice);
 
-        // check content count
+        // check log count
         uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, logCount);
         (, bytes32[] memory forkedContentHashes, ) = logbook.getLogbook(newTokenId);
         assertEq(logCount, forkedContentHashes.length);
@@ -399,10 +396,86 @@ contract LogbookTest is DSTest {
         string memory firstContent = string(abi.encodePacked(uint256(0)));
         bytes32 firstContentHash = keccak256(abi.encodePacked(firstContent));
         assertEq(firstContentHash, forkedContentHashes[0]);
+
         string memory lastContent = string(abi.encodePacked(uint256(logCount - 1)));
         bytes32 lastContentHash = keccak256(abi.encodePacked(lastContent));
         assertEq(lastContentHash, forkedContentHashes[logCount - 1]);
+
+        // check owner balance
+        address lastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 1)))));
+        uint256 feesLogbookOwner = (forkPrice * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+        uint256 feesPerLogAuthor = (forkPrice - feesLogbookOwner) / logCount;
+        uint256 lastOwnerBalance = logbook.getBalance(lastOwner);
+        assertEq(lastOwnerBalance, feesLogbookOwner + feesPerLogAuthor);
+
+        // check author balance
+        address secondLastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 2)))));
+        uint256 secondLastOwnerBalance = logbook.getBalance(secondLastOwner);
+        assertEq(secondLastOwnerBalance, feesPerLogAuthor);
     }
 
-    // transfer
+    function testWithdraw() public {
+        uint256 donationValue = 3.13 ether;
+        uint256 logCount = 64;
+
+        // no arithmetic overflow and underflow
+        _claimToTraveloggersOwner();
+
+        // append logs
+        for (uint256 i = 0; i < logCount; i++) {
+            // transfer to new owner
+            address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
+            address newOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
+            assertTrue(currentOwner != newOwner);
+            vm.prank(currentOwner);
+            logbook.transferFrom(currentOwner, newOwner, CLAIM_TOKEN_START_ID);
+
+            // append log
+            string memory content = string(abi.encodePacked(i));
+            vm.deal(newOwner, donationValue);
+            vm.prank(newOwner);
+            logbook.publish(CLAIM_TOKEN_START_ID, content);
+        }
+
+        // uint256 contractBalance = address(this).balance;
+
+        // donate
+        vm.deal(PUBLIC_SALE_MINTER, donationValue);
+        vm.prank(PUBLIC_SALE_MINTER);
+        vm.expectEmit(true, true, true, false);
+        emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, donationValue);
+        logbook.donate{value: donationValue}(CLAIM_TOKEN_START_ID);
+
+        // logbook owner withdrawl
+        address owner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 1)))));
+        uint256 feesLogbookOwner = (donationValue * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+        uint256 feesPerLogAuthor = (donationValue - feesLogbookOwner) / logCount;
+        uint256 ownerBalance = logbook.getBalance(owner);
+        assertEq(ownerBalance, feesLogbookOwner + feesPerLogAuthor);
+
+        uint256 ownerWalletBalance = owner.balance;
+        vm.prank(owner);
+        vm.expectEmit(true, true, false, false);
+        emit Withdraw(owner, ownerBalance);
+        logbook.withdraw();
+        assertEq(owner.balance, ownerWalletBalance + ownerBalance);
+        assertEq(logbook.getBalance(owner), 0);
+
+        // uint256 contractBalanceAfterOwnerWithdraw = address(this).balance;
+        // assertEq(contractBalanceAfterOwnerWithdraw, contractBalance - ownerWalletBalance - ownerBalance);
+
+        // previous author withdrawl
+        address secondLastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 2)))));
+        uint256 secondLastOwnerBalance = logbook.getBalance(secondLastOwner);
+        assertEq(secondLastOwnerBalance, feesPerLogAuthor);
+
+        uint256 secondLastOwnerWalletBalance = secondLastOwner.balance;
+        vm.prank(secondLastOwner);
+        vm.expectEmit(true, true, false, false);
+        emit Withdraw(secondLastOwner, secondLastOwnerBalance);
+        logbook.withdraw();
+        assertEq(secondLastOwner.balance, secondLastOwnerWalletBalance + secondLastOwnerBalance);
+        assertEq(logbook.getBalance(secondLastOwner), 0);
+        // assertEq(address(this).balance, secondLastOwnerWalletBalance - feesPerLogAuthor);
+    }
 }

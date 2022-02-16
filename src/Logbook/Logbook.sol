@@ -9,16 +9,6 @@ import "./ILogbook.sol";
 import "./Royalty.sol";
 
 contract Logbook is ERC721, Ownable, ILogbook, Royalty {
-    struct Log {
-        address author;
-        uint256 tokenId;
-    }
-
-    struct Book {
-        bytes32[] contentHashes;
-        uint256 forkPrice;
-    }
-
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
@@ -28,6 +18,16 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     uint128 private constant _PUBLIC_SALE_OFF = 2;
     uint128 public publicSale = _PUBLIC_SALE_OFF;
     uint256 public publicSalePrice;
+
+    struct Log {
+        address author;
+        uint256 tokenId;
+    }
+
+    struct Book {
+        bytes32[] contentHashes;
+        uint256 forkPrice;
+    }
 
     // contentHash to log
     mapping(bytes32 => Log) public logs;
