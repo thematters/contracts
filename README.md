@@ -52,7 +52,7 @@ make test
 
 ## Deployment
 
-Deploy on Local Node:
+### Deploy on Local Node:
 
 ```bash
 # Run local node
@@ -67,7 +67,7 @@ cp .env.polygon-mumbai.example .env.polygon-mumbai
 make deploy-logbook
 ```
 
-Deploy on testnet or mainnet:
+### Deploy on testnet or mainnet:
 
 ```bash
 # Deploy The Space contract
@@ -80,9 +80,9 @@ make deploy-the-space NETWORK=polygon-mainnet
 make deploy-the-space NETWORK=polygon-mumbai
 ```
 
-Verify (TODO)
+## Verify Contract
 
-Automatically
+[Automatically](https://onbjerg.github.io/foundry-book/forge/deploying.html#verifying)
 
 ```bash
 # Verify on Poygon Mainnet
