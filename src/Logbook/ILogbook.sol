@@ -31,13 +31,19 @@ interface ILogbook is IRoyalty, IERC721 {
     event SetForkPrice(uint256 indexed tokenId, uint256 amount);
 
     /**
-     * @notice Emitted when logbook owner publish a new log
-     * @param tokenId Logbook token id
-     * @param author Logbook owner address
+     * @notice Emitted when a new log was created
+     * @param author Author address
      * @param contentHash Deterministic unique ID, hash of the content
      * @param content Content string
      */
-    event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
+    event NewLog(address indexed author, bytes32 indexed contentHash, string content);
+
+    /**
+     * @notice Emitted when logbook owner publish a new log
+     * @param tokenId Logbook token id
+     * @param contentHash Deterministic unique ID, hash of the content
+     */
+    event Publish(uint256 indexed tokenId, bytes32 indexed contentHash);
 
     /**
      * @notice Emitted when a logbook was forked

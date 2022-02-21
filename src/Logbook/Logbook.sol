@@ -78,16 +78,16 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     function publish(uint256 tokenId_, string calldata content_) public onlyLogbookOwner(tokenId_) {
         bytes32 contentHash = keccak256(abi.encodePacked(content_));
 
-        // update book
-        books[tokenId_].contentHashes.push(contentHash);
-
-        // update log
+        // log
         Log memory log = logs[contentHash];
         if (log.author == address(0)) {
             logs[contentHash] = Log(msg.sender, tokenId_);
+            emit NewLog(msg.sender, contentHash, content_);
         }
 
-        emit Publish(tokenId_, msg.sender, contentHash, content_);
+        // logbook
+        books[tokenId_].contentHashes.push(contentHash);
+        emit Publish(tokenId_, contentHash);
     }
 
     /// @inheritdoc ILogbook

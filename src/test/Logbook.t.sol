@@ -31,7 +31,9 @@ contract LogbookTest is DSTest {
 
     event SetForkPrice(uint256 indexed tokenId, uint256 amount);
 
-    event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
+    event NewLog(address indexed author, bytes32 indexed contentHash, string content);
+
+    event Publish(uint256 indexed tokenId, bytes32 indexed contentHash);
 
     event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
 
@@ -157,8 +159,10 @@ contract LogbookTest is DSTest {
         contentHash = keccak256(abi.encodePacked(content));
 
         vm.prank(TRAVELOGGERS_OWNER);
-        vm.expectEmit(true, true, true, true);
-        emit Publish(CLAIM_TOKEN_START_ID, TRAVELOGGERS_OWNER, contentHash, content);
+        vm.expectEmit(true, true, true, false);
+        emit NewLog(TRAVELOGGERS_OWNER, contentHash, content);
+        vm.expectEmit(true, true, false, false);
+        emit Publish(CLAIM_TOKEN_START_ID, contentHash);
         logbook.publish(CLAIM_TOKEN_START_ID, content);
     }
 
