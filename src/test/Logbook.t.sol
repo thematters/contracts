@@ -237,7 +237,48 @@ contract LogbookTest is DSTest {
         logbook.publish(CLAIM_TOKEN_START_ID, content);
     }
 
-    // TODO: function testMulticall() public {}
+    /**
+     * Set title, description, fork price and publish new content
+     * in one transaction
+     */
+    function testMulticall() public {
+        _claimToTraveloggersOwner();
+
+        bytes[] memory data = new bytes[](4);
+
+        // title
+        string memory title = "Sit deserunt nulla aliqua ex nisi";
+        data[0] = abi.encodeWithSignature("setTitle(uint256,string)", CLAIM_TOKEN_START_ID, title);
+
+        // description
+        string
+            memory description = "Deserunt proident dolor id Lorem pariatur irure adipisicing labore labore aute sunt aliquip culpa consectetur laboris.";
+        data[1] = abi.encodeWithSignature("setDescription(uint256,string)", CLAIM_TOKEN_START_ID, description);
+
+        // fork price
+        uint256 forkPrice = 0.122 ether;
+        data[2] = abi.encodeWithSignature("setForkPrice(uint256,uint256)", CLAIM_TOKEN_START_ID, forkPrice);
+
+        // publish
+        string
+            memory content = "Fugiat proident irure et mollit quis occaecat labore cupidatat ut aute tempor esse exercitation eiusmod. Do commodo incididunt quis exercitation laboris adipisicing nisi. Magna aliquip aute mollit id aliquip incididunt sint ea laborum mollit eiusmod do aliquip aute. Enim ea eiusmod pariatur mollit pariatur irure consectetur anim. Proident elit nisi ea laboris ad reprehenderit. Consectetur consequat excepteur duis tempor nulla id in commodo occaecat. Excepteur quis nostrud velit exercitation ut ullamco tempor nulla non. Occaecat laboris anim labore ut adipisicing nisi. Sit enim dolor eiusmod ipsum nulla quis aliqua reprehenderit ea. Lorem sit tempor consequat magna Lorem deserunt duis.";
+        data[3] = abi.encodeWithSignature("publish(uint256,string)", CLAIM_TOKEN_START_ID, content);
+
+        // call
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+        vm.prank(TRAVELOGGERS_OWNER);
+        vm.expectEmit(true, true, false, false);
+        emit SetTitle(CLAIM_TOKEN_START_ID, title);
+        vm.expectEmit(true, true, false, false);
+        emit SetDescription(CLAIM_TOKEN_START_ID, description);
+        vm.expectEmit(true, true, false, false);
+        emit SetForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
+        vm.expectEmit(true, true, true, false);
+        emit Content(TRAVELOGGERS_OWNER, contentHash, content);
+        vm.expectEmit(true, true, false, false);
+        emit Publish(CLAIM_TOKEN_START_ID, contentHash);
+        logbook.multicall(data);
+    }
 
     /**
      * Donate, Fork
