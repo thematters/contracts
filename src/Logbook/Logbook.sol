@@ -82,7 +82,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         Log memory log = logs[contentHash];
         if (log.author == address(0)) {
             logs[contentHash] = Log(msg.sender, tokenId_);
-            emit NewLog(msg.sender, contentHash, content_);
+            emit Content(msg.sender, contentHash, content_);
         }
 
         // logbook

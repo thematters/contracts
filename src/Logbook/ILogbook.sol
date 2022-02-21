@@ -36,7 +36,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param contentHash Deterministic unique ID, hash of the content
      * @param content Content string
      */
-    event NewLog(address indexed author, bytes32 indexed contentHash, string content);
+    event Content(address indexed author, bytes32 indexed contentHash, string content);
 
     /**
      * @notice Emitted when logbook owner publish a new log
