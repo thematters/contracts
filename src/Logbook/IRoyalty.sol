@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 /**
  * @title The interface for NFT royalty
@@ -22,8 +22,8 @@ interface IRoyalty {
         uint256 indexed tokenId,
         address indexed sender,
         address indexed recipient,
-        RoyaltyPurpose purpose,
-        uint256 amount
+        uint256 amount,
+        RoyaltyPurpose purpose
     );
 
     /**

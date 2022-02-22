@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./IRoyalty.sol";
@@ -31,29 +31,29 @@ interface ILogbook is IRoyalty, IERC721 {
     event SetForkPrice(uint256 indexed tokenId, uint256 amount);
 
     /**
-     * @notice Emitted when logbook owner publish a new log
-     * @param tokenId Logbook token id
-     * @param author Logbook owner address
+     * @notice Emitted when a new log was created
+     * @param author Author address
      * @param contentHash Deterministic unique ID, hash of the content
      * @param content Content string
      */
-    event Publish(uint256 indexed tokenId, address indexed author, bytes32 indexed contentHash, string content);
+    event Content(address indexed author, bytes32 indexed contentHash, string content);
+
+    /**
+     * @notice Emitted when logbook owner publish a new log
+     * @param tokenId Logbook token id
+     * @param contentHash Deterministic unique ID, hash of the content
+     */
+    event Publish(uint256 indexed tokenId, bytes32 indexed contentHash);
 
     /**
      * @notice Emitted when a logbook was forked
      * @param tokenId Logbook token id
      * @param newTokenId New logbook token id
      * @param owner New logbook owner address
-     * @param contentHash End position of a range of logs in the old logbook
+     * @param end End position of a range of logs in the old logbook (zero-based)
      * @param amount Fork price
      */
-    event Fork(
-        uint256 indexed tokenId,
-        uint256 indexed newTokenId,
-        address indexed owner,
-        bytes32 contentHash,
-        uint256 amount
-    );
+    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
 
     /**
      * @notice Emitted when a logbook received a donation
@@ -109,22 +109,26 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Pay to fork a logbook
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param contentHash_ End position of a range of logs in the old logbook
+     * @param end_ End position of a range of logs in the old logbook (zero-based)
+     * @return tokenId New logobok token id
      */
-    function fork(uint256 tokenId_, bytes32 contentHash_) external payable;
+    function fork(uint256 tokenId_, uint256 end_) external payable returns (uint256 tokenId);
 
     /**
      * @notice Pay to fork a logbook with commission
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param contentHash_ End position of a range of logs in the old logbook
+     * @param end_ End position of a range of logs in the old logbook (zero-based)
      * @param commission_ Address (frontend operator) to earn commission
+     * @param commissionBPS_ Basis points of the commission
+     * @return tokenId New logobok token id
      */
     function forkWithCommission(
         uint256 tokenId_,
-        bytes32 contentHash_,
-        address commission_
-    ) external payable;
+        uint256 end_,
+        address commission_,
+        uint128 commissionBPS_
+    ) external payable returns (uint256 tokenId);
 
     /**
      * @notice Donate to a logbook
@@ -138,22 +142,13 @@ interface ILogbook is IRoyalty, IERC721 {
      * @dev Emits {Donate} and {Pay} events
      * @param tokenId_ Logbook token id
      * @param commission_ Address (frontend operator) to earn commission
+     * @param commissionBPS_ Basis points of the commission
      */
-    function donateWithCommission(uint256 tokenId_, address commission_) external payable;
-
-    /**
-     * @notice Set royalty basis points of logbook owner
-     * @dev Access Control: contract deployer
-     * @param bps_ Basis points
-     */
-    function setRoyaltyBPSLogbookOwner(uint128 bps_) external;
-
-    /**
-     * @notice Set royalty basis points of contract
-     * @dev Access Control: contract deployer
-     * @param bps_ Basis points
-     */
-    function setRoyaltyBPSCommission(uint128 bps_) external;
+    function donateWithCommission(
+        uint256 tokenId_,
+        address commission_,
+        uint128 commissionBPS_
+    ) external payable;
 
     /**
      * @notice Get a logbook
@@ -162,15 +157,14 @@ interface ILogbook is IRoyalty, IERC721 {
      * @return contentHashes All logs' content hashes
      * @return authors All logs' authors
      */
-    // function getLogbookLogs(uint256 tokenId_)
-    //     external
-    //     view
-    //     returns (
-    //         uint256 forkPrice,
-    //         bytes32[] memory contentHashes,
-    //         address[] memory authors
-    //     );
-    // TBD: interfaces for UBI
+    function getLogbook(uint256 tokenId_)
+        external
+        view
+        returns (
+            uint256 forkPrice,
+            bytes32[] memory contentHashes,
+            address[] memory authors
+        );
 
     /**
      * @notice Claim a logbook with a Traveloggers token
@@ -195,5 +189,5 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Toggle public sale state
      * @dev Access Control: contract deployer
      */
-    function togglePublicSale() external returns (uint256 publicSale);
+    function togglePublicSale() external returns (uint128 publicSale);
 }
