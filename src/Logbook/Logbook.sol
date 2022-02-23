@@ -13,10 +13,10 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
-    uint128 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
-    uint128 private constant _PUBLIC_SALE_ON = 1;
-    uint128 private constant _PUBLIC_SALE_OFF = 2;
-    uint128 public publicSale = _PUBLIC_SALE_OFF;
+    uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 private constant _PUBLIC_SALE_ON = 1;
+    uint256 private constant _PUBLIC_SALE_OFF = 2;
+    uint256 public publicSale = _PUBLIC_SALE_OFF;
     uint256 public publicSalePrice;
 
     struct Log {
@@ -105,7 +105,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint256 tokenId_,
         uint256 end_,
         address commission_,
-        uint128 commissionBPS_
+        uint256 commissionBPS_
     ) public payable returns (uint256 tokenId) {
         require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
 
@@ -132,7 +132,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     function donateWithCommission(
         uint256 tokenId_,
         address commission_,
-        uint128 commissionBPS_
+        uint256 commissionBPS_
     ) public payable {
         require(msg.value > 0, "zero value");
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
@@ -200,7 +200,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function togglePublicSale() external onlyOwner returns (uint128 newPublicSale) {
+    function togglePublicSale() external onlyOwner returns (uint256 newPublicSale) {
         newPublicSale = publicSale == _PUBLIC_SALE_ON ? _PUBLIC_SALE_OFF : _PUBLIC_SALE_ON;
 
         publicSale = newPublicSale;
@@ -256,7 +256,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint256 amount_,
         RoyaltyPurpose purpose_,
         address commission_,
-        uint128 commissionBPS_
+        uint256 commissionBPS_
     ) internal {
         uint256 feesCommission;
         uint256 feesLogbookOwner;

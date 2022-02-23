@@ -18,9 +18,9 @@ contract LogbookTest is DSTest {
     address constant APPROVED = address(180);
     address constant FRONTEND_OPERATOR = address(181);
 
-    uint128 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
-    uint128 constant _PUBLIC_SALE_ON = 1;
-    uint128 constant _PUBLIC_SALE_OFF = 2;
+    uint256 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 constant _PUBLIC_SALE_ON = 1;
+    uint256 constant _PUBLIC_SALE_OFF = 2;
 
     uint256 constant CLAIM_TOKEN_START_ID = 1;
     uint256 constant CLAIM_TOKEN_END_ID = 1500;
@@ -307,7 +307,7 @@ contract LogbookTest is DSTest {
         logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
     }
 
-    function testDonateWithCommission(uint256 amount, uint128 bps) public {
+    function testDonateWithCommission(uint256 amount, uint256 bps) public {
         _claimToTraveloggersOwner();
 
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
@@ -372,7 +372,7 @@ contract LogbookTest is DSTest {
         // assertEq(address(this).balance, contractBalance + amount);
     }
 
-    function testForkWithCommission(string calldata content, uint128 bps) public {
+    function testForkWithCommission(string calldata content, uint256 bps) public {
         uint256 amount = 1.342 ether;
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
 

@@ -1,4 +1,5 @@
 name: Lint & Test
+
 on:
   push:
     branches-ignore:
