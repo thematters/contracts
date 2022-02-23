@@ -127,7 +127,7 @@ interface ILogbook is IRoyalty, IERC721 {
         uint256 tokenId_,
         uint256 end_,
         address commission_,
-        uint128 commissionBPS_
+        uint256 commissionBPS_
     ) external payable returns (uint256 tokenId);
 
     /**
@@ -147,7 +147,7 @@ interface ILogbook is IRoyalty, IERC721 {
     function donateWithCommission(
         uint256 tokenId_,
         address commission_,
-        uint128 commissionBPS_
+        uint256 commissionBPS_
     ) external payable;
 
     /**
@@ -189,5 +189,5 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Toggle public sale state
      * @dev Access Control: contract deployer
      */
-    function togglePublicSale() external returns (uint128 publicSale);
+    function togglePublicSale() external returns (uint256 publicSale);
 }

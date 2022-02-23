@@ -1,20 +1,25 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./IRoyalty.sol";
 
-abstract contract Royalty is IRoyalty, ReentrancyGuard, Ownable {
+abstract contract Royalty is IRoyalty, Ownable {
     mapping(address => uint256) internal _balances;
 
     /// @inheritdoc IRoyalty
-    function withdraw() public nonReentrant {
+    function withdraw() public {
         uint256 amount = _balances[msg.sender];
+
+        require(amount != 0, "zero amount");
+        require(address(this).balance >= amount, "zero contract balance");
+
         _balances[msg.sender] = 0;
+
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success);
+
         emit Withdraw(msg.sender, amount);
     }
 

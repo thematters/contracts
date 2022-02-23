@@ -18,9 +18,9 @@ contract LogbookTest is DSTest {
     address constant APPROVED = address(180);
     address constant FRONTEND_OPERATOR = address(181);
 
-    uint128 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
-    uint128 constant _PUBLIC_SALE_ON = 1;
-    uint128 constant _PUBLIC_SALE_OFF = 2;
+    uint256 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 constant _PUBLIC_SALE_ON = 1;
+    uint256 constant _PUBLIC_SALE_OFF = 2;
 
     uint256 constant CLAIM_TOKEN_START_ID = 1;
     uint256 constant CLAIM_TOKEN_END_ID = 1500;
@@ -307,10 +307,16 @@ contract LogbookTest is DSTest {
         logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
     }
 
-    function testDonateWithCommission(uint256 amount, uint128 bps) public {
+    function testDonateWithCommission(uint256 amount, uint256 bps) public {
         _claimToTraveloggersOwner();
 
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+
+        unchecked {
+            if (amount * bps < amount && bps > 0) {
+                return;
+            }
+        }
 
         // donate
         vm.deal(PUBLIC_SALE_MINTER, amount);
@@ -322,6 +328,7 @@ contract LogbookTest is DSTest {
                 vm.expectEmit(true, true, true, false);
                 emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
             }
+
             logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
         } else {
             vm.expectRevert("zero value");
@@ -332,7 +339,7 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert("ERC721: operator query for nonexistent token");
-        logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
+        logbook.donateWithCommission{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, FRONTEND_OPERATOR, bps);
     }
 
     function testFork(string calldata content) public {
@@ -372,7 +379,7 @@ contract LogbookTest is DSTest {
         // assertEq(address(this).balance, contractBalance + amount);
     }
 
-    function testForkWithCommission(string calldata content, uint128 bps) public {
+    function testForkWithCommission(string calldata content, uint256 bps) public {
         uint256 amount = 1.342 ether;
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
 

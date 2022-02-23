@@ -1,4 +1,5 @@
 name: Lint & Test
+
 on:
   push:
     branches-ignore:
@@ -25,6 +26,9 @@ jobs:
 
       - name: Run lint check
         run: npm run lint:check
+
+      - name: Env
+        run: cp .env.local.example .env.local
 
       - name: Built
         run: make build
