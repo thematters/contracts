@@ -8,18 +8,21 @@ The interface is inherited from IERC721 (for logbook as NFT) and IRoyalty (for r
 
 Set logbook title
 
+Access Control: logbook owner
 Emits a {SetTitle} event
 
 ### `setDescription(uint256 tokenId_, string description_)` (external)
 
 Set logbook description
 
+Access Control: logbook owner
 Emits a {SetDescription} event
 
 ### `setForkPrice(uint256 tokenId_, uint256 amount_)` (external)
 
 Set logbook fork price
 
+Access Control: logbook owner
 Emits a {SetForkPrice} event
 
 ### `multicall(bytes[] data) → bytes[] results` (external)
@@ -30,11 +33,18 @@ Batch calling methods of this contract
 
 Publish a new log in a logbook
 
+Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, bytes32 contentHash_)` (external)
+### `fork(uint256 tokenId_, uint256 end_) → uint256 tokenId` (external)
 
 Pay to fork a logbook
+
+Emits {Fork} and {Pay} events
+
+### `forkWithCommission(uint256 tokenId_, uint256 end_, address commission_, uint128 commissionBPS_) → uint256 tokenId` (external)
+
+Pay to fork a logbook with commission
 
 Emits {Fork} and {Pay} events
 
@@ -44,13 +54,37 @@ Donate to a logbook
 
 Emits {Donate} and {Pay} events
 
-### `setRoyaltyBPSLogbookOwner(uint128 bps_)` (external)
+### `donateWithCommission(uint256 tokenId_, address commission_, uint128 commissionBPS_)` (external)
 
-Set royalty basis points of logbook owner
+Donate to a logbook with commission
 
-### `setRoyaltyBPSCommission(uint128 bps_)` (external)
+Emits {Donate} and {Pay} events
 
-Set royalty basis points of contract
+### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
+
+Get a logbook
+
+### `claim(address to_, uint256 logrsId_)` (external)
+
+Claim a logbook with a Traveloggers token
+
+Access Control: contract deployer
+
+### `publicSaleMint() → uint256 tokenId` (external)
+
+Mint a logbook
+
+### `setPublicSalePrice(uint256 price_)` (external)
+
+Set public sale
+
+Access Control: contract deployer
+
+### `togglePublicSale() → uint128 publicSale` (external)
+
+Toggle public sale state
+
+Access Control: contract deployer
 
 ## Events
 
@@ -66,11 +100,15 @@ Emitted when logbook description was set
 
 Emitted when logbook fork price was set
 
-### `Publish(uint256 tokenId, address author, bytes32 contentHash, string content)`
+### `Content(address author, bytes32 contentHash, string content)`
+
+Emitted when a new log was created
+
+### `Publish(uint256 tokenId, bytes32 contentHash)`
 
 Emitted when logbook owner publish a new log
 
-### `Fork(uint256 tokenId, uint256 newTokenId, address owner, bytes32 contentHash, uint256 amount)`
+### `Fork(uint256 tokenId, uint256 newTokenId, address owner, uint256 end, uint256 amount)`
 
 Emitted when a logbook was forked
 

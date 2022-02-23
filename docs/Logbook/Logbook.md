@@ -12,18 +12,21 @@ Throws if called by any account other than the logbook owner.
 
 Set logbook title
 
+Access Control: logbook owner
 Emits a {SetTitle} event
 
 ### `setDescription(uint256 tokenId_, string description_)` (public)
 
 Set logbook description
 
+Access Control: logbook owner
 Emits a {SetDescription} event
 
 ### `setForkPrice(uint256 tokenId_, uint256 amount_)` (public)
 
 Set logbook fork price
 
+Access Control: logbook owner
 Emits a {SetForkPrice} event
 
 ### `multicall(bytes[] data) → bytes[] results` (external)
@@ -34,11 +37,18 @@ Batch calling methods of this contract
 
 Publish a new log in a logbook
 
+Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, bytes32 contentHash_)` (public)
+### `fork(uint256 tokenId_, uint256 end_) → uint256 tokenId` (public)
 
 Pay to fork a logbook
+
+Emits {Fork} and {Pay} events
+
+### `forkWithCommission(uint256 tokenId_, uint256 end_, address commission_, uint128 commissionBPS_) → uint256 tokenId` (public)
+
+Pay to fork a logbook with commission
 
 Emits {Fork} and {Pay} events
 
@@ -48,21 +58,47 @@ Donate to a logbook
 
 Emits {Donate} and {Pay} events
 
-### `setRoyaltyBPSLogbookOwner(uint128 bps_)` (public)
+### `donateWithCommission(uint256 tokenId_, address commission_, uint128 commissionBPS_)` (public)
 
-Set royalty basis points of logbook owner
+Donate to a logbook with commission
 
-### `setRoyaltyBPSCommission(uint128 bps_)` (public)
+Emits {Donate} and {Pay} events
 
-Set royalty basis points of contract
+### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
+
+Get a logbook
+
+### `claim(address to_, uint256 logrsId_)` (external)
+
+Claim a logbook with a Traveloggers token
+
+Access Control: contract deployer
+
+### `publicSaleMint() → uint256 tokenId` (external)
+
+Mint a logbook
+
+### `setPublicSalePrice(uint256 price_)` (external)
+
+Set public sale
+
+Access Control: contract deployer
+
+### `togglePublicSale() → uint128 newPublicSale` (external)
+
+Toggle public sale state
+
+Access Control: contract deployer
 
 ### `_mint(address to) → uint256 tokenId` (internal)
 
-### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_)` (internal)
+### `_fork(uint256 tokenId_, uint256 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
+
+### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint128 commissionBPS_)` (internal)
 
 Split royalty payments
 
-No repetitive checks, please making sure the logbook is valid before calling it
+No repetitive checks, please make sure all arguments are valid
 
 ### `Log`
 
