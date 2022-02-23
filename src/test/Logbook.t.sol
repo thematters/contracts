@@ -312,6 +312,12 @@ contract LogbookTest is DSTest {
 
         bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
 
+        unchecked {
+            if (amount * bps < amount && bps > 0) {
+                return;
+            }
+        }
+
         // donate
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
@@ -322,6 +328,7 @@ contract LogbookTest is DSTest {
                 vm.expectEmit(true, true, true, false);
                 emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
             }
+
             logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
         } else {
             vm.expectRevert("zero value");
@@ -332,7 +339,7 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert("ERC721: operator query for nonexistent token");
-        logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
+        logbook.donateWithCommission{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, FRONTEND_OPERATOR, bps);
     }
 
     function testFork(string calldata content) public {
