@@ -26,8 +26,11 @@ check-verification-status-logbook:
 	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
 
 ## The Space
+deploy-the-space-currency: clean
+	@forge create ERC20 --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args SpaceToken --constructor-args STK --legacy
+
 deploy-the-space: clean
-	@echo "TODO"
+	@forge create TheSpace --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args TheSpace --constructor-args SPACE --constructor-args ${THESPACE_CURRENCY_ADDRESS} --constructor-args 300 --constructor-args 1000000 --legacy
 
 verify-the-space:
 	@echo "TODO"
