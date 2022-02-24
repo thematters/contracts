@@ -2,6 +2,12 @@
 
 source .env.${NETWORK}
 
+if [ ${NETWORK} != "polygon-mumbai" ]
+then
+  echo "${NETWORK} is not supported"
+  exit
+fi
+
 NOW=`date +%s`
 MAX_GAS=1000000
 TOKEN_ID=22
