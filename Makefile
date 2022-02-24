@@ -25,6 +25,8 @@ verify-logbook:
 check-verification-status-logbook:
 	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
 
+seeds-logbook:; @./bin/seed-logbook.sh
+
 ## The Space
 deploy-the-space-currency: clean
 	@forge create ERC20 --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args SpaceToken --constructor-args STK --legacy
