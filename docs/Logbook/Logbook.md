@@ -46,7 +46,7 @@ Pay to fork a logbook
 
 Emits {Fork} and {Pay} events
 
-### `forkWithCommission(uint256 tokenId_, uint256 end_, address commission_, uint128 commissionBPS_) → uint256 tokenId` (public)
+### `forkWithCommission(uint256 tokenId_, uint256 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (public)
 
 Pay to fork a logbook with commission
 
@@ -58,7 +58,7 @@ Donate to a logbook
 
 Emits {Donate} and {Pay} events
 
-### `donateWithCommission(uint256 tokenId_, address commission_, uint128 commissionBPS_)` (public)
+### `donateWithCommission(uint256 tokenId_, address commission_, uint256 commissionBPS_)` (public)
 
 Donate to a logbook with commission
 
@@ -84,7 +84,7 @@ Set public sale
 
 Access Control: contract deployer
 
-### `togglePublicSale() → uint128 newPublicSale` (external)
+### `togglePublicSale() → uint256 newPublicSale` (external)
 
 Toggle public sale state
 
@@ -94,7 +94,7 @@ Access Control: contract deployer
 
 ### `_fork(uint256 tokenId_, uint256 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
 
-### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint128 commissionBPS_)` (internal)
+### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint256 commissionBPS_)` (internal)
 
 Split royalty payments
 
