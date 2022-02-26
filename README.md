@@ -1,5 +1,60 @@
 # Contracts for Matters Protocol
 
+## Contracts
+
+| Name    | Network        | Address                                                                                                                         |
+| ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook | Polygon Mumbai | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
+
+In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
+
+### ABI
+
+See [Docs](./docs/) for Contract ABI.
+
+### Usages
+
+```ts
+import { ethers } from "ethers";
+
+/**
+ * Instantiate contract
+ */
+const address = "0x203197e074b7a2f4ff6890815e4657a9c47c68b1";
+const abi = '[{"inputs":[{"internalType":"string","name":"name_","type":"string"}...]';
+const alchemyAPIKey = "...";
+const provider = new ethers.providers.AlchemyProvider("maticmum", alchemyAPIKey);
+const contract = new ethers.Contract(address, abi, provider);
+
+/**
+ * Interact with contract
+ */
+// mint a logbook
+const publicSalePrice = await contract.publicSalePrice();
+const tokenId = await contract.publicSaleMint({ value: publicSalePrice });
+
+// set title, description & fork price in one transaction
+const title = "Ut cupidatat";
+const description = "Ut cupidatat amet ea et veniam amet aute aute eu.";
+const forkPrice = ethers.utils.parseEther("0.1"); // 0.1 Ether to Wei
+const iface = new ethers.utils.Interface(abi);
+const calldata = [
+  // title
+  iface.encodeFunctionData("setTitle", [tokenId, title]),
+  // description
+  iface.encodeFunctionData("setDescription", [tokenId, title]),
+  // fork price
+  iface.encodeFunctionData("setForkPrice", [tokenId, forkPrice]),
+];
+await contract.multicall(calldata);
+
+// donate
+const donationAmount = ethers.utils.parseEther("0.02");
+await contract.donate(tokenId, { value: donationAmount });
+```
+
+Ethers.js also supports [Human-Readable ABI](https://docs.ethers.io/v5/api/utils/abi/formats/), it's recommended to use, for smaller client bundle size.
+
 ## Development
 
 Install [Forge](https://github.com/gakonst/foundry)
