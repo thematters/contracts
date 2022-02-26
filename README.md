@@ -55,6 +55,8 @@ await contract.donate(tokenId, { value: donationAmount });
 
 Ethers.js also supports [Human-Readable ABI](https://docs.ethers.io/v5/api/utils/abi/formats/), it's recommended to use, for smaller client bundle size.
 
+To query the contract data, please checkout [thematters/subgraphs](https://github.com/thematters/subgraphs).
+
 ## Development
 
 Install [Forge](https://github.com/gakonst/foundry)
