@@ -22,7 +22,9 @@ import { ethers } from "ethers";
  */
 const address = "0x203197e074b7a2f4ff6890815e4657a9c47c68b1";
 const abi = '[{"inputs":[{"internalType":"string","name":"name_","type":"string"}...]';
-const contract = new ethers.Contract(address, abi, signerOrProvider);
+const alchemyAPIKey = "...";
+const provider = new ethers.providers.AlchemyProvider("maticmum", alchemyAPIKey);
+const contract = new ethers.Contract(address, abi, provider);
 
 /**
  * Interact with contract
