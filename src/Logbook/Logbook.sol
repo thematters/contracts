@@ -200,10 +200,13 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function togglePublicSale() external onlyOwner returns (uint256 newPublicSale) {
-        newPublicSale = publicSale == _PUBLIC_SALE_ON ? _PUBLIC_SALE_OFF : _PUBLIC_SALE_ON;
+    function turnOnPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_ON;
+    }
 
-        publicSale = newPublicSale;
+    /// @inheritdoc ILogbook
+    function turnOffPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_OFF;
     }
 
     function _mint(address to) internal returns (uint256 tokenId) {

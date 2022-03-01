@@ -108,14 +108,9 @@ contract LogbookTest is DSTest {
         vm.expectRevert("not started");
         logbook.publicSaleMint();
 
-        // turn on: set state (1/2)
+        // turn on
         vm.prank(DEPLOYER);
-        logbook.togglePublicSale();
-        vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("not started");
-        logbook.publicSaleMint();
-
-        // turn on: set price (2/2)
+        logbook.turnOnPublicSale();
         vm.prank(DEPLOYER);
         logbook.setPublicSalePrice(price);
         assertEq(logbook.publicSalePrice(), price);

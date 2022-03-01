@@ -186,8 +186,14 @@ interface ILogbook is IRoyalty, IERC721 {
     function setPublicSalePrice(uint256 price_) external;
 
     /**
-     * @notice Toggle public sale state
+     * @notice Turn on public sale
      * @dev Access Control: contract deployer
      */
-    function togglePublicSale() external returns (uint256 publicSale);
+    function turnOnPublicSale() external;
+
+    /**
+     * @notice Turn off public sale
+     * @dev Access Control: contract deployer
+     */
+    function turnOffPublicSale() external;
 }
