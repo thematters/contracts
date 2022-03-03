@@ -2,13 +2,15 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 import "./ILogbook.sol";
 import "./Royalty.sol";
 
-contract Logbook is ERC721, Ownable, ILogbook, Royalty {
+contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
@@ -62,7 +64,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
 
         for (uint256 i = 0; i < data.length; i++) {
@@ -166,10 +168,43 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
     }
 
-    // function tokenURI override
-    // inline SVG
+    function tokenURI(uint256 tokenId_) public view override returns (string memory) {
+        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
-    // function _baseURI override
+        Book memory book = books[tokenId_];
+        uint256 logCount = book.contentHashes.length;
+
+        string memory name = string(abi.encodePacked("Logbook #", _toString(tokenId_)));
+        string memory description = string(
+            abi.encodePacked(
+                "Using Logbook to write down your thoughts, stories or anything you liked to share. Transfer your thoughts to who you want to invite them to co-create."
+            )
+        );
+        string memory attributes = string(abi.encodePacked('{"trait_type": "Logs","value":', logCount, "}"));
+        string memory image = Base64.encode(bytes(_generateSVGofTokenById(tokenId_)));
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        name,
+                        '", "description": "',
+                        description,
+                        '", "attributes": [',
+                        attributes,
+                        '], "image": "data:image/svg+xml;base64,',
+                        image,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        string memory output = string(abi.encodePacked("data:application/json;base64,", json));
+
+        return output;
+    }
 
     /// @inheritdoc ILogbook
     function claim(address to_, uint256 logrsId_) external onlyOwner {
@@ -315,5 +350,35 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                 });
             }
         }
+    }
+
+    /**
+     * @notice Generate SVG image by token id
+     * @param tokenId_ Logbook token id
+     */
+    function _generateSVGofTokenById(uint256 tokenId_) internal pure returns (string memory svg) {
+        return string(abi.encodePacked("<svg>", _toString(tokenId_), "</svg>"));
+    }
+
+    function _toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT license
+        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
+
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 }

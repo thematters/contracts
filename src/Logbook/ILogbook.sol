@@ -94,7 +94,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Batch calling methods of this contract
      * @param data Array of calldata
      */
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
+    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results);
 
     /**
      * @notice Publish a new log in a logbook
