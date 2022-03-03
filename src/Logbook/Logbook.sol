@@ -27,8 +27,15 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     struct Book {
-        bytes32[] contentHashes;
+        // token id
+        uint256 from;
+        // end position of a range of logs
+        uint256 endAt;
+        // total number of logs
+        uint256 logCount;
         uint256 forkPrice;
+        uint256 createdAt;
+        bytes32[] contentHashes;
     }
 
     // contentHash to log
@@ -89,6 +96,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
         // logbook
         books[tokenId_].contentHashes.push(contentHash);
+        books[tokenId_].logCount++;
         emit Publish(tokenId_, contentHash);
     }
 
@@ -159,8 +167,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         Book memory book = books[tokenId_];
 
         forkPrice = book.forkPrice;
-        contentHashes = book.contentHashes;
-
+        contentHashes = _logs(tokenId_);
         authors = new address[](contentHashes.length);
         for (uint256 i = 0; i < contentHashes.length; i++) {
             bytes32 contentHash = contentHashes[i];
@@ -172,15 +179,14 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         Book memory book = books[tokenId_];
-        uint256 logCount = book.contentHashes.length;
 
-        string memory name = string(abi.encodePacked("Logbook #", _toString(tokenId_)));
+        string memory tokenName = string(abi.encodePacked("Logbook #", _toString(tokenId_)));
         string memory description = string(
             abi.encodePacked(
                 "Using Logbook to write down your thoughts, stories or anything you liked to share. Transfer your thoughts to who you want to invite them to co-create."
             )
         );
-        string memory attributes = string(abi.encodePacked('{"trait_type": "Logs","value":', logCount, "}"));
+        string memory attributes = string(abi.encodePacked('{"trait_type": "Logs","value":', book.logCount, "}"));
         string memory image = Base64.encode(bytes(_generateSVGofTokenById(tokenId_)));
 
         string memory json = Base64.encode(
@@ -188,7 +194,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
                 string(
                     abi.encodePacked(
                         '{"name": "',
-                        name,
+                        tokenName,
                         '", "description": "',
                         description,
                         '", "attributes": [',
@@ -244,6 +250,36 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         publicSale = _PUBLIC_SALE_OFF;
     }
 
+    /**
+     * @notice Get logs of a book
+     * @param tokenId_ Logbook token id
+     */
+    function _logs(uint256 tokenId_) internal view returns (bytes32[] memory contentHashes) {
+        Book memory book = books[tokenId_];
+
+        contentHashes = new bytes32[](book.logCount);
+
+        // copy from current & parents
+        uint256 index = 0;
+        bool hasParent = true;
+
+        while (hasParent) {
+            bytes32[] memory parentContentHashes = book.contentHashes;
+            uint256 parentLogCount = parentContentHashes.length;
+
+            for (uint256 i = 0; i < parentLogCount; i++) {
+                contentHashes[index] = parentContentHashes[i];
+                index++;
+            }
+
+            if (book.from == 0) {
+                hasParent = false;
+            }
+
+            book = books[book.from];
+        }
+    }
+
     function _mint(address to) internal returns (uint256 tokenId) {
         _tokenIdCounter.increment();
         tokenId = _tokenIdCounter.current();
@@ -254,7 +290,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
 
         book = books[tokenId_];
-        uint256 logCount = book.contentHashes.length;
+        uint256 logCount = book.logCount;
 
         require(logCount > 0, "no content");
         require(logCount >= end_, "invalid end_");
@@ -263,15 +299,15 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         // mint new logbook
         newTokenId = _mint(msg.sender);
 
-        // copy content hashes to the new logbook
-        bytes32[] memory newContentHashes = new bytes32[](end_);
-        bytes32[] memory contentHashes = book.contentHashes;
-
-        for (uint256 i = 0; i < end_; i++) {
-            newContentHashes[i] = contentHashes[i];
-        }
-
-        Book memory newBook = Book({contentHashes: newContentHashes, forkPrice: 0 ether});
+        bytes32[] memory contentHashes = new bytes32[](0);
+        Book memory newBook = Book({
+            from: tokenId_,
+            endAt: end_,
+            logCount: logCount,
+            forkPrice: 0 ether,
+            createdAt: block.timestamp,
+            contentHashes: contentHashes
+        });
 
         books[newTokenId] = newBook;
 
@@ -305,7 +341,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
             feesCommission = (amount_ * commissionBPS_) / 10000;
         }
 
-        uint256 logCount = book_.contentHashes.length;
+        uint256 logCount = book_.logCount;
         if (logCount <= 0) {
             feesLogbookOwner = amount_ - feesCommission;
         } else {

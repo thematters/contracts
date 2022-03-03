@@ -223,8 +223,8 @@ contract LogbookTest is DSTest {
         // publish
         bytes32 returnContentHash = _publish(content);
         assertEq(contentHash, returnContentHash);
-        (, bytes32[] memory contentHashes, ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        assertEq(contentHashes.length, 1);
+        (, , uint256 logCount, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        assertEq(logCount, 1);
 
         // only logbook owner
         vm.prank(ATTACKER);
@@ -507,7 +507,7 @@ contract LogbookTest is DSTest {
      */
     function testSplitRoyalty() public {
         uint256 forkPrice = 0.1 ether;
-        uint256 logCount = 64;
+        uint256 logCount = 128;
 
         // no arithmetic overflow and underflow
         _claimToTraveloggersOwner();
@@ -532,6 +532,8 @@ contract LogbookTest is DSTest {
 
         // check logs
         (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        (, , uint256 logCount1, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        assertEq(logCount1, logCount);
         assertEq(logCount, contentHashes.length);
         assertEq(logCount, authors.length);
 
