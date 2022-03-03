@@ -38,6 +38,12 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         bytes32[] contentHashes;
     }
 
+    struct SplitRoyaltyFees {
+        uint256 commission;
+        uint256 logbookOwner;
+        uint256 perLogAuthor;
+    }
+
     // contentHash to log
     mapping(bytes32 => Log) public logs;
 
@@ -332,42 +338,43 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) internal {
-        uint256 feesCommission;
-        uint256 feesLogbookOwner;
-        uint256 feesPerLogAuthor;
+        uint256 logCount = book_.logCount;
+        bytes32[] memory contentHashes = _logs(tokenId_);
 
+        // fees calculation
+        SplitRoyaltyFees memory fees;
         bool isNoCommission = commission_ == address(0) || commissionBPS_ == 0;
         if (!isNoCommission) {
-            feesCommission = (amount_ * commissionBPS_) / 10000;
+            fees.commission = (amount_ * commissionBPS_) / 10000;
         }
 
-        uint256 logCount = book_.logCount;
         if (logCount <= 0) {
-            feesLogbookOwner = amount_ - feesCommission;
+            fees.logbookOwner = amount_ - fees.commission;
         } else {
-            feesLogbookOwner = (amount_ * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
-            feesPerLogAuthor = (amount_ - feesLogbookOwner - feesCommission) / logCount;
+            fees.logbookOwner = (amount_ * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+            fees.perLogAuthor = (amount_ - fees.logbookOwner - fees.commission) / logCount;
         }
 
+        // split royalty
         // -> logbook owner
         address logbookOwner = ERC721.ownerOf(tokenId_);
-        _balances[logbookOwner] += feesLogbookOwner;
+        _balances[logbookOwner] += fees.logbookOwner;
         emit Pay({
             tokenId: tokenId_,
             sender: msg.sender,
             recipient: logbookOwner,
-            amount: feesLogbookOwner,
+            amount: fees.logbookOwner,
             purpose: purpose_
         });
 
         // -> commission
         if (!isNoCommission) {
-            _balances[commission_] += feesCommission;
+            _balances[commission_] += fees.commission;
             emit Pay({
                 tokenId: tokenId_,
                 sender: msg.sender,
                 recipient: commission_,
-                amount: feesCommission,
+                amount: fees.commission,
                 purpose: purpose_
             });
         }
@@ -375,13 +382,13 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         // -> logs' authors
         if (logCount > 0) {
             for (uint256 i = 0; i < logCount; i++) {
-                Log memory log = logs[book_.contentHashes[i]];
-                _balances[log.author] += feesPerLogAuthor;
+                Log memory log = logs[contentHashes[i]];
+                _balances[log.author] += fees.perLogAuthor;
                 emit Pay({
                     tokenId: tokenId_,
                     sender: msg.sender,
                     recipient: log.author,
-                    amount: feesPerLogAuthor,
+                    amount: fees.perLogAuthor,
                     purpose: purpose_
                 });
             }

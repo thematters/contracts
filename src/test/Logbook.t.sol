@@ -507,7 +507,7 @@ contract LogbookTest is DSTest {
      */
     function testSplitRoyalty() public {
         uint256 forkPrice = 0.1 ether;
-        uint256 logCount = 128;
+        uint256 logCount = 64;
 
         // no arithmetic overflow and underflow
         _claimToTraveloggersOwner();
