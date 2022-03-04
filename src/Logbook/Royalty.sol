@@ -12,8 +12,8 @@ abstract contract Royalty is IRoyalty, Ownable {
     function withdraw() public {
         uint256 amount = _balances[msg.sender];
 
-        require(amount != 0, "zero amount");
-        require(address(this).balance >= amount, "zero contract balance");
+        if (amount == 0) revert ZeroAmount();
+        if (address(this).balance < amount) revert InsufficientBalance(address(this).balance, amount);
 
         _balances[msg.sender] = 0;
 

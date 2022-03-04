@@ -9,6 +9,14 @@ import "./IRoyalty.sol";
  * @dev The interface is inherited from IERC721 (for logbook as NFT) and IRoyalty (for royalty)
  */
 interface ILogbook is IRoyalty, IERC721 {
+    error Unauthorized();
+    error InvalidBPS(uint256 min, uint256 max);
+    error InvalidTokenId(uint256 min, uint256 max);
+    error InsufficientAmount(uint256 available, uint256 required);
+    error InsufficientLogs(uint256 logCount);
+    error TokenNotExists();
+    error PublicSaleNotStarted();
+
     /**
      * @notice Emitted when logbook title was set
      * @param tokenId Logbook token id

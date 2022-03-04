@@ -19,6 +19,7 @@ contract LogbookTest is DSTest {
     address constant FRONTEND_OPERATOR = address(181);
 
     uint256 constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 private constant _ROYALTY_BPS_COMMISSION_MAX = 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
     uint256 constant _PUBLIC_SALE_ON = 1;
     uint256 constant _PUBLIC_SALE_OFF = 2;
 
@@ -90,11 +91,11 @@ contract LogbookTest is DSTest {
 
         // invalid token id
         vm.prank(DEPLOYER);
-        vm.expectRevert("invalid logrs id");
+        vm.expectRevert(abi.encodeWithSignature("InvalidTokenId(uint256,uint256)", 1, 1500));
         logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_START_ID - 1);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("invalid logrs id");
+        vm.expectRevert(abi.encodeWithSignature("InvalidTokenId(uint256,uint256)", 1, 1500));
         logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_END_ID + 1);
     }
 
@@ -105,8 +106,13 @@ contract LogbookTest is DSTest {
         uint256 price = 1 ether;
 
         // not started
-        vm.expectRevert("not started");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("PublicSaleNotStarted()"))));
         logbook.publicSaleMint();
+
+        // zero value
+        vm.prank(DEPLOYER);
+        logbook.setPublicSalePrice(0);
+        assertEq(logbook.publicSalePrice(), 0);
 
         // turn on
         vm.prank(DEPLOYER);
@@ -114,11 +120,6 @@ contract LogbookTest is DSTest {
         vm.prank(DEPLOYER);
         logbook.setPublicSalePrice(price);
         assertEq(logbook.publicSalePrice(), price);
-
-        // zero value
-        vm.prank(DEPLOYER);
-        vm.expectRevert("zero value");
-        logbook.setPublicSalePrice(0);
 
         // mint
         uint256 deployerWalletBalance = DEPLOYER.balance;
@@ -132,7 +133,7 @@ contract LogbookTest is DSTest {
         assertEq(DEPLOYER.balance, deployerWalletBalance + price);
 
         // not engough ether to mint
-        vm.expectRevert("value too small");
+        vm.expectRevert(abi.encodeWithSignature("InsufficientAmount(uint256,uint256)", price - 0.01 ether, price));
         vm.deal(PUBLIC_SALE_MINTER, price + 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         logbook.publicSaleMint{value: price - 0.01 ether}();
@@ -173,7 +174,7 @@ contract LogbookTest is DSTest {
 
         // only logbook owner
         vm.prank(ATTACKER);
-        vm.expectRevert("caller is not owner nor approved");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         logbook.setTitle(CLAIM_TOKEN_START_ID, title);
 
         // approve other address
@@ -199,7 +200,7 @@ contract LogbookTest is DSTest {
 
         // only logbook owner
         vm.prank(ATTACKER);
-        vm.expectRevert("caller is not owner nor approved");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         logbook.setTitle(CLAIM_TOKEN_START_ID, description);
     }
 
@@ -212,7 +213,7 @@ contract LogbookTest is DSTest {
 
         // only logbook owner
         vm.prank(ATTACKER);
-        vm.expectRevert("caller is not owner nor approved");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
     }
 
@@ -228,7 +229,7 @@ contract LogbookTest is DSTest {
 
         // only logbook owner
         vm.prank(ATTACKER);
-        vm.expectRevert("caller is not owner nor approved");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         logbook.publish(CLAIM_TOKEN_START_ID, content);
     }
 
@@ -398,21 +399,21 @@ contract LogbookTest is DSTest {
             logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
             // assertEq(address(this).balance, contractBalance + amount);
         } else {
-            vm.expectRevert("zero value");
+            vm.expectRevert(abi.encodePacked(bytes4(keccak256("ZeroAmount()"))));
             logbook.donate{value: amount}(CLAIM_TOKEN_START_ID);
         }
 
         // no logbook
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("ERC721: operator query for nonexistent token");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("TokenNotExists()"))));
         logbook.donate{value: 1 ether}(CLAIM_TOKEN_START_ID + 1);
     }
 
     function testDonateWithCommission(uint256 amount, uint256 bps) public {
         _claimToTraveloggersOwner();
 
-        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+        bool isInvalidBPS = bps > _ROYALTY_BPS_COMMISSION_MAX;
 
         unchecked {
             if (amount * bps < amount && bps > 0) {
@@ -425,7 +426,7 @@ contract LogbookTest is DSTest {
         vm.prank(PUBLIC_SALE_MINTER);
         if (amount > 0) {
             if (isInvalidBPS) {
-                vm.expectRevert("invalid BPS");
+                vm.expectRevert(abi.encodeWithSignature("InvalidBPS(uint256,uint256)", 0, 2000));
             } else {
                 vm.expectEmit(true, true, true, false);
                 emit Donate(CLAIM_TOKEN_START_ID, PUBLIC_SALE_MINTER, amount);
@@ -433,14 +434,14 @@ contract LogbookTest is DSTest {
 
             logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
         } else {
-            vm.expectRevert("zero value");
+            vm.expectRevert(abi.encodePacked(bytes4(keccak256("ZeroAmount()"))));
             logbook.donateWithCommission{value: amount}(CLAIM_TOKEN_START_ID, FRONTEND_OPERATOR, bps);
         }
 
         // no logbook
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("ERC721: operator query for nonexistent token");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("TokenNotExists()"))));
         logbook.donateWithCommission{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, FRONTEND_OPERATOR, bps);
     }
 
@@ -452,13 +453,13 @@ contract LogbookTest is DSTest {
         // no logbook
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("ERC721: operator query for nonexistent token");
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("TokenNotExists()"))));
         logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, 0);
 
         // no content
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("no content");
+        vm.expectRevert(abi.encodeWithSignature("InsufficientLogs(uint256)", 0));
         logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, 0);
 
         _publish(content);
@@ -468,7 +469,7 @@ contract LogbookTest is DSTest {
         _setForkPrice(forkPrice);
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert("value too small");
+        vm.expectRevert(abi.encodeWithSignature("InsufficientAmount(uint256,uint256)", forkPrice / 2, forkPrice));
         logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, 0);
 
         _setForkPrice(amount);
@@ -483,7 +484,7 @@ contract LogbookTest is DSTest {
 
     function testForkWithCommission(string calldata content, uint256 bps) public {
         uint256 amount = 1.342 ether;
-        bool isInvalidBPS = bps > 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
+        bool isInvalidBPS = bps > _ROYALTY_BPS_COMMISSION_MAX;
 
         _claimToTraveloggersOwner();
         _publish(content);
@@ -493,7 +494,7 @@ contract LogbookTest is DSTest {
         vm.prank(PUBLIC_SALE_MINTER);
 
         if (isInvalidBPS) {
-            vm.expectRevert("invalid BPS");
+            vm.expectRevert(abi.encodeWithSignature("InvalidBPS(uint256,uint256)", 0, 2000));
         } else {
             vm.expectEmit(true, true, true, true);
             emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);

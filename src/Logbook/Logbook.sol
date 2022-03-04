@@ -16,6 +16,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
     uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 private constant _ROYALTY_BPS_COMMISSION_MAX = 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
     uint256 private constant _PUBLIC_SALE_ON = 1;
     uint256 private constant _PUBLIC_SALE_OFF = 2;
     uint256 public publicSale = _PUBLIC_SALE_OFF;
@@ -54,7 +55,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
      * @dev Throws if called by any account other than the logbook owner.
      */
     modifier onlyLogbookOwner(uint256 tokenId_) {
-        require(_isApprovedOrOwner(msg.sender, tokenId_), "caller is not owner nor approved");
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         _;
     }
 
@@ -123,7 +124,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) public payable returns (uint256 tokenId) {
-        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
+        if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
         tokenId = newTokenId;
@@ -135,8 +136,8 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function donate(uint256 tokenId_) public payable {
-        require(msg.value > 0, "zero value");
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        if (msg.value <= 0) revert ZeroAmount();
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
         Book memory book = books[tokenId_];
         _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, address(0), 0);
@@ -150,9 +151,9 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) public payable {
-        require(msg.value > 0, "zero value");
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
-        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
+        if (msg.value <= 0) revert ZeroAmount();
+        if (!_exists(tokenId_)) revert TokenNotExists();
+        if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         Book memory book = books[tokenId_];
         _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
@@ -182,7 +183,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     function tokenURI(uint256 tokenId_) public view override returns (string memory) {
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
         Book memory book = books[tokenId_];
 
@@ -220,20 +221,20 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function claim(address to_, uint256 logrsId_) external onlyOwner {
-        require(logrsId_ >= 1 && logrsId_ <= 1500, "invalid logrs id");
+        if (logrsId_ < 1 || logrsId_ > 1500) revert InvalidTokenId(1, 1500);
 
         _safeMint(to_, logrsId_);
     }
 
     /// @inheritdoc ILogbook
     function publicSaleMint() external payable returns (uint256 tokenId) {
-        require(publicSale == _PUBLIC_SALE_ON && publicSalePrice > 0, "not started");
-        require(msg.value >= publicSalePrice, "value too small");
+        if (publicSale != _PUBLIC_SALE_ON) revert PublicSaleNotStarted();
+        if (msg.value < publicSalePrice) revert InsufficientAmount(msg.value, publicSalePrice);
 
         // forward value
         address deployer = owner();
         (bool success, ) = deployer.call{value: msg.value}("");
-        require(success, "transfer failed");
+        require(success);
 
         // mint
         tokenId = _mint(msg.sender);
@@ -241,8 +242,6 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setPublicSalePrice(uint256 price_) external onlyOwner {
-        require(price_ > 0, "zero value");
-
         publicSalePrice = price_;
     }
 
@@ -293,14 +292,13 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     function _fork(uint256 tokenId_, uint256 end_) internal returns (Book memory book, uint256 newTokenId) {
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
         book = books[tokenId_];
         uint256 logCount = book.logCount;
 
-        require(logCount > 0, "no content");
-        require(logCount >= end_, "invalid end_");
-        require(msg.value >= book.forkPrice, "value too small");
+        if (logCount <= 0 || logCount < end_) revert InsufficientLogs(logCount);
+        if (msg.value < book.forkPrice) revert InsufficientAmount(msg.value, book.forkPrice);
 
         // mint new logbook
         newTokenId = _mint(msg.sender);
