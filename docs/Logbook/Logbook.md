@@ -68,6 +68,8 @@ Emits {Donate} and {Pay} events
 
 Get a logbook
 
+### `tokenURI(uint256 tokenId_) → string` (public)
+
 ### `claim(address to_, uint256 logrsId_)` (external)
 
 Claim a logbook with a Traveloggers token
@@ -96,6 +98,10 @@ Turn off public sale
 
 Access Control: contract deployer
 
+### `_logs(uint256 tokenId_) → bytes32[] contentHashes` (internal)
+
+Get logs of a book
+
 ### `_mint(address to) → uint256 tokenId` (internal)
 
 ### `_fork(uint256 tokenId_, uint256 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
@@ -105,6 +111,12 @@ Access Control: contract deployer
 Split royalty payments
 
 No repetitive checks, please make sure all arguments are valid
+
+### `_generateSVGofTokenById(uint256 tokenId_) → string svg` (internal)
+
+Generate SVG image by token id
+
+### `_toString(uint256 value) → string` (internal)
 
 ### `Log`
 
@@ -116,8 +128,31 @@ tokenId
 
 ### `Book`
 
-bytes32[]
-contentHashes
+uint256
+from
+
+uint256
+endAt
+
+uint256
+logCount
 
 uint256
 forkPrice
+
+uint256
+createdAt
+
+bytes32[]
+contentHashes
+
+### `SplitRoyaltyFees`
+
+uint256
+commission
+
+uint256
+logbookOwner
+
+uint256
+perLogAuthor
