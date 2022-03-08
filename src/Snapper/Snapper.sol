@@ -4,7 +4,6 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Snapper is Ownable {
-
     /**
      * @notice snapshot info
      * @param blocknum block number for this snapshot
@@ -39,16 +38,17 @@ contract Snapper is Ownable {
     /**
      * @dev set confirmations.
      */
-    function setConfirmations(uint256 confirmations_) external onlyOwner{
+    function setConfirmations(uint256 confirmations_) external onlyOwner {
         confirmations = confirmations_;
     }
 
-    function takeSnapshot(uint256 toBlocknum_, string calldata snapshotCid_, string calldata deltaCid_) external onlyOwner{
+    function takeSnapshot(
+        uint256 toBlocknum_,
+        string calldata snapshotCid_,
+        string calldata deltaCid_
+    ) external onlyOwner {
         require(toBlocknum_ > lastBlocknum, "toBlocknum must bigger than lastBlocknum");
-        require(
-            toBlocknum_ + confirmations  <= block.number,
-            "target contain unstable blocks"
-        );
+        require(toBlocknum_ + confirmations <= block.number, "target contain unstable blocks");
 
         emit Snapshot(toBlocknum_, snapshotCid_);
         emit Delta(toBlocknum_, deltaCid_);

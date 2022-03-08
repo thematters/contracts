@@ -41,7 +41,7 @@ contract SnapperTest is DSTest {
 
     function testCannotTakeSnapshotNotStableBlock() public {
         vm.roll(5);
-        uint unstableBlocknum = block.number - snapper.confirmations() + 1;
+        uint256 unstableBlocknum = block.number - snapper.confirmations() + 1;
 
         vm.prank(DEPLOYER);
         vm.expectRevert("target contain unstable blocks");
@@ -58,7 +58,7 @@ contract SnapperTest is DSTest {
 
     function testTakeSnapshot() public {
         vm.roll(5);
-        uint stableBlocknum = block.number - snapper.confirmations();
+        uint256 stableBlocknum = block.number - snapper.confirmations();
 
         assertEq(snapper.lastBlocknum(), 0);
 
