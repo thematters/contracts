@@ -11,6 +11,8 @@ contract SnapperTest is DSTest {
     Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant DEPLOYER = address(176);
+    string constant CID1 = "QmYCw8HExhNnoxvc4FQQwtjK5bTZ3NKU2Np6TbNBX2ypWJ";
+    string constant CID2 = "QmSmGAGMGxvKADmvYYQYHTD4BobZBJcSvZffjM6QhUC74E";
 
     event Snapshot(uint256 indexed blocknum, string cid);
     event Delta(uint256 indexed blocknum, string cid);
@@ -34,7 +36,7 @@ contract SnapperTest is DSTest {
     function testCannotTakeSnapshotByNotOwner() public {
         vm.roll(5);
         vm.expectRevert("Ownable: caller is not the owner");
-        snapper.takeSnapshot(1, "cid1", "cid2");
+        snapper.takeSnapshot(1, CID1, CID2);
     }
 
     function testCannotTakeSnapshotNotStableBlock() public {
@@ -43,7 +45,7 @@ contract SnapperTest is DSTest {
 
         vm.prank(DEPLOYER);
         vm.expectRevert("target contain unstable blocks");
-        snapper.takeSnapshot(unstableBlocknum, "cid1", "cid2");
+        snapper.takeSnapshot(unstableBlocknum, CID1, CID2);
     }
 
     function testCannotTakeSnapshotSmallToBlocknum() public {
@@ -51,7 +53,7 @@ contract SnapperTest is DSTest {
         assertEq(snapper.lastBlocknum(), 0);
         vm.prank(DEPLOYER);
         vm.expectRevert("toBlocknum must bigger than lastBlocknum");
-        snapper.takeSnapshot(0, "cid1", "cid2");
+        snapper.takeSnapshot(0, CID1, CID2);
     }
 
     function testTakeSnapshot() public {
@@ -62,12 +64,12 @@ contract SnapperTest is DSTest {
 
         // takeSnapshot will emit Snapshot and Delta events.
         vm.expectEmit(true, false, false, true);
-        emit Snapshot(stableBlocknum, "cid1");
+        emit Snapshot(stableBlocknum, CID1);
         vm.expectEmit(true, false, false, true);
-        emit Delta(stableBlocknum, "cid2");
+        emit Delta(stableBlocknum, CID2);
 
         vm.prank(DEPLOYER);
-        snapper.takeSnapshot(stableBlocknum, "cid1", "cid2");
+        snapper.takeSnapshot(stableBlocknum, CID1, CID2);
 
         // takeSnapshot will update lastBlocknum
         assertEq(snapper.lastBlocknum(), stableBlocknum);
