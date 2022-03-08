@@ -45,9 +45,8 @@ contract Snapper is Ownable {
 
     function takeSnapshot(uint256 toBlocknum_, string calldata snapshotCid_, string calldata deltaCid_) external onlyOwner{
         require(toBlocknum_ > lastBlocknum, "toBlocknum must bigger than lastBlocknum");
-        // todo: test which use less gas: '-1' vs '<='
         require(
-            toBlocknum_ + confirmations - 1 < block.number,
+            toBlocknum_ + confirmations  <= block.number,
             "target contain unstable blocks"
         );
 
