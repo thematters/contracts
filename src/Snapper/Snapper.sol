@@ -48,7 +48,7 @@ contract Snapper is Ownable {
         // todo: test which use less gas: '-1' vs '<='
         require(
             toBlocknum_ + confirmations - 1 < block.number,
-            "this block in danger of reorg. Please wait for more confirmations"
+            "target contain unstable blocks"
         );
 
         emit Snapshot(toBlocknum_, snapshotCid_);
