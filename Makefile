@@ -6,11 +6,11 @@ update:; forge update
 
 # Build & test
 clean    :; forge clean
-snapshot :; forge snapshot
+snapshot :; forge snapshot --gas-report
 build: clean
 	forge build
 test:
-	forge test -vvv
+	forge test -vvv --gas-report
 trace: clean
 	forge test -vvvvv
 

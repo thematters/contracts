@@ -34,16 +34,16 @@
     "*.sol": "solhint"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.4.2"
+    "@openzeppelin/contracts": "^4.5.0"
   },
   "devDependencies": {
-    "ganache": "^7.0.2",
+    "ganache": "^7.0.3",
     "husky": "^7.0.4",
-    "lint-staged": "^12.3.3",
+    "lint-staged": "^12.3.5",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
-    "solc-0.8": "npm:solc@^0.8.11",
-    "solhint": "^3.3.6",
+    "solc-0.8": "npm:solc@^0.8.12",
+    "solhint": "^3.3.7",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-docgen": "^0.5.16"
   }

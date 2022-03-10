@@ -9,6 +9,14 @@ import "./IRoyalty.sol";
  * @dev The interface is inherited from IERC721 (for logbook as NFT) and IRoyalty (for royalty)
  */
 interface ILogbook is IRoyalty, IERC721 {
+    error Unauthorized();
+    error InvalidBPS(uint256 min, uint256 max);
+    error InvalidTokenId(uint256 min, uint256 max);
+    error InsufficientAmount(uint256 available, uint256 required);
+    error InsufficientLogs(uint256 logCount);
+    error TokenNotExists();
+    error PublicSaleNotStarted();
+
     /**
      * @notice Emitted when logbook title was set
      * @param tokenId Logbook token id
@@ -94,7 +102,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Batch calling methods of this contract
      * @param data Array of calldata
      */
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
+    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results);
 
     /**
      * @notice Publish a new log in a logbook
@@ -186,8 +194,14 @@ interface ILogbook is IRoyalty, IERC721 {
     function setPublicSalePrice(uint256 price_) external;
 
     /**
-     * @notice Toggle public sale state
+     * @notice Turn on public sale
      * @dev Access Control: contract deployer
      */
-    function togglePublicSale() external returns (uint256 publicSale);
+    function turnOnPublicSale() external;
+
+    /**
+     * @notice Turn off public sale
+     * @dev Access Control: contract deployer
+     */
+    function turnOffPublicSale() external;
 }

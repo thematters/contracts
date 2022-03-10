@@ -5,6 +5,9 @@ pragma solidity ^0.8.4;
  * @title The interface for NFT royalty
  */
 interface IRoyalty {
+    error ZeroAmount();
+    error InsufficientBalance(uint256 available, uint256 required);
+
     enum RoyaltyPurpose {
         Fork,
         Donate

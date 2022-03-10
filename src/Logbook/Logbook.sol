@@ -2,18 +2,21 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 import "./ILogbook.sol";
 import "./Royalty.sol";
 
-contract Logbook is ERC721, Ownable, ILogbook, Royalty {
+contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
     Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
     uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
+    uint256 private constant _ROYALTY_BPS_COMMISSION_MAX = 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
     uint256 private constant _PUBLIC_SALE_ON = 1;
     uint256 private constant _PUBLIC_SALE_OFF = 2;
     uint256 public publicSale = _PUBLIC_SALE_OFF;
@@ -25,8 +28,21 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     struct Book {
-        bytes32[] contentHashes;
+        // token id
+        uint256 from;
+        // end position of a range of logs
+        uint256 endAt;
+        // total number of logs
+        uint256 logCount;
         uint256 forkPrice;
+        uint256 createdAt;
+        bytes32[] contentHashes;
+    }
+
+    struct SplitRoyaltyFees {
+        uint256 commission;
+        uint256 logbookOwner;
+        uint256 perLogAuthor;
     }
 
     // contentHash to log
@@ -39,7 +55,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
      * @dev Throws if called by any account other than the logbook owner.
      */
     modifier onlyLogbookOwner(uint256 tokenId_) {
-        require(_isApprovedOrOwner(msg.sender, tokenId_), "caller is not owner nor approved");
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         _;
     }
 
@@ -62,7 +78,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data) external payable returns (bytes[] memory results) {
         results = new bytes[](data.length);
 
         for (uint256 i = 0; i < data.length; i++) {
@@ -87,6 +103,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         // logbook
         books[tokenId_].contentHashes.push(contentHash);
+        books[tokenId_].logCount++;
         emit Publish(tokenId_, contentHash);
     }
 
@@ -107,7 +124,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) public payable returns (uint256 tokenId) {
-        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
+        if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
         tokenId = newTokenId;
@@ -119,8 +136,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function donate(uint256 tokenId_) public payable {
-        require(msg.value > 0, "zero value");
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        if (msg.value <= 0) revert ZeroAmount();
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
         Book memory book = books[tokenId_];
         _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, address(0), 0);
@@ -134,9 +151,9 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) public payable {
-        require(msg.value > 0, "zero value");
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
-        require(commissionBPS_ <= 10000 - _ROYALTY_BPS_LOGBOOK_OWNER, "invalid BPS");
+        if (msg.value <= 0) revert ZeroAmount();
+        if (!_exists(tokenId_)) revert TokenNotExists();
+        if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         Book memory book = books[tokenId_];
         _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
@@ -157,8 +174,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         Book memory book = books[tokenId_];
 
         forkPrice = book.forkPrice;
-        contentHashes = book.contentHashes;
-
+        contentHashes = _logs(tokenId_);
         authors = new address[](contentHashes.length);
         for (uint256 i = 0; i < contentHashes.length; i++) {
             bytes32 contentHash = contentHashes[i];
@@ -166,27 +182,59 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
     }
 
-    // function tokenURI override
-    // inline SVG
+    function tokenURI(uint256 tokenId_) public view override returns (string memory) {
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
-    // function _baseURI override
+        Book memory book = books[tokenId_];
+
+        string memory tokenName = string(abi.encodePacked("Logbook #", _toString(tokenId_)));
+        string memory description = string(
+            abi.encodePacked(
+                "Using Logbook to write down your thoughts, stories or anything you liked to share. Transfer your thoughts to who you want to invite them to co-create."
+            )
+        );
+        string memory attributes = string(abi.encodePacked('{"trait_type": "Logs","value":', book.logCount, "}"));
+        string memory image = Base64.encode(bytes(_generateSVGofTokenById(tokenId_)));
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        tokenName,
+                        '", "description": "',
+                        description,
+                        '", "attributes": [',
+                        attributes,
+                        '], "image": "data:image/svg+xml;base64,',
+                        image,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        string memory output = string(abi.encodePacked("data:application/json;base64,", json));
+
+        return output;
+    }
 
     /// @inheritdoc ILogbook
     function claim(address to_, uint256 logrsId_) external onlyOwner {
-        require(logrsId_ >= 1 && logrsId_ <= 1500, "invalid logrs id");
+        if (logrsId_ < 1 || logrsId_ > 1500) revert InvalidTokenId(1, 1500);
 
         _safeMint(to_, logrsId_);
     }
 
     /// @inheritdoc ILogbook
     function publicSaleMint() external payable returns (uint256 tokenId) {
-        require(publicSale == _PUBLIC_SALE_ON && publicSalePrice > 0, "not started");
-        require(msg.value >= publicSalePrice, "value too small");
+        if (publicSale != _PUBLIC_SALE_ON) revert PublicSaleNotStarted();
+        if (msg.value < publicSalePrice) revert InsufficientAmount(msg.value, publicSalePrice);
 
         // forward value
         address deployer = owner();
         (bool success, ) = deployer.call{value: msg.value}("");
-        require(success, "transfer failed");
+        require(success);
 
         // mint
         tokenId = _mint(msg.sender);
@@ -194,16 +242,47 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setPublicSalePrice(uint256 price_) external onlyOwner {
-        require(price_ > 0, "zero value");
-
         publicSalePrice = price_;
     }
 
     /// @inheritdoc ILogbook
-    function togglePublicSale() external onlyOwner returns (uint256 newPublicSale) {
-        newPublicSale = publicSale == _PUBLIC_SALE_ON ? _PUBLIC_SALE_OFF : _PUBLIC_SALE_ON;
+    function turnOnPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_ON;
+    }
 
-        publicSale = newPublicSale;
+    /// @inheritdoc ILogbook
+    function turnOffPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_OFF;
+    }
+
+    /**
+     * @notice Get logs of a book
+     * @param tokenId_ Logbook token id
+     */
+    function _logs(uint256 tokenId_) internal view returns (bytes32[] memory contentHashes) {
+        Book memory book = books[tokenId_];
+
+        contentHashes = new bytes32[](book.logCount);
+
+        // copy from current & parents
+        uint256 index = 0;
+        bool hasParent = true;
+
+        while (hasParent) {
+            bytes32[] memory parentContentHashes = book.contentHashes;
+            uint256 parentLogCount = parentContentHashes.length;
+
+            for (uint256 i = 0; i < parentLogCount; i++) {
+                contentHashes[index] = parentContentHashes[i];
+                index++;
+            }
+
+            if (book.from == 0) {
+                hasParent = false;
+            }
+
+            book = books[book.from];
+        }
     }
 
     function _mint(address to) internal returns (uint256 tokenId) {
@@ -213,27 +292,26 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     function _fork(uint256 tokenId_, uint256 end_) internal returns (Book memory book, uint256 newTokenId) {
-        require(_exists(tokenId_), "ERC721: operator query for nonexistent token");
+        if (!_exists(tokenId_)) revert TokenNotExists();
 
         book = books[tokenId_];
-        uint256 logCount = book.contentHashes.length;
+        uint256 logCount = book.logCount;
 
-        require(logCount > 0, "no content");
-        require(logCount >= end_, "invalid end_");
-        require(msg.value >= book.forkPrice, "value too small");
+        if (logCount <= 0 || logCount < end_) revert InsufficientLogs(logCount);
+        if (msg.value < book.forkPrice) revert InsufficientAmount(msg.value, book.forkPrice);
 
         // mint new logbook
         newTokenId = _mint(msg.sender);
 
-        // copy content hashes to the new logbook
-        bytes32[] memory newContentHashes = new bytes32[](end_);
-        bytes32[] memory contentHashes = book.contentHashes;
-
-        for (uint256 i = 0; i < end_; i++) {
-            newContentHashes[i] = contentHashes[i];
-        }
-
-        Book memory newBook = Book({contentHashes: newContentHashes, forkPrice: 0 ether});
+        bytes32[] memory contentHashes = new bytes32[](0);
+        Book memory newBook = Book({
+            from: tokenId_,
+            endAt: end_,
+            logCount: logCount,
+            forkPrice: 0 ether,
+            createdAt: block.timestamp,
+            contentHashes: contentHashes
+        });
 
         books[newTokenId] = newBook;
 
@@ -258,42 +336,43 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) internal {
-        uint256 feesCommission;
-        uint256 feesLogbookOwner;
-        uint256 feesPerLogAuthor;
+        uint256 logCount = book_.logCount;
+        bytes32[] memory contentHashes = _logs(tokenId_);
 
+        // fees calculation
+        SplitRoyaltyFees memory fees;
         bool isNoCommission = commission_ == address(0) || commissionBPS_ == 0;
         if (!isNoCommission) {
-            feesCommission = (amount_ * commissionBPS_) / 10000;
+            fees.commission = (amount_ * commissionBPS_) / 10000;
         }
 
-        uint256 logCount = book_.contentHashes.length;
         if (logCount <= 0) {
-            feesLogbookOwner = amount_ - feesCommission;
+            fees.logbookOwner = amount_ - fees.commission;
         } else {
-            feesLogbookOwner = (amount_ * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
-            feesPerLogAuthor = (amount_ - feesLogbookOwner - feesCommission) / logCount;
+            fees.logbookOwner = (amount_ * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+            fees.perLogAuthor = (amount_ - fees.logbookOwner - fees.commission) / logCount;
         }
 
+        // split royalty
         // -> logbook owner
         address logbookOwner = ERC721.ownerOf(tokenId_);
-        _balances[logbookOwner] += feesLogbookOwner;
+        _balances[logbookOwner] += fees.logbookOwner;
         emit Pay({
             tokenId: tokenId_,
             sender: msg.sender,
             recipient: logbookOwner,
-            amount: feesLogbookOwner,
+            amount: fees.logbookOwner,
             purpose: purpose_
         });
 
         // -> commission
         if (!isNoCommission) {
-            _balances[commission_] += feesCommission;
+            _balances[commission_] += fees.commission;
             emit Pay({
                 tokenId: tokenId_,
                 sender: msg.sender,
                 recipient: commission_,
-                amount: feesCommission,
+                amount: fees.commission,
                 purpose: purpose_
             });
         }
@@ -301,16 +380,46 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         // -> logs' authors
         if (logCount > 0) {
             for (uint256 i = 0; i < logCount; i++) {
-                Log memory log = logs[book_.contentHashes[i]];
-                _balances[log.author] += feesPerLogAuthor;
+                Log memory log = logs[contentHashes[i]];
+                _balances[log.author] += fees.perLogAuthor;
                 emit Pay({
                     tokenId: tokenId_,
                     sender: msg.sender,
                     recipient: log.author,
-                    amount: feesPerLogAuthor,
+                    amount: fees.perLogAuthor,
                     purpose: purpose_
                 });
             }
         }
+    }
+
+    /**
+     * @notice Generate SVG image by token id
+     * @param tokenId_ Logbook token id
+     */
+    function _generateSVGofTokenById(uint256 tokenId_) internal pure returns (string memory svg) {
+        return string(abi.encodePacked("<svg>", _toString(tokenId_), "</svg>"));
+    }
+
+    function _toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT license
+        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
+
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 }

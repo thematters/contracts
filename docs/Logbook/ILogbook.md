@@ -80,9 +80,15 @@ Set public sale
 
 Access Control: contract deployer
 
-### `togglePublicSale() → uint256 publicSale` (external)
+### `turnOnPublicSale()` (external)
 
-Toggle public sale state
+Turn on public sale
+
+Access Control: contract deployer
+
+### `turnOffPublicSale()` (external)
+
+Turn off public sale
 
 Access Control: contract deployer
 
