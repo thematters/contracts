@@ -27,9 +27,10 @@ import "./HarbergerMarket.sol";
  */
 
 contract TheSpace is HarbergerMarket {
+    error Unauthorized();
+
     /**
      * @dev Emitted when the color of a pixel is updated.
-     * TBD: use uint8 for color encoding?
      */
     event Color(uint256 indexed pixelId, uint256 color);
 
@@ -39,15 +40,30 @@ contract TheSpace is HarbergerMarket {
         address currencyAddress_,
         uint256 taxRate_,
         uint256 totalSupply_
-    ) HarbergerMarket(propertyName_, propertySymbol_, currencyAddress_, taxRate_, totalSupply_) {}
+    ) HarbergerMarket(propertyName_, propertySymbol_, currencyAddress_) {}
 
     /**
-     * @dev Set colors in batch for an array of pixels.
-     *
-     * Emits {Color} events.
+     * @dev Bid pixel, then set price and color.
      */
-    function setColor(uint256 tokenId_, uint256 color_) external {
-        // require(asset.ownerOf(tokenId_) == msg.sender, "Pixel not owned by caller.");
-        emit Color(tokenId_, color_);
+    function setPixel(
+        uint256 tokenId,
+        uint256 bid,
+        uint256 price,
+        uint256 color
+    ) external {
+        this.bid(tokenId, bid);
+        this.setPrice(tokenId, price);
+        this.setColor(tokenId, color);
+    }
+
+    /**
+     * @dev Set color for a pixels.
+     *
+     * Emits {Color} event.
+     */
+    function setColor(uint256 tokenId, uint256 color) external {
+        if (property.ownerOf(tokenId) != msg.sender) revert Unauthorized();
+
+        emit Color(tokenId, color);
     }
 }
