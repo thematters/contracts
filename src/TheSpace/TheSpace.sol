@@ -30,7 +30,7 @@ contract TheSpace is HarbergerMarket {
     /**
      * @dev Emitted when the color of a pixel is updated.
      */
-    event Color(uint256 indexed pixelId, uint256 color);
+    event Color(uint256 indexed pixelId, uint256 color, address owner);
 
     constructor(address currencyAddress) HarbergerMarket("Planck", "PLK", currencyAddress) {}
 
@@ -56,6 +56,6 @@ contract TheSpace is HarbergerMarket {
     function setColor(uint256 tokenId, uint256 color) external {
         if (!property.isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
 
-        emit Color(tokenId, color);
+        emit Color(tokenId, color, property.ownerOf(tokenId));
     }
 }

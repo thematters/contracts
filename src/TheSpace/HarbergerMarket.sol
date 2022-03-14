@@ -39,7 +39,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     /**
      * @dev Emitted when a token changes price.
      */
-    event Price(uint256 indexed tokenId, uint256 price);
+    event Price(uint256 indexed tokenId, uint256 price, address owner);
 
     /**
      * @dev Emitted when tax configuration updates.
@@ -143,9 +143,8 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * TODO: check security implications
      */
     function bid(uint256 tokenId, uint256 price) external {
-        if (property.ownerOf(tokenId) == msg.sender) revert NoEffect();
-
         if (property.exists(tokenId)) {
+            if (property.ownerOf(tokenId) == msg.sender) revert NoEffect();
             uint256 askPrice = this.getPrice(tokenId);
             if (price < askPrice) revert PriceTooLow();
 
@@ -235,7 +234,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
         taxRecord[tokenId].price = price;
 
         // emit events
-        emit Price(tokenId, price);
+        emit Price(tokenId, price, property.ownerOf(tokenId));
     }
 
     function _min(uint256 a, uint256 b) private pure returns (uint256) {
