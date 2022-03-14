@@ -545,8 +545,8 @@ contract LogbookTest is DSTest {
         (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
         (, uint32 logCount1, , , ) = logbook.books(CLAIM_TOKEN_START_ID);
         assertEq(logCount1, logCount);
-        assertEq(logCount, uint32(contentHashes.length));
-        assertEq(logCount, uint32(authors.length));
+        assertEq(logCount, contentHashes.length);
+        assertEq(logCount, authors.length);
 
         // fork
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
@@ -557,7 +557,7 @@ contract LogbookTest is DSTest {
         // check log count
         uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, logCount);
         (, bytes32[] memory forkedContentHashes, ) = logbook.getLogbook(newTokenId);
-        assertEq(logCount, uint32(forkedContentHashes.length));
+        assertEq(logCount, forkedContentHashes.length);
 
         // check content hashes
         string memory firstContent = string(abi.encodePacked(uint32(0)));
