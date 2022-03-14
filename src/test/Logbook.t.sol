@@ -36,7 +36,7 @@ contract LogbookTest is DSTest {
 
     event Publish(uint256 indexed tokenId, bytes32 indexed contentHash);
 
-    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
+    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint32 end, uint256 amount);
 
     event Donate(uint256 indexed tokenId, address indexed donor, uint256 amount);
 
@@ -224,7 +224,7 @@ contract LogbookTest is DSTest {
         // publish
         bytes32 returnContentHash = _publish(content);
         assertEq(contentHash, returnContentHash);
-        (, , uint256 logCount, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        (, uint32 logCount, , , ) = logbook.books(CLAIM_TOKEN_START_ID);
         assertEq(logCount, 1);
 
         // only logbook owner
@@ -470,7 +470,7 @@ contract LogbookTest is DSTest {
         // no content
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
-        vm.expectRevert(abi.encodeWithSignature("InsufficientLogs(uint256)", 0));
+        vm.expectRevert(abi.encodeWithSignature("InsufficientLogs(uint32)", 0));
         logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, 0);
 
         _publish(content);
@@ -519,13 +519,13 @@ contract LogbookTest is DSTest {
      */
     function testSplitRoyalty() public {
         uint256 forkPrice = 0.1 ether;
-        uint256 logCount = 64;
+        uint32 logCount = 64;
 
         _claimToTraveloggersOwner();
         _setForkPrice(forkPrice);
 
         // append logs
-        for (uint256 i = 0; i < logCount; i++) {
+        for (uint32 i = 0; i < logCount; i++) {
             // transfer to new owner
             address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
             address newOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
@@ -543,10 +543,10 @@ contract LogbookTest is DSTest {
 
         // check logs
         (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        (, , uint256 logCount1, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        (, uint32 logCount1, , , ) = logbook.books(CLAIM_TOKEN_START_ID);
         assertEq(logCount1, logCount);
-        assertEq(logCount, contentHashes.length);
-        assertEq(logCount, authors.length);
+        assertEq(logCount, uint32(contentHashes.length));
+        assertEq(logCount, uint32(authors.length));
 
         // fork
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
@@ -557,14 +557,14 @@ contract LogbookTest is DSTest {
         // check log count
         uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, logCount);
         (, bytes32[] memory forkedContentHashes, ) = logbook.getLogbook(newTokenId);
-        assertEq(logCount, forkedContentHashes.length);
+        assertEq(logCount, uint32(forkedContentHashes.length));
 
         // check content hashes
-        string memory firstContent = string(abi.encodePacked(uint256(0)));
+        string memory firstContent = string(abi.encodePacked(uint32(0)));
         bytes32 firstContentHash = keccak256(abi.encodePacked(firstContent));
         assertEq(firstContentHash, forkedContentHashes[0]);
 
-        string memory lastContent = string(abi.encodePacked(uint256(logCount - 1)));
+        string memory lastContent = string(abi.encodePacked(uint32(logCount - 1)));
         bytes32 lastContentHash = keccak256(abi.encodePacked(lastContent));
         assertEq(lastContentHash, forkedContentHashes[logCount - 1]);
 
@@ -583,12 +583,12 @@ contract LogbookTest is DSTest {
 
     function testWithdraw() public {
         uint256 donationValue = 3.13 ether;
-        uint256 logCount = 64;
+        uint32 logCount = 64;
 
         _claimToTraveloggersOwner();
 
         // append logs
-        for (uint256 i = 0; i < logCount; i++) {
+        for (uint32 i = 0; i < logCount; i++) {
             // transfer to new owner
             address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
             address newOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
