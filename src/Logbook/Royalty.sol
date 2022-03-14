@@ -10,12 +10,12 @@ abstract contract Royalty is IRoyalty, Ownable {
 
     /// @inheritdoc IRoyalty
     function withdraw() public {
-        uint256 amount = _balances[msg.sender];
+        uint256 amount = getBalance(msg.sender);
 
         if (amount == 0) revert ZeroAmount();
         if (address(this).balance < amount) revert InsufficientBalance(address(this).balance, amount);
 
-        _balances[msg.sender] = 0;
+        _balances[msg.sender] = 1 wei;
 
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success);
@@ -24,7 +24,9 @@ abstract contract Royalty is IRoyalty, Ownable {
     }
 
     /// @inheritdoc IRoyalty
-    function getBalance(address account_) public view returns (uint256) {
-        return _balances[account_];
+    function getBalance(address account_) public view returns (uint256 amount) {
+        uint256 balance = _balances[account_];
+
+        amount = balance <= 1 wei ? 0 : balance - 1 wei;
     }
 }

@@ -24,6 +24,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
     struct Log {
         address author;
+        // logbook that this log first publish to
         uint256 tokenId;
     }
 
@@ -62,17 +63,17 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {}
 
     /// @inheritdoc ILogbook
-    function setTitle(uint256 tokenId_, string calldata title_) public onlyLogbookOwner(tokenId_) {
+    function setTitle(uint256 tokenId_, string calldata title_) external onlyLogbookOwner(tokenId_) {
         emit SetTitle(tokenId_, title_);
     }
 
     /// @inheritdoc ILogbook
-    function setDescription(uint256 tokenId_, string calldata description_) public onlyLogbookOwner(tokenId_) {
+    function setDescription(uint256 tokenId_, string calldata description_) external onlyLogbookOwner(tokenId_) {
         emit SetDescription(tokenId_, description_);
     }
 
     /// @inheritdoc ILogbook
-    function setForkPrice(uint256 tokenId_, uint256 amount_) public onlyLogbookOwner(tokenId_) {
+    function setForkPrice(uint256 tokenId_, uint256 amount_) external onlyLogbookOwner(tokenId_) {
         books[tokenId_].forkPrice = amount_;
         emit SetForkPrice(tokenId_, amount_);
     }
@@ -91,7 +92,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function publish(uint256 tokenId_, string calldata content_) public onlyLogbookOwner(tokenId_) {
+    function publish(uint256 tokenId_, string calldata content_) external onlyLogbookOwner(tokenId_) {
         bytes32 contentHash = keccak256(abi.encodePacked(content_));
 
         // log
@@ -108,7 +109,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function fork(uint256 tokenId_, uint256 end_) public payable returns (uint256 tokenId) {
+    function fork(uint256 tokenId_, uint256 end_) external payable returns (uint256 tokenId) {
         (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
         tokenId = newTokenId;
 
@@ -123,7 +124,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         uint256 end_,
         address commission_,
         uint256 commissionBPS_
-    ) public payable returns (uint256 tokenId) {
+    ) external payable returns (uint256 tokenId) {
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
@@ -135,7 +136,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function donate(uint256 tokenId_) public payable {
+    function donate(uint256 tokenId_) external payable {
         if (msg.value <= 0) revert ZeroAmount();
         if (!_exists(tokenId_)) revert TokenNotExists();
 
@@ -150,7 +151,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         uint256 tokenId_,
         address commission_,
         uint256 commissionBPS_
-    ) public payable {
+    ) external payable {
         if (msg.value <= 0) revert ZeroAmount();
         if (!_exists(tokenId_)) revert TokenNotExists();
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
@@ -421,5 +422,18 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
             value /= 10;
         }
         return string(buffer);
+    }
+
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        super._afterTokenTransfer(from, to, tokenId); // Call parent hook
+
+        // warm up _balances[to] to reduce gas of SSTORE
+        if (_balances[to] == 0) {
+            _balances[to] = 1 wei;
+        }
     }
 }

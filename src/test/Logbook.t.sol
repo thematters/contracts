@@ -389,6 +389,13 @@ contract LogbookTest is DSTest {
     function testDonate(uint256 amount) public {
         _claimToTraveloggersOwner();
 
+        // skip if overflow/underflow
+        unchecked {
+            if (amount * _ROYALTY_BPS_LOGBOOK_OWNER < amount && _ROYALTY_BPS_LOGBOOK_OWNER > 0) {
+                return;
+            }
+        }
+
         // donate
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
@@ -415,8 +422,12 @@ contract LogbookTest is DSTest {
 
         bool isInvalidBPS = bps > _ROYALTY_BPS_COMMISSION_MAX;
 
+        // skip if overflow/underflow
         unchecked {
             if (amount * bps < amount && bps > 0) {
+                return;
+            }
+            if (amount * _ROYALTY_BPS_LOGBOOK_OWNER < amount && _ROYALTY_BPS_LOGBOOK_OWNER > 0) {
                 return;
             }
         }
@@ -510,7 +521,6 @@ contract LogbookTest is DSTest {
         uint256 forkPrice = 0.1 ether;
         uint256 logCount = 64;
 
-        // no arithmetic overflow and underflow
         _claimToTraveloggersOwner();
         _setForkPrice(forkPrice);
 
@@ -575,7 +585,6 @@ contract LogbookTest is DSTest {
         uint256 donationValue = 3.13 ether;
         uint256 logCount = 64;
 
-        // no arithmetic overflow and underflow
         _claimToTraveloggersOwner();
 
         // append logs
