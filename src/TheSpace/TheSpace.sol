@@ -62,7 +62,7 @@ contract TheSpace is HarbergerMarket {
      * Emits {Color} event.
      */
     function setColor(uint256 tokenId, uint256 color) external {
-        if (property.ownerOf(tokenId) != msg.sender) revert Unauthorized();
+        if (!property.isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
 
         emit Color(tokenId, color);
     }

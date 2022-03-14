@@ -25,7 +25,7 @@ contract Property is ERC721Enumerable {
     uint256 private _totalSupply;
 
     modifier onlyMarket() {
-        require(msg.sender == market);
+        if (msg.sender != market) revert Unauthorized();
         _;
     }
 
@@ -61,6 +61,17 @@ contract Property is ERC721Enumerable {
     }
 
     /**
+     * @dev Returns whether `spender` is allowed to manage `tokenId`.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     */
+    function isApprovedOrOwner(address spender, uint256 tokenId) public view returns (bool) {
+        return _isApprovedOrOwner(spender, tokenId);
+    }
+
+    /**
      * @dev Mint token by market contract.
      */
     function mint(address to, uint256 tokenId) public onlyMarket {
@@ -85,7 +96,7 @@ contract Property is ERC721Enumerable {
      */
     function setTokenURI(uint256 tokenId, string memory uri) internal virtual {
         if (!_exists(tokenId)) revert TokenNotExists();
-        if (msg.sender != this.ownerOf(tokenId)) revert Unauthorized();
+        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
 
         _tokenURIs[tokenId] = uri;
     }

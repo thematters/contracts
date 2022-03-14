@@ -11,6 +11,10 @@ import "./Property.sol";
  * @dev Market place with Harberger tax, inherits from `IPixelCanvas`. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
  */
 abstract contract HarbergerMarket is Multicall, Ownable {
+    error PriceTooLow();
+    error NoEffect();
+    error Unauthorized();
+
     /**
      * @dev Tax record of token. Use block number to record tax collection time.
      *
@@ -25,7 +29,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     /**
      * @dev Tax configuration of market.
      * - taxRate: Tax rate in bps every 1000 blocks
-     * - treasuryShare: Share to treasury in percentage.
+     * - treasuryShare: Share to treasury in bps.
      */
     enum ConfigOptions {
         taxRate,
@@ -92,7 +96,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
 
         // default config
         taxConfig[ConfigOptions.taxRate] = 10;
-        taxConfig[ConfigOptions.treasuryShare] = 5;
+        taxConfig[ConfigOptions.treasuryShare] = 500;
     }
 
     /**
@@ -114,8 +118,8 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * Emits a {Price} event.
      */
     function setPrice(uint256 tokenId, uint256 price) external {
-        require(property.ownerOf(tokenId) == msg.sender, "Sender does not own property");
-        require(price != this.getPrice(tokenId), "Price is the same");
+        if (!property.isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
+        if (price == this.getPrice(tokenId)) revert NoEffect();
 
         _setPrice(tokenId, price);
     }
@@ -139,11 +143,11 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * TODO: check security implications
      */
     function bid(uint256 tokenId, uint256 price) external {
-        require(property.ownerOf(tokenId) != msg.sender, "Already owned");
+        if (property.ownerOf(tokenId) == msg.sender) revert NoEffect();
 
         if (property.exists(tokenId)) {
             uint256 askPrice = this.getPrice(tokenId);
-            require(price >= this.getPrice(tokenId), "Price too low");
+            if (price < askPrice) revert PriceTooLow();
 
             // collect tax
             bool success = this.collectTax(tokenId);
@@ -172,11 +176,10 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     function collectTax(uint256 tokenId) external returns (bool) {
         uint256 price = this.getPrice(tokenId);
         if (price > 0) {
-            // TODO: determine best tax rate
             // calculate tax
             uint256 tax = (price *
                 taxConfig[ConfigOptions.taxRate] *
-                (block.number - taxRecord[tokenId].lastTaxCollection)) / 1000;
+                (block.number - taxRecord[tokenId].lastTaxCollection)) / (1000 * 10000);
 
             // calculate collectable amount
             address taxpayer = property.ownerOf(tokenId);
@@ -188,6 +191,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
             // then update accumulatedUBI
             uint256 collecting = _min(collectable, tax);
             currency.transferFrom(property.ownerOf(tokenId), address(this), collecting);
+            emit Tax(tokenId, collecting);
 
             // update tax record and accumulated ubi
             taxRecord[tokenId].lastTaxCollection = block.number;
@@ -215,6 +219,8 @@ abstract contract HarbergerMarket is Multicall, Ownable {
 
         if (ubi > 0) {
             currency.transferFrom(address(this), property.ownerOf(tokenId), ubi);
+            taxRecord[tokenId].ubiWithdrawn += ubi;
+
             emit UBI(tokenId, ubi);
         }
     }
