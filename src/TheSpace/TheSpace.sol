@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.11;
 
 import "./HarbergerMarket.sol";
 
@@ -27,20 +27,12 @@ import "./HarbergerMarket.sol";
  */
 
 contract TheSpace is HarbergerMarket {
-    error Unauthorized();
-
     /**
      * @dev Emitted when the color of a pixel is updated.
      */
     event Color(uint256 indexed pixelId, uint256 color);
 
-    constructor(
-        string memory propertyName_,
-        string memory propertySymbol_,
-        address currencyAddress_,
-        uint256 taxRate_,
-        uint256 totalSupply_
-    ) HarbergerMarket(propertyName_, propertySymbol_, currencyAddress_) {}
+    constructor(address currencyAddress) HarbergerMarket("Planck", "PLK", currencyAddress) {}
 
     /**
      * @dev Bid pixel, then set price and color.
