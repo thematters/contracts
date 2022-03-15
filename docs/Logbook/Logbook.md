@@ -64,9 +64,13 @@ Donate to a logbook with commission
 
 Emits {Donate} and {Pay} events
 
-### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
+### `getLogbook(uint256 tokenId_) → struct ILogbook.Book book` (external)
 
 Get a logbook
+
+### `getLogs(uint256 tokenId_) → bytes32[] contentHashes, address[] authors` (external)
+
+Get a logbook's logs
 
 ### `claim(address to_, uint256 logrsId_)` (external)
 
@@ -104,57 +108,12 @@ Get logs of a book
 
 ### `_mint(address to) → uint256 tokenId` (internal)
 
-### `_fork(uint256 tokenId_, uint32 endAt_) → struct Logbook.Book book, uint256 newTokenId` (internal)
+### `_fork(uint256 tokenId_, uint32 endAt_) → struct ILogbook.Book newBook, uint256 newTokenId` (internal)
 
-### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint256 commissionBPS_)` (internal)
+### `_splitRoyalty(uint256 tokenId_, struct ILogbook.Book book_, address logbookOwner_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint256 commissionBPS_)` (internal)
 
 Split royalty payments
 
 No repetitive checks, please make sure all arguments are valid
 
-### `_generateSVGofTokenById(uint256 tokenId_) → string svg` (internal)
-
-Generate SVG image by token id
-
-### `_toString(uint256 value) → string` (internal)
-
 ### `_afterTokenTransfer(address from, address to, uint256 tokenId)` (internal)
-
-### `Log`
-
-address
-author
-
-uint256
-tokenId
-
-### `Book`
-
-uint32
-endAt
-
-uint32
-logCount
-
-uint192
-createdAt
-
-uint256
-from
-
-uint256
-forkPrice
-
-bytes32[]
-contentHashes
-
-### `SplitRoyaltyFees`
-
-uint256
-commission
-
-uint256
-logbookOwner
-
-uint256
-perLogAuthor

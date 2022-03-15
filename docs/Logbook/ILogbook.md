@@ -60,9 +60,13 @@ Donate to a logbook with commission
 
 Emits {Donate} and {Pay} events
 
-### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
+### `getLogbook(uint256 tokenId_) → struct ILogbook.Book book` (external)
 
 Get a logbook
+
+### `getLogs(uint256 tokenId_) → bytes32[] contentHashes, address[] authors` (external)
+
+Get a logbook's logs
 
 ### `claim(address to_, uint256 logrsId_)` (external)
 
@@ -121,3 +125,42 @@ Emitted when a logbook was forked
 ### `Donate(uint256 tokenId, address donor, uint256 amount)`
 
 Emitted when a logbook received a donation
+
+### `Log`
+
+address
+author
+
+uint256
+tokenId
+
+### `Book`
+
+uint32
+endAt
+
+uint32
+logCount
+
+uint192
+createdAt
+
+uint256
+from
+
+uint256
+forkPrice
+
+bytes32[]
+contentHashes
+
+### `SplitRoyaltyFees`
+
+uint256
+commission
+
+uint256
+logbookOwner
+
+uint256
+perLogAuthor
