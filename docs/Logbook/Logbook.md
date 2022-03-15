@@ -8,21 +8,21 @@ Throws if called by any account other than the logbook owner.
 
 ### `constructor(string name_, string symbol_)` (public)
 
-### `setTitle(uint256 tokenId_, string title_)` (public)
+### `setTitle(uint256 tokenId_, string title_)` (external)
 
 Set logbook title
 
 Access Control: logbook owner
 Emits a {SetTitle} event
 
-### `setDescription(uint256 tokenId_, string description_)` (public)
+### `setDescription(uint256 tokenId_, string description_)` (external)
 
 Set logbook description
 
 Access Control: logbook owner
 Emits a {SetDescription} event
 
-### `setForkPrice(uint256 tokenId_, uint256 amount_)` (public)
+### `setForkPrice(uint256 tokenId_, uint256 amount_)` (external)
 
 Set logbook fork price
 
@@ -33,32 +33,32 @@ Emits a {SetForkPrice} event
 
 Batch calling methods of this contract
 
-### `publish(uint256 tokenId_, string content_)` (public)
+### `publish(uint256 tokenId_, string content_)` (external)
 
 Publish a new log in a logbook
 
 Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, uint256 end_) → uint256 tokenId` (public)
+### `fork(uint256 tokenId_, uint32 end_) → uint256 tokenId` (external)
 
 Pay to fork a logbook
 
 Emits {Fork} and {Pay} events
 
-### `forkWithCommission(uint256 tokenId_, uint256 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (public)
+### `forkWithCommission(uint256 tokenId_, uint32 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
 
 Pay to fork a logbook with commission
 
 Emits {Fork} and {Pay} events
 
-### `donate(uint256 tokenId_)` (public)
+### `donate(uint256 tokenId_)` (external)
 
 Donate to a logbook
 
 Emits {Donate} and {Pay} events
 
-### `donateWithCommission(uint256 tokenId_, address commission_, uint256 commissionBPS_)` (public)
+### `donateWithCommission(uint256 tokenId_, address commission_, uint256 commissionBPS_)` (external)
 
 Donate to a logbook with commission
 
@@ -67,8 +67,6 @@ Emits {Donate} and {Pay} events
 ### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
 
 Get a logbook
-
-### `tokenURI(uint256 tokenId_) → string` (public)
 
 ### `claim(address to_, uint256 logrsId_)` (external)
 
@@ -98,13 +96,15 @@ Turn off public sale
 
 Access Control: contract deployer
 
+### `tokenURI(uint256 tokenId_) → string` (public)
+
 ### `_logs(uint256 tokenId_) → bytes32[] contentHashes` (internal)
 
 Get logs of a book
 
 ### `_mint(address to) → uint256 tokenId` (internal)
 
-### `_fork(uint256 tokenId_, uint256 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
+### `_fork(uint256 tokenId_, uint32 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
 
 ### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint256 commissionBPS_)` (internal)
 
@@ -118,6 +118,8 @@ Generate SVG image by token id
 
 ### `_toString(uint256 value) → string` (internal)
 
+### `_afterTokenTransfer(address from, address to, uint256 tokenId)` (internal)
+
 ### `Log`
 
 address
@@ -128,20 +130,20 @@ tokenId
 
 ### `Book`
 
+uint32
+endAt
+
+uint32
+logCount
+
+uint192
+createdAt
+
 uint256
 from
 
 uint256
-endAt
-
-uint256
-logCount
-
-uint256
 forkPrice
-
-uint256
-createdAt
 
 bytes32[]
 contentHashes

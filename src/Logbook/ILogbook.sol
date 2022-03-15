@@ -13,7 +13,7 @@ interface ILogbook is IRoyalty, IERC721 {
     error InvalidBPS(uint256 min, uint256 max);
     error InvalidTokenId(uint256 min, uint256 max);
     error InsufficientAmount(uint256 available, uint256 required);
-    error InsufficientLogs(uint256 logCount);
+    error InsufficientLogs(uint32 logCount);
     error TokenNotExists();
     error PublicSaleNotStarted();
 
@@ -61,7 +61,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param end End position of a range of logs in the old logbook (zero-based)
      * @param amount Fork price
      */
-    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint256 end, uint256 amount);
+    event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint32 end, uint256 amount);
 
     /**
      * @notice Emitted when a logbook received a donation
@@ -120,7 +120,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param end_ End position of a range of logs in the old logbook (zero-based)
      * @return tokenId New logobok token id
      */
-    function fork(uint256 tokenId_, uint256 end_) external payable returns (uint256 tokenId);
+    function fork(uint256 tokenId_, uint32 end_) external payable returns (uint256 tokenId);
 
     /**
      * @notice Pay to fork a logbook with commission
@@ -133,7 +133,7 @@ interface ILogbook is IRoyalty, IERC721 {
      */
     function forkWithCommission(
         uint256 tokenId_,
-        uint256 end_,
+        uint32 end_,
         address commission_,
         uint256 commissionBPS_
     ) external payable returns (uint256 tokenId);

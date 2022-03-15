@@ -47,7 +47,4 @@ interface IRoyalty {
      * @param account_ Address
      */
     function getBalance(address account_) external view returns (uint256);
-
-    // TBD: support ERC-20 tokens,
-    // more easy to spam or attack withdraw (pay more gas fee)?
 }

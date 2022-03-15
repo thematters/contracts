@@ -11,10 +11,6 @@ import "./ILogbook.sol";
 import "./Royalty.sol";
 
 contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
-    // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
-    using Counters for Counters.Counter;
-    Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
-
     uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
     uint256 private constant _ROYALTY_BPS_COMMISSION_MAX = 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
     uint256 private constant _PUBLIC_SALE_ON = 1;
@@ -29,14 +25,17 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     struct Book {
-        // token id
-        uint256 from;
         // end position of a range of logs
-        uint256 endAt;
+        uint32 endAt;
         // total number of logs
-        uint256 logCount;
+        uint32 logCount;
+        // creation time of the book
+        uint192 createdAt;
+        // parent book
+        uint256 from;
+        // fork price
         uint256 forkPrice;
-        uint256 createdAt;
+        // all logs hashes in the book
         bytes32[] contentHashes;
     }
 
@@ -51,6 +50,10 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
     // tokenId to logbook
     mapping(uint256 => Book) public books;
+
+    // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
+    using Counters for Counters.Counter;
+    Counters.Counter internal _tokenIdCounter = Counters.Counter(1500);
 
     /**
      * @dev Throws if called by any account other than the logbook owner.
@@ -109,7 +112,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function fork(uint256 tokenId_, uint256 end_) external payable returns (uint256 tokenId) {
+    function fork(uint256 tokenId_, uint32 end_) external payable returns (uint256 tokenId) {
         (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
         tokenId = newTokenId;
 
@@ -121,7 +124,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     /// @inheritdoc ILogbook
     function forkWithCommission(
         uint256 tokenId_,
-        uint256 end_,
+        uint32 end_,
         address commission_,
         uint256 commissionBPS_
     ) external payable returns (uint256 tokenId) {
@@ -177,10 +180,46 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         forkPrice = book.forkPrice;
         contentHashes = _logs(tokenId_);
         authors = new address[](contentHashes.length);
-        for (uint256 i = 0; i < contentHashes.length; i++) {
+        for (uint32 i = 0; i < contentHashes.length; i++) {
             bytes32 contentHash = contentHashes[i];
             authors[i] = logs[contentHash].author;
         }
+    }
+
+    /// @inheritdoc ILogbook
+    function claim(address to_, uint256 logrsId_) external onlyOwner {
+        if (logrsId_ < 1 || logrsId_ > 1500) revert InvalidTokenId(1, 1500);
+
+        _safeMint(to_, logrsId_);
+    }
+
+    /// @inheritdoc ILogbook
+    function publicSaleMint() external payable returns (uint256 tokenId) {
+        if (publicSale != _PUBLIC_SALE_ON) revert PublicSaleNotStarted();
+        if (msg.value < publicSalePrice) revert InsufficientAmount(msg.value, publicSalePrice);
+
+        // forward value
+        address deployer = owner();
+        (bool success, ) = deployer.call{value: msg.value}("");
+        require(success);
+
+        // mint
+        tokenId = _mint(msg.sender);
+    }
+
+    /// @inheritdoc ILogbook
+    function setPublicSalePrice(uint256 price_) external onlyOwner {
+        publicSalePrice = price_;
+    }
+
+    /// @inheritdoc ILogbook
+    function turnOnPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_ON;
+    }
+
+    /// @inheritdoc ILogbook
+    function turnOffPublicSale() external onlyOwner {
+        publicSale = _PUBLIC_SALE_OFF;
     }
 
     function tokenURI(uint256 tokenId_) public view override returns (string memory) {
@@ -220,42 +259,6 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         return output;
     }
 
-    /// @inheritdoc ILogbook
-    function claim(address to_, uint256 logrsId_) external onlyOwner {
-        if (logrsId_ < 1 || logrsId_ > 1500) revert InvalidTokenId(1, 1500);
-
-        _safeMint(to_, logrsId_);
-    }
-
-    /// @inheritdoc ILogbook
-    function publicSaleMint() external payable returns (uint256 tokenId) {
-        if (publicSale != _PUBLIC_SALE_ON) revert PublicSaleNotStarted();
-        if (msg.value < publicSalePrice) revert InsufficientAmount(msg.value, publicSalePrice);
-
-        // forward value
-        address deployer = owner();
-        (bool success, ) = deployer.call{value: msg.value}("");
-        require(success);
-
-        // mint
-        tokenId = _mint(msg.sender);
-    }
-
-    /// @inheritdoc ILogbook
-    function setPublicSalePrice(uint256 price_) external onlyOwner {
-        publicSalePrice = price_;
-    }
-
-    /// @inheritdoc ILogbook
-    function turnOnPublicSale() external onlyOwner {
-        publicSale = _PUBLIC_SALE_ON;
-    }
-
-    /// @inheritdoc ILogbook
-    function turnOffPublicSale() external onlyOwner {
-        publicSale = _PUBLIC_SALE_OFF;
-    }
-
     /**
      * @notice Get logs of a book
      * @param tokenId_ Logbook token id
@@ -266,14 +269,14 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         contentHashes = new bytes32[](book.logCount);
 
         // copy from current & parents
-        uint256 index = 0;
+        uint32 index = 0;
         bool hasParent = true;
 
         while (hasParent) {
             bytes32[] memory parentContentHashes = book.contentHashes;
-            uint256 parentLogCount = parentContentHashes.length;
+            uint32 parentLogCount = uint32(parentContentHashes.length);
 
-            for (uint256 i = 0; i < parentLogCount; i++) {
+            for (uint32 i = 0; i < parentLogCount; i++) {
                 contentHashes[index] = parentContentHashes[i];
                 index++;
             }
@@ -292,11 +295,11 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         _safeMint(to, tokenId);
     }
 
-    function _fork(uint256 tokenId_, uint256 end_) internal returns (Book memory book, uint256 newTokenId) {
+    function _fork(uint256 tokenId_, uint32 end_) internal returns (Book memory book, uint256 newTokenId) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
         book = books[tokenId_];
-        uint256 logCount = book.logCount;
+        uint32 logCount = book.logCount;
 
         if (logCount <= 0 || logCount < end_) revert InsufficientLogs(logCount);
         if (msg.value < book.forkPrice) revert InsufficientAmount(msg.value, book.forkPrice);
@@ -306,11 +309,11 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
         bytes32[] memory contentHashes = new bytes32[](0);
         Book memory newBook = Book({
-            from: tokenId_,
             endAt: end_,
             logCount: logCount,
+            createdAt: uint192(block.timestamp),
+            from: tokenId_,
             forkPrice: 0 ether,
-            createdAt: block.timestamp,
             contentHashes: contentHashes
         });
 
@@ -337,7 +340,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         address commission_,
         uint256 commissionBPS_
     ) internal {
-        uint256 logCount = book_.logCount;
+        uint32 logCount = book_.logCount;
         bytes32[] memory contentHashes = _logs(tokenId_);
 
         // fees calculation
@@ -380,7 +383,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
         // -> logs' authors
         if (logCount > 0) {
-            for (uint256 i = 0; i < logCount; i++) {
+            for (uint32 i = 0; i < logCount; i++) {
                 Log memory log = logs[contentHashes[i]];
                 _balances[log.author] += fees.perLogAuthor;
                 emit Pay({
@@ -431,7 +434,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     ) internal virtual override {
         super._afterTokenTransfer(from, to, tokenId); // Call parent hook
 
-        // warm up _balances[to] to reduce gas of SSTORE
+        // warm up _balances[to] to reduce gas of SSTORE on _splitRoyalty
         if (_balances[to] == 0) {
             _balances[to] = 1 wei;
         }
