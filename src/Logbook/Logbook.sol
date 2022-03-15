@@ -2,7 +2,6 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
@@ -12,7 +11,7 @@ import "./ILogbook.sol";
 import "./Royalty.sol";
 import "./NFTSVG.sol";
 
-contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
+contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
     uint256 private constant _ROYALTY_BPS_COMMISSION_MAX = 10000 - _ROYALTY_BPS_LOGBOOK_OWNER;
     uint256 private constant _PUBLIC_SALE_ON = 1;
@@ -87,29 +86,31 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function fork(uint256 tokenId_, uint32 end_) external payable returns (uint256 tokenId) {
-        (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
+    function fork(uint256 tokenId_, uint32 endAt_) external payable returns (uint256 tokenId) {
+        (Book memory book, uint256 newTokenId) = _fork(tokenId_, endAt_);
         tokenId = newTokenId;
 
         if (msg.value > 0) {
-            _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, address(0), 0);
+            address logbookOwner = ERC721.ownerOf(tokenId_);
+            _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Fork, address(0), 0);
         }
     }
 
     /// @inheritdoc ILogbook
     function forkWithCommission(
         uint256 tokenId_,
-        uint32 end_,
+        uint32 endAt_,
         address commission_,
         uint256 commissionBPS_
     ) external payable returns (uint256 tokenId) {
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
-        (Book memory book, uint256 newTokenId) = _fork(tokenId_, end_);
+        (Book memory book, uint256 newTokenId) = _fork(tokenId_, endAt_);
         tokenId = newTokenId;
 
         if (msg.value > 0) {
-            _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Fork, commission_, commissionBPS_);
+            address logbookOwner = ERC721.ownerOf(tokenId_);
+            _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Fork, commission_, commissionBPS_);
         }
     }
 
@@ -119,7 +120,8 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
         Book memory book = books[tokenId_];
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, address(0), 0);
+        address logbookOwner = ERC721.ownerOf(tokenId_);
+        _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, address(0), 0);
 
         emit Donate(tokenId_, msg.sender, msg.value);
     }
@@ -135,25 +137,26 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
         Book memory book = books[tokenId_];
-        _splitRoyalty(tokenId_, book, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
+        address logbookOwner = ERC721.ownerOf(tokenId_);
+        _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
 
         emit Donate(tokenId_, msg.sender, msg.value);
     }
 
     /// @inheritdoc ILogbook
-    function getLogbook(uint256 tokenId_)
+    function getLogbook(uint256 tokenId_) external view returns (Book memory book) {
+        book = books[tokenId_];
+    }
+
+    /// @inheritdoc ILogbook
+    function getLogs(uint256 tokenId_)
         external
         view
-        returns (
-            uint256 forkPrice,
-            bytes32[] memory contentHashes,
-            address[] memory authors
-        )
+        returns (bytes32[] memory contentHashes, address[] memory authors)
     {
         Book memory book = books[tokenId_];
         uint32 logCount = book.logCount;
 
-        forkPrice = book.forkPrice;
         contentHashes = _logs(tokenId_);
         authors = new address[](logCount);
         for (uint32 i = 0; i < logCount; i++) {
@@ -207,14 +210,11 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         uint32 logCount = book.logCount;
 
         string memory tokenName = string(abi.encodePacked("Logbook #", Strings.toString(tokenId_)));
-        string memory description = string(
-            abi.encodePacked(
-                "Logbook 2.0, the NFT that empowers collective collection beyond private ownership, issued by Matters Lab."
-            )
-        );
+        string memory description = string(abi.encodePacked("A book that records owners' journey in Matterverse."));
         string memory attributeLogs = string(
             abi.encodePacked('{"trait_type": "Logs","value":', Strings.toString(logCount), "}")
         );
+
         NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({
             logCount: book.logCount,
             createdAt: book.createdAt,
@@ -253,25 +253,33 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         Book memory book = books[tokenId_];
 
         contentHashes = new bytes32[](book.logCount);
-
-        // copy from current & parents
         uint32 index = 0;
-        bool hasParent = true;
+
+        // copy from current
+        bytes32[] memory currentContentHashes = book.contentHashes;
+        for (uint32 i = 0; i < currentContentHashes.length; i++) {
+            contentHashes[index] = currentContentHashes[i];
+            index++;
+        }
+
+        // copy from parents
+        Book memory parent = books[book.from];
+        uint32 takes = book.endAt;
+        bool hasParent = book.from == 0 ? false : true;
 
         while (hasParent) {
-            bytes32[] memory parentContentHashes = book.contentHashes;
-            uint32 parentLogCount = uint32(parentContentHashes.length);
-
-            for (uint32 i = 0; i < parentLogCount; i++) {
+            bytes32[] memory parentContentHashes = parent.contentHashes;
+            for (uint32 i = 0; i < takes; i++) {
                 contentHashes[index] = parentContentHashes[i];
                 index++;
             }
 
-            if (book.from == 0) {
+            if (parent.from == 0) {
                 hasParent = false;
+            } else {
+                takes = parent.endAt;
+                parent = books[parent.from];
             }
-
-            book = books[book.from];
         }
     }
 
@@ -283,22 +291,23 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         books[tokenId].createdAt = uint192(block.timestamp);
     }
 
-    function _fork(uint256 tokenId_, uint32 end_) internal returns (Book memory book, uint256 newTokenId) {
+    function _fork(uint256 tokenId_, uint32 endAt_) internal returns (Book memory newBook, uint256 newTokenId) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
-        book = books[tokenId_];
+        Book memory book = books[tokenId_];
+        uint32 maxEndAt = uint32(book.contentHashes.length);
         uint32 logCount = book.logCount;
 
-        if (logCount <= 0 || logCount < end_) revert InsufficientLogs(logCount);
+        if (logCount <= 0 || endAt_ <= 0 || maxEndAt < endAt_) revert InsufficientLogs(maxEndAt);
         if (msg.value < book.forkPrice) revert InsufficientAmount(msg.value, book.forkPrice);
 
         // mint new logbook
         newTokenId = _mint(msg.sender);
 
         bytes32[] memory contentHashes = new bytes32[](0);
-        Book memory newBook = Book({
-            endAt: end_,
-            logCount: logCount,
+        newBook = Book({
+            endAt: endAt_,
+            logCount: logCount - maxEndAt + endAt_,
             createdAt: uint192(block.timestamp),
             from: tokenId_,
             forkPrice: 0 ether,
@@ -307,7 +316,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
         books[newTokenId] = newBook;
 
-        emit Fork(tokenId_, newTokenId, msg.sender, end_, msg.value);
+        emit Fork(tokenId_, newTokenId, msg.sender, endAt_, msg.value);
     }
 
     /**
@@ -323,6 +332,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     function _splitRoyalty(
         uint256 tokenId_,
         Book memory book_,
+        address logbookOwner_,
         uint256 amount_,
         RoyaltyPurpose purpose_,
         address commission_,
@@ -347,12 +357,11 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
 
         // split royalty
         // -> logbook owner
-        address logbookOwner = ERC721.ownerOf(tokenId_);
-        _balances[logbookOwner] += fees.logbookOwner;
+        _balances[logbookOwner_] += fees.logbookOwner;
         emit Pay({
             tokenId: tokenId_,
             sender: msg.sender,
-            recipient: logbookOwner,
+            recipient: logbookOwner_,
             amount: fees.logbookOwner,
             purpose: purpose_
         });

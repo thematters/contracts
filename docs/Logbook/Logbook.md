@@ -40,13 +40,13 @@ Publish a new log in a logbook
 Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, uint32 end_) → uint256 tokenId` (external)
+### `fork(uint256 tokenId_, uint32 endAt_) → uint256 tokenId` (external)
 
 Pay to fork a logbook
 
 Emits {Fork} and {Pay} events
 
-### `forkWithCommission(uint256 tokenId_, uint32 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
+### `forkWithCommission(uint256 tokenId_, uint32 endAt_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
 
 Pay to fork a logbook with commission
 
@@ -104,7 +104,7 @@ Get logs of a book
 
 ### `_mint(address to) → uint256 tokenId` (internal)
 
-### `_fork(uint256 tokenId_, uint32 end_) → struct Logbook.Book book, uint256 newTokenId` (internal)
+### `_fork(uint256 tokenId_, uint32 endAt_) → struct Logbook.Book book, uint256 newTokenId` (internal)
 
 ### `_splitRoyalty(uint256 tokenId_, struct Logbook.Book book_, uint256 amount_, enum IRoyalty.RoyaltyPurpose purpose_, address commission_, uint256 commissionBPS_)` (internal)
 

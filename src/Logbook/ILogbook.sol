@@ -13,7 +13,7 @@ interface ILogbook is IRoyalty, IERC721 {
     error InvalidBPS(uint256 min, uint256 max);
     error InvalidTokenId(uint256 min, uint256 max);
     error InsufficientAmount(uint256 available, uint256 required);
-    error InsufficientLogs(uint32 logCount);
+    error InsufficientLogs(uint32 maxEndAt);
     error TokenNotExists();
     error PublicSaleNotStarted();
 
@@ -85,7 +85,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param tokenId Logbook token id
      * @param newTokenId New logbook token id
      * @param owner New logbook owner address
-     * @param end End position of a range of logs in the old logbook (zero-based)
+     * @param end End position of contentHashes of parent logbook (one-based)
      * @param amount Fork price
      */
     event Fork(uint256 indexed tokenId, uint256 indexed newTokenId, address indexed owner, uint32 end, uint256 amount);
@@ -144,23 +144,23 @@ interface ILogbook is IRoyalty, IERC721 {
      * @notice Pay to fork a logbook
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param end_ End position of a range of logs in the old logbook (zero-based)
+     * @param endAt_ End position of contentHashes of parent logbook  (one-based)
      * @return tokenId New logobok token id
      */
-    function fork(uint256 tokenId_, uint32 end_) external payable returns (uint256 tokenId);
+    function fork(uint256 tokenId_, uint32 endAt_) external payable returns (uint256 tokenId);
 
     /**
      * @notice Pay to fork a logbook with commission
      * @dev Emits {Fork} and {Pay} events
      * @param tokenId_ Logbook token id
-     * @param end_ End position of a range of logs in the old logbook (zero-based)
+     * @param endAt_ End position of contentHashes of parent logbook (one-based)
      * @param commission_ Address (frontend operator) to earn commission
      * @param commissionBPS_ Basis points of the commission
      * @return tokenId New logobok token id
      */
     function forkWithCommission(
         uint256 tokenId_,
-        uint32 end_,
+        uint32 endAt_,
         address commission_,
         uint256 commissionBPS_
     ) external payable returns (uint256 tokenId);
@@ -188,18 +188,17 @@ interface ILogbook is IRoyalty, IERC721 {
     /**
      * @notice Get a logbook
      * @param tokenId_ Logbook token id
-     * @return forkPrice Fork price
+     * @return book Logbook data
+     */
+    function getLogbook(uint256 tokenId_) external view returns (Book memory book);
+
+    /**
+     * @notice Get a logbook's logs
+     * @param tokenId_ Logbook token id
      * @return contentHashes All logs' content hashes
      * @return authors All logs' authors
      */
-    function getLogbook(uint256 tokenId_)
-        external
-        view
-        returns (
-            uint256 forkPrice,
-            bytes32[] memory contentHashes,
-            address[] memory authors
-        );
+    function getLogs(uint256 tokenId_) external view returns (bytes32[] memory contentHashes, address[] memory authors);
 
     /**
      * @notice Claim a logbook with a Traveloggers token

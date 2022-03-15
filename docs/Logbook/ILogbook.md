@@ -36,13 +36,13 @@ Publish a new log in a logbook
 Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, uint32 end_) → uint256 tokenId` (external)
+### `fork(uint256 tokenId_, uint32 endAt_) → uint256 tokenId` (external)
 
 Pay to fork a logbook
 
 Emits {Fork} and {Pay} events
 
-### `forkWithCommission(uint256 tokenId_, uint32 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
+### `forkWithCommission(uint256 tokenId_, uint32 endAt_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
 
 Pay to fork a logbook with commission
 

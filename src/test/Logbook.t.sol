@@ -3,9 +3,12 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/utils/Base64.sol";
 import {DSTest} from "ds-test/test.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import {console} from "./utils/Console.sol";
 import {Hevm} from "./utils/Hevm.sol";
 import {Logbook} from "../Logbook/Logbook.sol";
+import {ILogbook} from "../Logbook/ILogbook.sol";
 
 contract LogbookTest is DSTest {
     Logbook private logbook;
@@ -71,9 +74,9 @@ contract LogbookTest is DSTest {
         assertEq(logbook.ownerOf(CLAIM_TOKEN_START_ID), TRAVELOGGERS_OWNER);
         assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 1);
 
-        (, , uint192 createdAt, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
         assertEq(uint192(block.timestamp), blockTime);
-        assertEq(block.timestamp, createdAt);
+        assertEq(block.timestamp, book.createdAt);
     }
 
     function testClaim() public {
@@ -154,8 +157,8 @@ contract LogbookTest is DSTest {
         vm.expectEmit(true, true, false, false);
         emit SetForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
         logbook.setForkPrice(CLAIM_TOKEN_START_ID, forkPrice);
-        (uint256 returnForkPrice, , ) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        assertEq(returnForkPrice, forkPrice);
+        ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(book.forkPrice, forkPrice);
     }
 
     function _publish(string memory content) private returns (bytes32 contentHash) {
@@ -231,8 +234,8 @@ contract LogbookTest is DSTest {
         // publish
         bytes32 returnContentHash = _publish(content);
         assertEq(contentHash, returnContentHash);
-        (, uint32 logCount, , , ) = logbook.books(CLAIM_TOKEN_START_ID);
-        assertEq(logCount, 1);
+        ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(book.logCount, 1);
 
         // only logbook owner
         vm.prank(ATTACKER);
@@ -472,13 +475,13 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("TokenNotExists()"))));
-        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, 0);
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID + 1, 1);
 
         // no content
         vm.deal(PUBLIC_SALE_MINTER, 1 ether);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert(abi.encodeWithSignature("InsufficientLogs(uint32)", 0));
-        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, 0);
+        logbook.fork{value: 1 ether}(CLAIM_TOKEN_START_ID, 1);
 
         _publish(content);
 
@@ -488,15 +491,15 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectRevert(abi.encodeWithSignature("InsufficientAmount(uint256,uint256)", forkPrice / 2, forkPrice));
-        logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, 0);
+        logbook.fork{value: forkPrice / 2}(CLAIM_TOKEN_START_ID, 1);
 
         _setForkPrice(amount);
         // uint256 contractBalance = address(this).balance;
         vm.deal(PUBLIC_SALE_MINTER, amount);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectEmit(true, true, true, true);
-        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
-        logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 0);
+        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 1, amount);
+        logbook.fork{value: amount}(CLAIM_TOKEN_START_ID, 1);
         // assertEq(address(this).balance, contractBalance + amount);
     }
 
@@ -515,10 +518,10 @@ contract LogbookTest is DSTest {
             vm.expectRevert(abi.encodeWithSignature("InvalidBPS(uint256,uint256)", 0, 2000));
         } else {
             vm.expectEmit(true, true, true, true);
-            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 0, amount);
+            emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 1, amount);
         }
 
-        logbook.forkWithCommission{value: amount}(CLAIM_TOKEN_START_ID, 0, FRONTEND_OPERATOR, bps);
+        logbook.forkWithCommission{value: amount}(CLAIM_TOKEN_START_ID, 1, FRONTEND_OPERATOR, bps);
     }
 
     /**
@@ -526,7 +529,8 @@ contract LogbookTest is DSTest {
      */
     function testSplitRoyalty() public {
         uint256 forkPrice = 0.1 ether;
-        uint32 logCount = 64;
+        uint32 logCount = 12;
+        uint32 endAt = logCount / 2;
 
         _claimToTraveloggersOwner();
         _setForkPrice(forkPrice);
@@ -542,16 +546,16 @@ contract LogbookTest is DSTest {
             logbook.transferFrom(currentOwner, newOwner, CLAIM_TOKEN_START_ID);
 
             // append log
-            string memory content = string(abi.encodePacked(i));
+            string memory content = Strings.toString(i);
             vm.deal(newOwner, forkPrice);
             vm.prank(newOwner);
             logbook.publish(CLAIM_TOKEN_START_ID, content);
         }
 
         // check logs
-        (, bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        (, uint32 logCount1, , , ) = logbook.books(CLAIM_TOKEN_START_ID);
-        assertEq(logCount1, logCount);
+        (bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogs(CLAIM_TOKEN_START_ID);
+        ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        assertEq(book.logCount, logCount);
         assertEq(logCount, contentHashes.length);
         assertEq(logCount, authors.length);
 
@@ -559,31 +563,28 @@ contract LogbookTest is DSTest {
         vm.deal(PUBLIC_SALE_MINTER, forkPrice);
         vm.prank(PUBLIC_SALE_MINTER);
         vm.expectEmit(true, true, true, true);
-        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, logCount, forkPrice);
+        emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, endAt, forkPrice);
 
         // check log count
-        uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, logCount);
-        (, bytes32[] memory forkedContentHashes, ) = logbook.getLogbook(newTokenId);
-        assertEq(logCount, forkedContentHashes.length);
+        uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, endAt);
+        uint32 maxEndAt = uint32(book.contentHashes.length);
+        ILogbook.Book memory newBook = logbook.getLogbook(newTokenId);
+        assertEq(book.logCount - maxEndAt + endAt, newBook.logCount);
 
         // check content hashes
-        string memory firstContent = string(abi.encodePacked(uint32(0)));
-        bytes32 firstContentHash = keccak256(abi.encodePacked(firstContent));
-        assertEq(firstContentHash, forkedContentHashes[0]);
+        (bytes32[] memory newContentHashes, ) = logbook.getLogs(newTokenId);
+        assertEq(keccak256(abi.encodePacked(Strings.toString(uint32(0)))), newContentHashes[0]);
 
-        string memory lastContent = string(abi.encodePacked(uint32(logCount - 1)));
-        bytes32 lastContentHash = keccak256(abi.encodePacked(lastContent));
-        assertEq(lastContentHash, forkedContentHashes[logCount - 1]);
+        assertEq(keccak256(abi.encodePacked(Strings.toString(uint32(endAt - 1)))), newContentHashes[endAt - 1]);
 
         // check owner balance
         address lastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 1)))));
         uint256 feesLogbookOwner = (forkPrice * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
-        uint256 feesPerLogAuthor = (forkPrice - feesLogbookOwner) / logCount;
-        uint256 lastOwnerBalance = logbook.getBalance(lastOwner);
-        assertEq(lastOwnerBalance, feesLogbookOwner + feesPerLogAuthor);
+        uint256 feesPerLogAuthor = (forkPrice - feesLogbookOwner) / endAt;
+        assertEq(logbook.getBalance(lastOwner), feesLogbookOwner);
 
         // check author balance
-        address secondLastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 2)))));
+        address secondLastOwner = address(uint160(uint256(keccak256(abi.encodePacked(endAt - 2)))));
         uint256 secondLastOwnerBalance = logbook.getBalance(secondLastOwner);
         assertEq(secondLastOwnerBalance, feesPerLogAuthor);
     }
@@ -656,7 +657,7 @@ contract LogbookTest is DSTest {
         _claimToTraveloggersOwner();
 
         console.log(logbook.tokenURI(CLAIM_TOKEN_START_ID));
-        (, , uint192 createdAt, , ) = logbook.books(CLAIM_TOKEN_START_ID);
-        console.log(createdAt);
+        ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
+        console.log(book.createdAt);
     }
 }
