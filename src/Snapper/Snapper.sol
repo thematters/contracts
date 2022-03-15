@@ -48,7 +48,7 @@ contract Snapper is Ownable {
         string calldata deltaCid_
     ) external onlyOwner {
         require(toBlocknum_ > lastBlocknum, "toBlocknum must bigger than lastBlocknum");
-        require(toBlocknum_ + confirmations < block.number, "target contain unstable blocks");
+        require(toBlocknum_ + confirmations < block.number + 2, "target contain unstable blocks");
 
         emit Snapshot(toBlocknum_, snapshotCid_);
         emit Delta(toBlocknum_, deltaCid_);
