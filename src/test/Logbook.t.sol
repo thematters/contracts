@@ -529,7 +529,7 @@ contract LogbookTest is DSTest {
      */
     function testSplitRoyalty() public {
         uint256 forkPrice = 0.1 ether;
-        uint32 logCount = 12;
+        uint32 logCount = 64;
         uint32 endAt = logCount / 2;
 
         _claimToTraveloggersOwner();
