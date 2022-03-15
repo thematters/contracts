@@ -6,6 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SpaceToken is ERC20, Ownable {
     constructor() ERC20("SpaceToken", "STK") {
-        _mint(msg.sender, 100000000);
+        _mint(msg.sender, 100000000 * (10**uint256(decimals())));
     }
 }
