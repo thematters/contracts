@@ -6,9 +6,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "./ILogbook.sol";
 import "./Royalty.sol";
+import "./NFTSVG.sol";
 
 contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     uint256 private constant _ROYALTY_BPS_LOGBOOK_OWNER = 8000;
@@ -17,33 +19,6 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
     uint256 private constant _PUBLIC_SALE_OFF = 2;
     uint256 public publicSale = _PUBLIC_SALE_OFF;
     uint256 public publicSalePrice;
-
-    struct Log {
-        address author;
-        // logbook that this log first publish to
-        uint256 tokenId;
-    }
-
-    struct Book {
-        // end position of a range of logs
-        uint32 endAt;
-        // total number of logs
-        uint32 logCount;
-        // creation time of the book
-        uint192 createdAt;
-        // parent book
-        uint256 from;
-        // fork price
-        uint256 forkPrice;
-        // all logs hashes in the book
-        bytes32[] contentHashes;
-    }
-
-    struct SplitRoyaltyFees {
-        uint256 commission;
-        uint256 logbookOwner;
-        uint256 perLogAuthor;
-    }
 
     // contentHash to log
     mapping(bytes32 => Log) public logs;
@@ -176,11 +151,12 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         )
     {
         Book memory book = books[tokenId_];
+        uint32 logCount = book.logCount;
 
         forkPrice = book.forkPrice;
         contentHashes = _logs(tokenId_);
-        authors = new address[](contentHashes.length);
-        for (uint32 i = 0; i < contentHashes.length; i++) {
+        authors = new address[](logCount);
+        for (uint32 i = 0; i < logCount; i++) {
             bytes32 contentHash = contentHashes[i];
             authors[i] = logs[contentHash].author;
         }
@@ -191,6 +167,8 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         if (logrsId_ < 1 || logrsId_ > 1500) revert InvalidTokenId(1, 1500);
 
         _safeMint(to_, logrsId_);
+
+        books[logrsId_].createdAt = uint192(block.timestamp);
     }
 
     /// @inheritdoc ILogbook
@@ -226,15 +204,23 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
         Book memory book = books[tokenId_];
+        uint32 logCount = book.logCount;
 
-        string memory tokenName = string(abi.encodePacked("Logbook #", _toString(tokenId_)));
+        string memory tokenName = string(abi.encodePacked("Logbook #", Strings.toString(tokenId_)));
         string memory description = string(
             abi.encodePacked(
-                "Using Logbook to write down your thoughts, stories or anything you liked to share. Transfer your thoughts to who you want to invite them to co-create."
+                "Logbook 2.0, the NFT that empowers collective collection beyond private ownership, issued by Matters Lab."
             )
         );
-        string memory attributes = string(abi.encodePacked('{"trait_type": "Logs","value":', book.logCount, "}"));
-        string memory image = Base64.encode(bytes(_generateSVGofTokenById(tokenId_)));
+        string memory attributeLogs = string(
+            abi.encodePacked('{"trait_type": "Logs","value":', Strings.toString(logCount), "}")
+        );
+        NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({
+            logCount: book.logCount,
+            createdAt: book.createdAt,
+            tokenId: tokenId_
+        });
+        string memory image = Base64.encode(bytes(NFTSVG.generateSVG(svgParams)));
 
         string memory json = Base64.encode(
             bytes(
@@ -245,7 +231,7 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
                         '", "description": "',
                         description,
                         '", "attributes": [',
-                        attributes,
+                        attributeLogs,
                         '], "image": "data:image/svg+xml;base64,',
                         image,
                         '"}'
@@ -293,6 +279,8 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
         _tokenIdCounter.increment();
         tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
+
+        books[tokenId].createdAt = uint192(block.timestamp);
     }
 
     function _fork(uint256 tokenId_, uint32 end_) internal returns (Book memory book, uint256 newTokenId) {
@@ -395,36 +383,6 @@ contract Logbook is ERC721, ERC721Burnable, Ownable, ILogbook, Royalty {
                 });
             }
         }
-    }
-
-    /**
-     * @notice Generate SVG image by token id
-     * @param tokenId_ Logbook token id
-     */
-    function _generateSVGofTokenById(uint256 tokenId_) internal pure returns (string memory svg) {
-        return string(abi.encodePacked("<svg>", _toString(tokenId_), "</svg>"));
-    }
-
-    function _toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT license
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
     }
 
     function _afterTokenTransfer(

@@ -17,6 +17,33 @@ interface ILogbook is IRoyalty, IERC721 {
     error TokenNotExists();
     error PublicSaleNotStarted();
 
+    struct Log {
+        address author;
+        // logbook that this log first publish to
+        uint256 tokenId;
+    }
+
+    struct Book {
+        // end position of a range of logs
+        uint32 endAt;
+        // total number of logs
+        uint32 logCount;
+        // creation time of the book
+        uint192 createdAt;
+        // parent book
+        uint256 from;
+        // fork price
+        uint256 forkPrice;
+        // all logs hashes in the book
+        bytes32[] contentHashes;
+    }
+
+    struct SplitRoyaltyFees {
+        uint256 commission;
+        uint256 logbookOwner;
+        uint256 perLogAuthor;
+    }
+
     /**
      * @notice Emitted when logbook title was set
      * @param tokenId Logbook token id

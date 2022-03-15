@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/utils/Base64.sol";
 import {DSTest} from "ds-test/test.sol";
 import {console} from "./utils/Console.sol";
 import {Hevm} from "./utils/Hevm.sol";
@@ -63,10 +64,16 @@ contract LogbookTest is DSTest {
      * Claim
      */
     function _claimToTraveloggersOwner() private {
+        uint192 blockTime = 1647335928;
         vm.prank(DEPLOYER);
+        vm.warp(blockTime);
         logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_START_ID);
         assertEq(logbook.ownerOf(CLAIM_TOKEN_START_ID), TRAVELOGGERS_OWNER);
         assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 1);
+
+        (, , uint192 createdAt, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        assertEq(uint192(block.timestamp), blockTime);
+        assertEq(block.timestamp, createdAt);
     }
 
     function testClaim() public {
@@ -643,5 +650,13 @@ contract LogbookTest is DSTest {
         assertEq(secondLastOwner.balance, secondLastOwnerWalletBalance + secondLastOwnerBalance);
         assertEq(logbook.getBalance(secondLastOwner), 0);
         // assertEq(address(this).balance, secondLastOwnerWalletBalance - feesPerLogAuthor);
+    }
+
+    function testTokenURI() public {
+        _claimToTraveloggersOwner();
+
+        console.log(logbook.tokenURI(CLAIM_TOKEN_START_ID));
+        (, , uint192 createdAt, , ) = logbook.books(CLAIM_TOKEN_START_ID);
+        console.log(createdAt);
     }
 }
