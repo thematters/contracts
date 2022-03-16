@@ -28,8 +28,10 @@ interface ILogbook is IRoyalty, IERC721 {
         uint32 endAt;
         // total number of logs
         uint32 logCount;
+        // number of transfers
+        uint32 transferCount;
         // creation time of the book
-        uint192 createdAt;
+        uint160 createdAt;
         // parent book
         uint256 from;
         // fork price

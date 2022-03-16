@@ -173,7 +173,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         _safeMint(to_, logrsId_);
 
-        books[logrsId_].createdAt = uint192(block.timestamp);
+        books[logrsId_].createdAt = uint160(block.timestamp);
     }
 
     /// @inheritdoc ILogbook
@@ -218,7 +218,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         );
 
         NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({
-            logCount: book.logCount,
+            logCount: logCount,
+            transferCount: book.transferCount,
             createdAt: book.createdAt,
             tokenId: tokenId_
         });
@@ -290,7 +291,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
 
-        books[tokenId].createdAt = uint192(block.timestamp);
+        books[tokenId].createdAt = uint160(block.timestamp);
     }
 
     function _fork(uint256 tokenId_, uint32 endAt_) internal returns (Book memory newBook, uint256 newTokenId) {
@@ -310,7 +311,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         newBook = Book({
             endAt: endAt_,
             logCount: logCount - maxEndAt + endAt_,
-            createdAt: uint192(block.timestamp),
+            transferCount: 0,
+            createdAt: uint160(block.timestamp),
             from: tokenId_,
             forkPrice: 0 ether,
             contentHashes: contentHashes
@@ -397,15 +399,17 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
+        address from_,
+        address to_,
+        uint256 tokenId_
     ) internal virtual override {
-        super._afterTokenTransfer(from, to, tokenId); // Call parent hook
+        super._afterTokenTransfer(from_, to_, tokenId_); // Call parent hook
+
+        books[tokenId_].transferCount++;
 
         // warm up _balances[to] to reduce gas of SSTORE on _splitRoyalty
-        if (_balances[to] == 0) {
-            _balances[to] = 1 wei;
+        if (_balances[to_] == 0) {
+            _balances[to_] = 1 wei;
         }
     }
 }

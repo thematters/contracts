@@ -142,7 +142,7 @@ endAt
 uint32
 logCount
 
-uint192
+uint160
 createdAt
 
 uint256

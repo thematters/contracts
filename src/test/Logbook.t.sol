@@ -76,7 +76,7 @@ contract LogbookTest is DSTest {
      * Claim
      */
     function _claimToTraveloggersOwner() private {
-        uint192 blockTime = 1647335928;
+        uint160 blockTime = 1647335928;
         vm.prank(DEPLOYER);
         vm.warp(blockTime);
         logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_START_ID);
@@ -84,7 +84,7 @@ contract LogbookTest is DSTest {
         assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 1);
 
         ILogbook.Book memory book = logbook.getLogbook(CLAIM_TOKEN_START_ID);
-        assertEq(uint192(block.timestamp), blockTime);
+        assertEq(uint160(block.timestamp), blockTime);
         assertEq(block.timestamp, book.createdAt);
     }
 
@@ -732,9 +732,27 @@ contract LogbookTest is DSTest {
     }
 
     function testTokenURI() public {
+        uint32 logCount = 1024;
+
         _claimToTraveloggersOwner();
 
-        string memory tokenURI = logbook.tokenURI(CLAIM_TOKEN_START_ID);
-        console.log(tokenURI);
+        // append logs
+        for (uint32 i = 0; i < logCount; i++) {
+            // transfer to new owner
+            address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
+            address logbookOwner = address(uint160(i + 10000));
+            assertTrue(currentOwner != logbookOwner);
+
+            vm.prank(currentOwner);
+            logbook.transferFrom(currentOwner, logbookOwner, CLAIM_TOKEN_START_ID);
+
+            // append log
+            vm.startPrank(logbookOwner);
+            logbook.publish(CLAIM_TOKEN_START_ID, Strings.toString(i));
+            logbook.publish(CLAIM_TOKEN_START_ID, Strings.toString(i * logCount));
+            vm.stopPrank();
+        }
+
+        logbook.tokenURI(CLAIM_TOKEN_START_ID);
     }
 }

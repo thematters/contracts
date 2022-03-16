@@ -7,7 +7,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 library NFTSVG {
     struct SVGParams {
         uint32 logCount;
-        uint192 createdAt;
+        uint32 transferCount;
+        uint160 createdAt;
         uint256 tokenId;
     }
 
@@ -36,7 +37,7 @@ library NFTSVG {
                 "rgba(",
                 Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 10) % 256)),
                 ",",
-                Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 80) % 256)),
+                Strings.toString(uint8((params.createdAt * _max(params.transferCount, 1) * 80) % 256)),
                 ",",
                 Strings.toString(uint8(params.tokenId % 256)),
                 ",0.5)"
@@ -103,7 +104,7 @@ library NFTSVG {
                 "rgb(",
                 Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 20) % 256)),
                 ",",
-                Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 40) % 256)),
+                Strings.toString(uint8((params.createdAt * _max(params.transferCount, 1) * 40) % 256)),
                 ",",
                 Strings.toString(uint8(params.tokenId % 256)),
                 ")"
@@ -177,7 +178,14 @@ library NFTSVG {
 
         // metadata
         string memory numbers = string(
-            abi.encodePacked("Logs/", Strings.toString(params.logCount), "    ID/", Strings.toString(params.tokenId))
+            abi.encodePacked(
+                "Logs/",
+                Strings.toString(params.logCount),
+                "    Transfers/",
+                Strings.toString(params.transferCount - 1),
+                "    ID/",
+                Strings.toString(params.tokenId)
+            )
         );
 
         uint256 len = bytes(numbers).length;
