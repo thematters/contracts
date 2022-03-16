@@ -116,4 +116,4 @@ Split royalty payments
 
 No repetitive checks, please make sure all arguments are valid
 
-### `_afterTokenTransfer(address from, address to, uint256 tokenId)` (internal)
+### `_afterTokenTransfer(address from_, address to_, uint256 tokenId_)` (internal)

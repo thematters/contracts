@@ -37,7 +37,7 @@ library NFTSVG {
                 "rgba(",
                 Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 10) % 256)),
                 ",",
-                Strings.toString(uint8((params.createdAt * _max(params.transferCount, 1) * 80) % 256)),
+                Strings.toString(uint8((params.createdAt * params.transferCount * 80) % 256)),
                 ",",
                 Strings.toString(uint8(params.tokenId % 256)),
                 ",0.5)"
@@ -104,7 +104,7 @@ library NFTSVG {
                 "rgb(",
                 Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 20) % 256)),
                 ",",
-                Strings.toString(uint8((params.createdAt * _max(params.transferCount, 1) * 40) % 256)),
+                Strings.toString(uint8((params.createdAt * params.transferCount * 40) % 256)),
                 ",",
                 Strings.toString(uint8(params.tokenId % 256)),
                 ")"

@@ -142,6 +142,9 @@ endAt
 uint32
 logCount
 
+uint32
+transferCount
+
 uint160
 createdAt
 
