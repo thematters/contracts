@@ -513,6 +513,46 @@ contract LogbookTest is DSTest {
         // assertEq(address(this).balance, contractBalance + amount);
     }
 
+    function testForkRecursively(uint8 forkCount, uint96 forkPrice) public {
+        vm.assume(forkCount <= 64);
+
+        _claimToTraveloggersOwner();
+        _publish("1234", true);
+        _setForkPrice(forkPrice);
+
+        // forks
+        address logbookOwner = TRAVELOGGERS_OWNER;
+        uint256 nextTokenId = CLAIM_TOKEN_START_ID;
+        for (uint32 i = 0; i < forkCount; i++) {
+            address prevLogbookOwner = logbookOwner;
+            logbookOwner = address(uint160(i + 10000));
+
+            // fork
+            vm.deal(logbookOwner, forkPrice);
+            vm.prank(logbookOwner);
+            nextTokenId = logbook.fork{value: forkPrice}(nextTokenId, 1);
+
+            // append log
+            string memory content = Strings.toString(i);
+            vm.prank(logbookOwner);
+            logbook.publish(nextTokenId, content);
+
+            uint256 feesLogbookOwner = (forkPrice * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
+            uint256 feesPerLogAuthor = (forkPrice - feesLogbookOwner) / (i + 1);
+
+            // check owner balance
+            assertEq(logbook.getBalance(prevLogbookOwner), feesLogbookOwner + feesPerLogAuthor);
+        }
+        assertEq(logbookOwner, logbook.ownerOf(nextTokenId));
+
+        // check logs
+        (bytes32[] memory contentHashes, address[] memory authors) = logbook.getLogs(nextTokenId);
+        ILogbook.Book memory book = logbook.getLogbook(nextTokenId);
+        assertEq(book.logCount, forkCount + 1);
+        assertEq(forkCount + 1, contentHashes.length);
+        assertEq(forkCount + 1, authors.length);
+    }
+
     function testForkWithCommission(
         uint96 amount,
         string calldata content,
@@ -556,7 +596,7 @@ contract LogbookTest is DSTest {
         for (uint32 i = 0; i < logCount; i++) {
             // transfer to new owner
             address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
-            logbookOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
+            logbookOwner = address(uint160(i + 10000));
             assertTrue(currentOwner != logbookOwner);
 
             if (i == 0) {
@@ -637,7 +677,7 @@ contract LogbookTest is DSTest {
         for (uint32 i = 0; i < logCount; i++) {
             // transfer to new owner
             address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
-            address newOwner = address(uint160(uint256(keccak256(abi.encodePacked(i)))));
+            address newOwner = address(uint160(i + 10000));
             assertTrue(currentOwner != newOwner);
             vm.prank(currentOwner);
             logbook.transferFrom(currentOwner, newOwner, CLAIM_TOKEN_START_ID);
@@ -659,7 +699,7 @@ contract LogbookTest is DSTest {
         logbook.donate{value: donationValue}(CLAIM_TOKEN_START_ID);
 
         // logbook owner withdrawl
-        address owner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 1)))));
+        address owner = address(uint160(logCount - 1 + 10000));
         uint256 feesLogbookOwner = (donationValue * _ROYALTY_BPS_LOGBOOK_OWNER) / 10000;
         uint256 feesPerLogAuthor = (donationValue - feesLogbookOwner) / logCount;
         uint256 ownerBalance = logbook.getBalance(owner);
@@ -677,7 +717,7 @@ contract LogbookTest is DSTest {
         // assertEq(contractBalanceAfterOwnerWithdraw, contractBalance - ownerWalletBalance - ownerBalance);
 
         // previous author withdrawl
-        address secondLastOwner = address(uint160(uint256(keccak256(abi.encodePacked(logCount - 2)))));
+        address secondLastOwner = address(uint160(logCount - 2 + 10000));
         uint256 secondLastOwnerBalance = logbook.getBalance(secondLastOwner);
         assertEq(secondLastOwnerBalance, feesPerLogAuthor);
 
