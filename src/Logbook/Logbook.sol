@@ -23,7 +23,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     mapping(bytes32 => Log) public logs;
 
     // tokenId to logbook
-    mapping(uint256 => Book) public books;
+    mapping(uint256 => Book) private books;
 
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
@@ -121,6 +121,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         Book memory book = books[tokenId_];
         address logbookOwner = ERC721.ownerOf(tokenId_);
+
         _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, address(0), 0);
 
         emit Donate(tokenId_, msg.sender, msg.value);
@@ -138,6 +139,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         Book memory book = books[tokenId_];
         address logbookOwner = ERC721.ownerOf(tokenId_);
+
         _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
 
         emit Donate(tokenId_, msg.sender, msg.value);
