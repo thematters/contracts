@@ -734,6 +734,7 @@ contract LogbookTest is DSTest {
     function testTokenURI() public {
         _claimToTraveloggersOwner();
 
-        logbook.tokenURI(CLAIM_TOKEN_START_ID);
+        string memory tokenURI = logbook.tokenURI(CLAIM_TOKEN_START_ID);
+        console.log(tokenURI);
     }
 }

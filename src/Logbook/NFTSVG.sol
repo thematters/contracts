@@ -158,21 +158,26 @@ library NFTSVG {
     }
 
     function generateSVGTexts(SVGParams memory params) internal pure returns (string memory svg) {
-        string memory color = params.logCount < 10 ? "#F3F1EA" : "#41403F";
+        string memory colorBackground = params.logCount < 10 ? "#F3F1EA" : "#41403F";
+        string memory colorText = params.logCount < 10 ? "#333" : "#fff";
 
         string[3] memory texts;
 
         // title
         texts[0] = string(
             abi.encodePacked(
-                '<text fill="#333" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="48" font-weight="bold"><tspan x="99.3" y="105.4">LOGBOOK</tspan></text>',
-                '<path stroke="#333" stroke-width="8" d="M387 88h314M99 718h602"/>'
+                '<text fill="',
+                colorText,
+                '" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="48" font-weight="bold"><tspan x="99.3" y="105.4">LOGBOOK</tspan></text>',
+                '<path stroke="',
+                colorText,
+                '" stroke-width="8" d="M387 88h314M99 718h602"/>'
             )
         );
 
         // metadata
         string memory numbers = string(
-            abi.encodePacked("Log/", Strings.toString(params.logCount), "    ID/", Strings.toString(params.tokenId))
+            abi.encodePacked("Logs/", Strings.toString(params.logCount), "    ID/", Strings.toString(params.tokenId))
         );
 
         uint256 len = bytes(numbers).length;
@@ -183,15 +188,19 @@ library NFTSVG {
         texts[1] = string(
             abi.encodePacked(
                 '<text stroke="',
-                color,
-                '" stroke-width="20" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="18" font-weight="bold" fill="#333"><tspan x="98" y="724.2">',
+                colorBackground,
+                '" stroke-width="20" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="18" font-weight="bold" fill="',
+                colorText,
+                '"><tspan x="98" y="724.2">',
                 placeholders,
                 "</tspan></text>"
             )
         );
         texts[2] = string(
             abi.encodePacked(
-                '<text fill="#333" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="18" font-weight="bold" xml:space="preserve"><tspan x="98" y="724.2">',
+                '<text fill="',
+                colorText,
+                '" font-family="Roboto, Tahoma-Bold, Tahoma" font-size="18" font-weight="bold" xml:space="preserve"><tspan x="98" y="724.2">',
                 numbers,
                 "</tspan></text>"
             )
