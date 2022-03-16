@@ -258,13 +258,6 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         contentHashes = new bytes32[](book.logCount);
         uint32 index = 0;
 
-        // copy from current
-        bytes32[] memory currentContentHashes = book.contentHashes;
-        for (uint32 i = 0; i < currentContentHashes.length; i++) {
-            contentHashes[index] = currentContentHashes[i];
-            index++;
-        }
-
         // copy from parents
         Book memory parent = books[book.from];
         uint32 takes = book.endAt;
@@ -283,6 +276,13 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                 takes = parent.endAt;
                 parent = books[parent.from];
             }
+        }
+
+        // copy from current
+        bytes32[] memory currentContentHashes = book.contentHashes;
+        for (uint32 i = 0; i < currentContentHashes.length; i++) {
+            contentHashes[index] = currentContentHashes[i];
+            index++;
         }
     }
 
