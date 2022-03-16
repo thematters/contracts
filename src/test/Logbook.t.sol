@@ -753,6 +753,7 @@ contract LogbookTest is DSTest {
             vm.stopPrank();
         }
 
-        logbook.tokenURI(CLAIM_TOKEN_START_ID);
+        string memory tokenURI = logbook.tokenURI(CLAIM_TOKEN_START_ID);
+        console.log(tokenURI);
     }
 }
