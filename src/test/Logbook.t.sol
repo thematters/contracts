@@ -574,7 +574,12 @@ contract LogbookTest is DSTest {
             emit Fork(CLAIM_TOKEN_START_ID, CLAIM_TOKEN_END_ID + 1, PUBLIC_SALE_MINTER, 1, amount);
         }
 
-        logbook.forkWithCommission{value: amount}(CLAIM_TOKEN_START_ID, 1, FRONTEND_OPERATOR, bps);
+        uint256 newTokenId = logbook.forkWithCommission{value: amount}(CLAIM_TOKEN_START_ID, 1, FRONTEND_OPERATOR, bps);
+
+        if (!isInvalidBPS) {
+            // get tokenURI
+            logbook.tokenURI(newTokenId);
+        }
     }
 
     /**
@@ -637,6 +642,9 @@ contract LogbookTest is DSTest {
         }
 
         uint256 newTokenId = logbook.fork{value: forkPrice}(CLAIM_TOKEN_START_ID, endAt);
+
+        // get tokenURI
+        logbook.tokenURI(newTokenId);
 
         // check log count
         ILogbook.Book memory newBook = logbook.getLogbook(newTokenId);
