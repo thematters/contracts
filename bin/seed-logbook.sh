@@ -43,6 +43,6 @@ cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRI
 
 
 # fork
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "fork(uint256,uint256)" ${TOKEN_ID} 0 --value ${FORK_PRICE}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "fork(uint256,uint32)" ${TOKEN_ID} 1 --value ${FORK_PRICE}
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "forkWithCommission(uint256,uint256,address,uint256)" ${TOKEN_ID} 0 ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${FORK_PRICE}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "forkWithCommission(uint256,uint32,address,uint256)" ${TOKEN_ID} 1 ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${FORK_PRICE}

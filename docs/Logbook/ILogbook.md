@@ -36,13 +36,13 @@ Publish a new log in a logbook
 Access Control: logbook owner
 Emits a {Publish} event
 
-### `fork(uint256 tokenId_, uint32 end_) → uint256 tokenId` (external)
+### `fork(uint256 tokenId_, uint32 endAt_) → uint256 tokenId` (external)
 
 Pay to fork a logbook
 
 Emits {Fork} and {Pay} events
 
-### `forkWithCommission(uint256 tokenId_, uint32 end_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
+### `forkWithCommission(uint256 tokenId_, uint32 endAt_, address commission_, uint256 commissionBPS_) → uint256 tokenId` (external)
 
 Pay to fork a logbook with commission
 
@@ -60,9 +60,13 @@ Donate to a logbook with commission
 
 Emits {Donate} and {Pay} events
 
-### `getLogbook(uint256 tokenId_) → uint256 forkPrice, bytes32[] contentHashes, address[] authors` (external)
+### `getLogbook(uint256 tokenId_) → struct ILogbook.Book book` (external)
 
 Get a logbook
+
+### `getLogs(uint256 tokenId_) → bytes32[] contentHashes, address[] authors` (external)
+
+Get a logbook's logs
 
 ### `claim(address to_, uint256 logrsId_)` (external)
 
@@ -121,3 +125,45 @@ Emitted when a logbook was forked
 ### `Donate(uint256 tokenId, address donor, uint256 amount)`
 
 Emitted when a logbook received a donation
+
+### `Log`
+
+address
+author
+
+uint256
+tokenId
+
+### `Book`
+
+uint32
+endAt
+
+uint32
+logCount
+
+uint32
+transferCount
+
+uint160
+createdAt
+
+uint256
+from
+
+uint256
+forkPrice
+
+bytes32[]
+contentHashes
+
+### `SplitRoyaltyFees`
+
+uint256
+commission
+
+uint256
+logbookOwner
+
+uint256
+perLogAuthor
