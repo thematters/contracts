@@ -35,7 +35,7 @@ library NFTSVG {
         string memory color = string(
             abi.encodePacked(
                 "rgb(",
-                Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 10) % 256)),
+                Strings.toString(uint8((params.createdAt * params.tokenId * _max(params.logCount, 1) * 10) % 256)),
                 ",",
                 Strings.toString(uint8((params.createdAt * params.transferCount * 80) % 256)),
                 ",",
@@ -57,7 +57,7 @@ library NFTSVG {
         string memory color = string(
             abi.encodePacked(
                 "rgb(",
-                Strings.toString(uint8((params.createdAt * _max(params.logCount, 1) * 20) % 256)),
+                Strings.toString(uint8((params.createdAt * params.tokenId * _max(params.logCount, 1) * 20) % 256)),
                 ",",
                 Strings.toString(uint8((params.createdAt * params.transferCount * 40) % 256)),
                 ",",

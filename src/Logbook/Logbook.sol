@@ -80,8 +80,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
 
         // logbook
-        books[tokenId_].contentHashes.push(contentHash);
         books[tokenId_].logCount++;
+        books[tokenId_].contentHashes.push(contentHash);
         emit Publish(tokenId_, contentHash);
     }
 
@@ -311,7 +311,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         newBook = Book({
             endAt: endAt_,
             logCount: logCount - maxEndAt + endAt_,
-            transferCount: 0,
+            transferCount: 1,
             createdAt: uint160(block.timestamp),
             from: tokenId_,
             forkPrice: 0 ether,
