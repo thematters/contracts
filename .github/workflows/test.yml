@@ -34,4 +34,4 @@ jobs:
         run: make build
 
       - name: Run tests
-        run: make test
+        run: FOUNDRY_PROFILE=ci make test

@@ -10,9 +10,9 @@ snapshot :; forge snapshot --gas-report
 build: clean
 	forge build
 test:
-	forge test -vvv --gas-report
+	forge test --gas-report
 trace: clean
-	forge test -vvvvv
+	forge test -vvvvv --gas-report
 
 # Deployments
 ## Logbook
