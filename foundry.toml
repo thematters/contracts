@@ -1,5 +1,5 @@
 [default]
-ffi = false
+ffi = true
 fuzz_runs = 256
 optimizer = true
 optimizer_runs = 200
@@ -8,6 +8,7 @@ remappings = [
   "@openzeppelin/=lib/openzeppelin-contracts/"
 ]
 verbosity = 3
+gas_reports = ["*"]
 
 [ci]
 fuzz_runs = 4096

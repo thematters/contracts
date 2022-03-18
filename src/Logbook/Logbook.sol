@@ -212,9 +212,9 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint32 logCount = book.logCount;
 
         string memory tokenName = string(abi.encodePacked("Logbook #", Strings.toString(tokenId_)));
-        string memory description = string(abi.encodePacked("A book that records owners' journey in Matterverse."));
+        string memory description = "A book that records owners' journey in Matterverse.";
         string memory attributeLogs = string(
-            abi.encodePacked('{"trait_type": "Logs","value":', Strings.toString(logCount), "}")
+            abi.encodePacked('{"trait_type": "Logs","value":"', Strings.toString(logCount), '"}')
         );
 
         NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({

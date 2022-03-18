@@ -19,12 +19,6 @@ trace: clean
 deploy-logbook: clean
 	@forge create Logbook --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args Logbook --constructor-args LOGRS --legacy
 
-verify-logbook:
-	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args 0x0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000074c6f67626f6f6b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054c4f475253000000000000000000000000000000000000000000000000000000 --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${CONTRACT_ADDRESS} src/Logbook/Logbook.sol:Logbook ${ETHERSCAN_API_KEY}
-
-check-verification-status-logbook:
-	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
-
 seeds-logbook:; @./bin/seed-logbook.sh
 
 ## The Space
@@ -33,6 +27,13 @@ deploy-the-space-currency: clean
 
 deploy-the-space: clean
 	@forge create TheSpace --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args TheSpace --constructor-args SPACE --constructor-args ${THESPACE_CURRENCY_ADDRESS} --constructor-args 300 --constructor-args 1000000 --legacy
+
+# Verifications
+check-verification:
+	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
+
+verify-logbook:
+	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args ${LOGBOOK_ABI_ENCODE_CONSTRUCTOR_ARGS} --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${LOGBOOK_CONTRACT_ADDRESS} src/Logbook/Logbook.sol:Logbook ${ETHERSCAN_API_KEY}
 
 verify-the-space:
 	@echo "TODO"
