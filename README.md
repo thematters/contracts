@@ -116,17 +116,17 @@ make deploy-the-space NETWORK=polygon-mumbai
 
 ## Verify Contract
 
-[Automatically](https://onbjerg.github.io/foundry-book/forge/deploying.html#verifying)
+### [Automatically](https://onbjerg.github.io/foundry-book/forge/deploying.html#verifying)
 
 ```bash
-# Verify on Poygon Mainnet
-make verify-the-space NETWORK=polygon-mainnet
-
 # Verify on Polygon Mumbai
 make verify-the-space NETWORK=polygon-mumbai
+
+# Verify on Poygon Mainnet
+make verify-the-space NETWORK=polygon-mainnet
 ```
 
-Manually
+### Manually
 
 ```bash
 # 1. Concat all file into one
