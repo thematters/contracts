@@ -10,5 +10,5 @@ remappings = [
 verbosity = 3
 
 [ci]
-fuzz_runs = 100_000
+fuzz_runs = 4096
 verbosity = 5
