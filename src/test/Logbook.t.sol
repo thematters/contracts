@@ -738,30 +738,4 @@ contract LogbookTest is DSTest {
         assertEq(logbook.getBalance(secondLastOwner), 0);
         // assertEq(address(this).balance, secondLastOwnerWalletBalance - feesPerLogAuthor);
     }
-
-    function testTokenURI() public {
-        uint32 logCount = 1024;
-
-        _claimToTraveloggersOwner();
-
-        // append logs
-        for (uint32 i = 0; i < logCount; i++) {
-            // transfer to new owner
-            address currentOwner = logbook.ownerOf(CLAIM_TOKEN_START_ID);
-            address logbookOwner = address(uint160(i + 10000));
-            assertTrue(currentOwner != logbookOwner);
-
-            vm.prank(currentOwner);
-            logbook.transferFrom(currentOwner, logbookOwner, CLAIM_TOKEN_START_ID);
-
-            // append log
-            vm.startPrank(logbookOwner);
-            logbook.publish(CLAIM_TOKEN_START_ID, Strings.toString(i));
-            logbook.publish(CLAIM_TOKEN_START_ID, Strings.toString(i * logCount));
-            vm.stopPrank();
-        }
-
-        string memory tokenURI = logbook.tokenURI(CLAIM_TOKEN_START_ID);
-        console.log(tokenURI);
-    }
 }

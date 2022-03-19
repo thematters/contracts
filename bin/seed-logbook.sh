@@ -26,23 +26,23 @@ CALLDATA_DESCRIPTION=`cast calldata "setDescription(uint256,string)" ${TOKEN_ID}
 CALLDATA_FORK_PRICE=`cast calldata "setForkPrice(uint256,uint256)" ${TOKEN_ID} ${FORK_PRICE}`
 CALLDATA_PUBLISH=`cast calldata "publish(uint256,string)" ${TOKEN_ID} "${CONTENT}"`
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "multicall(bytes[])" "[${CALLDATA_CLAIM},${CALLDATA_TITLE},${CALLDATA_DESCRIPTION},${CALLDATA_FORK_PRICE},${CALLDATA_PUBLISH}]"
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "multicall(bytes[])" "[${CALLDATA_CLAIM},${CALLDATA_TITLE},${CALLDATA_DESCRIPTION},${CALLDATA_FORK_PRICE},${CALLDATA_PUBLISH}]"
 
 # public mint
 CALLDATA_TURN_ON_PUBLIC_MINT=`cast calldata "turnOnPublicSale()"`
 CALLDATA_PUBLIC_MINT_PRICE=`cast calldata "setPublicSalePrice(uint256)" ${PUBLIC_SALE_PRICE}`
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "multicall(bytes[])" "[${CALLDATA_TURN_ON_PUBLIC_MINT},${CALLDATA_PUBLIC_MINT_PRICE}]"
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "multicall(bytes[])" "[${CALLDATA_TURN_ON_PUBLIC_MINT},${CALLDATA_PUBLIC_MINT_PRICE}]"
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "publicSaleMint()" --value ${PUBLIC_SALE_PRICE}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "publicSaleMint()" --value ${PUBLIC_SALE_PRICE}
 
 # donate
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "donate(uint256)" ${TOKEN_ID} --value ${DONATE_AMOUNT}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "donate(uint256)" ${TOKEN_ID} --value ${DONATE_AMOUNT}
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "donateWithCommission(uint256,address,uint256)" ${TOKEN_ID} ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${DONATE_AMOUNT}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "donateWithCommission(uint256,address,uint256)" ${TOKEN_ID} ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${DONATE_AMOUNT}
 
 
 # fork
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "fork(uint256,uint32)" ${TOKEN_ID} 1 --value ${FORK_PRICE}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "fork(uint256,uint32)" ${TOKEN_ID} 1 --value ${FORK_PRICE}
 
-cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${CONTRACT_ADDRESS} "forkWithCommission(uint256,uint32,address,uint256)" ${TOKEN_ID} 1 ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${FORK_PRICE}
+cast send --gas ${MAX_GAS} --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} ${LOGBOOK_CONTRACT_ADDRESS} "forkWithCommission(uint256,uint32,address,uint256)" ${TOKEN_ID} 1 ${DEPLOYER_ADDRESS} ${COMMISSION_BPS} --value ${FORK_PRICE}
