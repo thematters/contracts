@@ -259,9 +259,9 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         uint32 index = 0;
 
         // copy from parents
-        Book memory parent = _books[book.from];
+        Book memory parent = _books[book.parent];
         uint32 takes = book.endAt;
-        bool hasParent = book.from == 0 ? false : true;
+        bool hasParent = book.parent == 0 ? false : true;
 
         while (hasParent) {
             bytes32[] memory parentContentHashes = parent.contentHashes;
@@ -270,11 +270,11 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                 index++;
             }
 
-            if (parent.from == 0) {
+            if (parent.parent == 0) {
                 hasParent = false;
             } else {
                 takes = parent.endAt;
-                parent = _books[parent.from];
+                parent = _books[parent.parent];
             }
         }
 
@@ -313,7 +313,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
             logCount: logCount - maxEndAt + endAt_,
             transferCount: 1,
             createdAt: uint160(block.timestamp),
-            from: tokenId_,
+            parent: tokenId_,
             forkPrice: 0 ether,
             contentHashes: contentHashes
         });
