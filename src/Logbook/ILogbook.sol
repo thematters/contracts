@@ -33,7 +33,7 @@ interface ILogbook is IRoyalty, IERC721 {
         // creation time of the book
         uint160 createdAt;
         // parent book
-        uint256 from;
+        uint256 parent;
         // fork price
         uint256 forkPrice;
         // all logs hashes in the book

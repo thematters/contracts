@@ -23,7 +23,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     mapping(bytes32 => Log) public logs;
 
     // tokenId to logbook
-    mapping(uint256 => Book) private books;
+    mapping(uint256 => Book) private _books;
 
     // starts at 1501 since 1-1500 are reseved for Traveloggers claiming
     using Counters for Counters.Counter;
@@ -51,7 +51,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function setForkPrice(uint256 tokenId_, uint256 amount_) external onlyLogbookOwner(tokenId_) {
-        books[tokenId_].forkPrice = amount_;
+        _books[tokenId_].forkPrice = amount_;
         emit SetForkPrice(tokenId_, amount_);
     }
 
@@ -80,8 +80,8 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
 
         // logbook
-        books[tokenId_].logCount++;
-        books[tokenId_].contentHashes.push(contentHash);
+        _books[tokenId_].logCount++;
+        _books[tokenId_].contentHashes.push(contentHash);
         emit Publish(tokenId_, contentHash);
     }
 
@@ -119,7 +119,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         if (msg.value <= 0) revert ZeroAmount();
         if (!_exists(tokenId_)) revert TokenNotExists();
 
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
         address logbookOwner = ERC721.ownerOf(tokenId_);
 
         _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, address(0), 0);
@@ -137,7 +137,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         if (!_exists(tokenId_)) revert TokenNotExists();
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
 
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
         address logbookOwner = ERC721.ownerOf(tokenId_);
 
         _splitRoyalty(tokenId_, book, logbookOwner, msg.value, RoyaltyPurpose.Donate, commission_, commissionBPS_);
@@ -147,7 +147,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
     /// @inheritdoc ILogbook
     function getLogbook(uint256 tokenId_) external view returns (Book memory book) {
-        book = books[tokenId_];
+        book = _books[tokenId_];
     }
 
     /// @inheritdoc ILogbook
@@ -156,7 +156,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         view
         returns (bytes32[] memory contentHashes, address[] memory authors)
     {
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
         uint32 logCount = book.logCount;
 
         contentHashes = _logs(tokenId_);
@@ -173,7 +173,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
 
         _safeMint(to_, logrsId_);
 
-        books[logrsId_].createdAt = uint160(block.timestamp);
+        _books[logrsId_].createdAt = uint160(block.timestamp);
     }
 
     /// @inheritdoc ILogbook
@@ -208,7 +208,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     function tokenURI(uint256 tokenId_) public view override returns (string memory) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
         uint32 logCount = book.logCount;
 
         string memory tokenName = string(abi.encodePacked("Logbook #", Strings.toString(tokenId_)));
@@ -253,15 +253,15 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
      * @param tokenId_ Logbook token id
      */
     function _logs(uint256 tokenId_) internal view returns (bytes32[] memory contentHashes) {
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
 
         contentHashes = new bytes32[](book.logCount);
         uint32 index = 0;
 
         // copy from parents
-        Book memory parent = books[book.from];
+        Book memory parent = _books[book.parent];
         uint32 takes = book.endAt;
-        bool hasParent = book.from == 0 ? false : true;
+        bool hasParent = book.parent == 0 ? false : true;
 
         while (hasParent) {
             bytes32[] memory parentContentHashes = parent.contentHashes;
@@ -270,11 +270,11 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
                 index++;
             }
 
-            if (parent.from == 0) {
+            if (parent.parent == 0) {
                 hasParent = false;
             } else {
                 takes = parent.endAt;
-                parent = books[parent.from];
+                parent = _books[parent.parent];
             }
         }
 
@@ -291,13 +291,13 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
 
-        books[tokenId].createdAt = uint160(block.timestamp);
+        _books[tokenId].createdAt = uint160(block.timestamp);
     }
 
     function _fork(uint256 tokenId_, uint32 endAt_) internal returns (Book memory newBook, uint256 newTokenId) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
-        Book memory book = books[tokenId_];
+        Book memory book = _books[tokenId_];
         uint32 maxEndAt = uint32(book.contentHashes.length);
         uint32 logCount = book.logCount;
 
@@ -313,12 +313,12 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
             logCount: logCount - maxEndAt + endAt_,
             transferCount: 1,
             createdAt: uint160(block.timestamp),
-            from: tokenId_,
+            parent: tokenId_,
             forkPrice: 0 ether,
             contentHashes: contentHashes
         });
 
-        books[newTokenId] = newBook;
+        _books[newTokenId] = newBook;
 
         emit Fork(tokenId_, newTokenId, msg.sender, endAt_, msg.value);
     }
@@ -405,7 +405,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     ) internal virtual override {
         super._afterTokenTransfer(from_, to_, tokenId_); // Call parent hook
 
-        books[tokenId_].transferCount++;
+        _books[tokenId_].transferCount++;
 
         // warm up _balances[to] to reduce gas of SSTORE on _splitRoyalty
         if (_balances[to_] == 0) {
