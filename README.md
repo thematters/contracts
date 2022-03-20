@@ -1,40 +1,136 @@
 # Contracts for Matters Protocol
 
-## The Space
+## Contracts
 
-_The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels. Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
+| Name    | Network        | Address                                                                                                                         |
+| ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook | Polygon Mumbai | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
 
-### Contract Interfaces
+In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
-- [`ISpaceDAO`](./docs/TheSpace/ISpaceDAO.md): main contract of the DAO, inherit from [`IHarbergerMarket`](./docs/TheSpace/IHarbergerMarket.md) and [`IDividendDAO`](./docs/TheSpace/IDividendDAO.md).
-- [`IDividendDAO`](./docs/TheSpace/IDividendDAO.md): interface of a DAO that pays dividend based on user share.
-- [`IHarbergerMarket`](./docs/TheSpace/IHarbergerMarket.md): interface of a market place that trades ERC721 tokens with Harberger tax, inherit from [`IPixelCanvas`](./docs/TheSpace/IPixelCanvas.md).
-  - It needs to set an ERC20 contract as currency. An ERC721 contract is set to be property, deployed by `IPixelCanvas`.
-  - Users need to set approval on both ERC20 contract (currency) and ERC721 (property).
-  - When cannot collect tax from currency, it removes owner and puts propety on tax sale. If property owner disapprove operation from property, re-map pixel ids to new token ids.
-- [`IPixelCanvas`](./docs/TheSpace/IPixelCanvas.md): interface of a canvas on which pixels can be tokenized as ERC721 tokens and colored.
-  - Keeps mappings between pixel ids and token ids.
-  - Deploys a ERC721 contract among construction.
-- [`ILand`](./docs/TheSpace/ILand.md): interface of a ERC721 contract representing land. It allows owners to set token URIs for their tokens, and emit events to record the URI as token content.
+### ABI
 
-![The Space Contracts Relationship](./docs/TheSpace/TheSpaceContracts.png "The Space Contracts Relationship")
+See [Docs](./docs/) for Contract ABI.
 
-### Use Cases
+### Usages
 
-#### Trading
+```ts
+import { ethers } from "ethers";
 
-- User needs to call `approve` on currency contract and `approveForAll` on `Land` contract before starting. If user disapprove while playing the game, the mapping between their tokens and pixels will be removed.
-- User buy land: call [`bid` function](./docs/TheSpace/IHarbergerMarket.md) on `SpaceDAO` contract.
-- User set land price: call [`price` function](./docs/TheSpace/IHarbergerMarket.md) on `SpaceDAO` contract.
+/**
+ * Instantiate contract
+ */
+const address = "0x203197e074b7a2f4ff6890815e4657a9c47c68b1";
+const abi = '[{"inputs":[{"internalType":"string","name":"name_","type":"string"}...]';
+const alchemyAPIKey = "...";
+const provider = new ethers.providers.AlchemyProvider("maticmum", alchemyAPIKey);
+const contract = new ethers.Contract(address, abi, provider);
 
-#### Setting Content
+/**
+ * Interact with contract
+ */
+// mint a logbook
+const publicSalePrice = await contract.publicSalePrice();
+const tokenId = await contract.publicSaleMint({ value: publicSalePrice });
 
-- Frontend renders pixel canvas: fetch [`Colored` events](./docs/TheSpace/IPixelCanvas.md) from `SpaceDAO` contract.
-- User color an array of pixels: call [`setColors` function](./docs/TheSpace/IPixelCanvas.md) on `SpaceDAO` contract.
-- Frontend fetch content / metadata URI: call [`tokenURI` function](./docs/TheSpace/ILand.md) on `Land` contract.
-- User set token content: call [`setTokenURI` function](./docs/TheSpace/ILand.md) on `Land` contract.
+// set title, description & fork price in one transaction
+const title = "Ut cupidatat";
+const description = "Ut cupidatat amet ea et veniam amet aute aute eu.";
+const forkPrice = ethers.utils.parseEther("0.1"); // 0.1 Ether to Wei
+const iface = new ethers.utils.Interface(abi);
+const calldata = [
+  // title
+  iface.encodeFunctionData("setTitle", [tokenId, title]),
+  // description
+  iface.encodeFunctionData("setDescription", [tokenId, title]),
+  // fork price
+  iface.encodeFunctionData("setForkPrice", [tokenId, forkPrice]),
+];
+await contract.multicall(calldata);
 
-#### Tokenize
+// donate
+const donationAmount = ethers.utils.parseEther("0.02");
+await contract.donate(tokenId, { value: donationAmount });
+```
 
-- User combine multiple token into one: call [`groupTokens` function](./docs/TheSpace/IPixelCanvas.md) on `SpaceDAO` contract.
-- User seperate pixels in one token into multiple tokens: call [`ungroupToken` function](./docs/TheSpace/IPixelCanvas.md) on `SpaceDAO` contract.
+Ethers.js also supports [Human-Readable ABI](https://docs.ethers.io/v5/api/utils/abi/formats/), it's recommended to use, for smaller client bundle size.
+
+To query the contract data, please checkout [thematters/subgraphs](https://github.com/thematters/subgraphs).
+
+## Development
+
+Install [Forge](https://github.com/gakonst/foundry)
+
+Environment
+
+```bash
+cp .env.local.example .env.local
+```
+
+Build
+
+```bash
+make build
+```
+
+Testing
+
+```bash
+make test
+```
+
+## Deployment
+
+### Deploy on Local Node:
+
+```bash
+# Run local node
+npm run ganache
+
+# Preprare environment
+cp .env.local.example .env.local
+cp .env.polygon-mainnet.example .env.polygon-mainnet
+cp .env.polygon-mumbai.example .env.polygon-mumbai
+
+# Deploy Logbook contract (defaults to local node)
+make deploy-logbook
+
+# Deploy currency first, then add the contract address to THESPACE_CURRENCY_ADDRESS env variable
+make deploy-the-space-currency
+# Deploy the space contract
+make deploy-the-space
+```
+
+### Deploy on testnet or mainnet:
+
+```bash
+# Deploy The Space contract
+make deploy-the-space
+
+# Deploy to Poygon Mainnet
+make deploy-the-space NETWORK=polygon-mainnet
+
+# Deploy to Polygon Mumbai
+make deploy-the-space NETWORK=polygon-mumbai
+```
+
+## Verify Contract
+
+### [Automatically](https://onbjerg.github.io/foundry-book/forge/deploying.html#verifying)
+
+```bash
+# Verify on Polygon Mumbai
+make verify-the-space NETWORK=polygon-mumbai
+
+# Verify on Poygon Mainnet
+make verify-the-space NETWORK=polygon-mainnet
+```
+
+### Manually
+
+```bash
+# 1. Concat all file into one
+forge flatten src/Logbook/Logbook.sol
+
+# 2. On (Polygonscan)[https://mumbai.polygonscan.com/verifycontract], Select "Solidity (Single File)" and upload
+```
