@@ -16,7 +16,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     error InvalidTokenId(uint256 min, uint256 max);
 
     /**
-     * @dev Tax record of token. Use block number to record tax collection time.
+     * @dev Record of token. Use block number to record tax collection time.
      *
      * TODO: more efficient storage scheme, see: https://medium.com/@novablitz/storing-structs-is-costing-you-gas-774da988895e
      */
@@ -25,6 +25,18 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
         uint256 lastTaxCollection;
         uint256 ubiWithdrawn;
     }
+
+    /**
+     * @dev Record of treasury state.
+     * TODO: more efficient storage scheme
+     */
+    struct TreasuryRecord {
+        uint256 accumulatedUBI;
+        uint256 accumulatedTreasury;
+        uint256 treasuryLeft;
+    }
+
+    TreasuryRecord public treasuryRecord;
 
     /**
      * @dev Tax configuration of market.
@@ -66,9 +78,6 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
 
     // total token supply
     uint256 public _totalSupply = 1000000;
-
-    // total accumulated UBI
-    uint256 public accumulatedUBI;
 
     /**
      * @dev ERC20 token used as currency
@@ -207,8 +216,14 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
             if (collecting > 0) {
                 currency.transferFrom(ownerOf(tokenId), address(this), collecting);
                 emit Tax(tokenId, collecting);
+
                 // update accumulated ubi
-                accumulatedUBI += collecting;
+                treasuryRecord.accumulatedUBI +=
+                    (collecting * (10000 - taxConfig[ConfigOptions.treasuryShare])) /
+                    10000;
+
+                // update accumulated treasury
+                treasuryRecord.accumulatedTreasury += (collecting * taxConfig[ConfigOptions.treasuryShare]) / 10000;
             }
 
             // default if tax is not fully collected
@@ -229,10 +244,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     }
 
     function ubiAvailable(uint256 tokenId) public view returns (uint256) {
-        return
-            ((accumulatedUBI * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000) /
-            totalSupply() -
-            tokenRecord[tokenId].ubiWithdrawn;
+        return treasuryRecord.accumulatedUBI / _totalSupply - tokenRecord[tokenId].ubiWithdrawn;
     }
 
     function withdrawUbi(uint256 tokenId) external {
