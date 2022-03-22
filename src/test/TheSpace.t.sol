@@ -8,7 +8,6 @@ import {Hevm} from "./utils/Hevm.sol";
 
 import {TheSpace} from "../TheSpace/TheSpace.sol";
 import {SpaceToken} from "../TheSpace/SpaceToken.sol";
-import {Property} from "../TheSpace/Property.sol";
 
 contract TheSpaceTest is DSTest {
     TheSpace private thespace;
@@ -38,7 +37,6 @@ contract TheSpaceTest is DSTest {
         // deploy the space
         vm.prank(DEPLOYER);
         thespace = new TheSpace(address(currency));
-        pixels = thespace.property();
 
         // transfer to tester
         vm.prank(DEPLOYER);

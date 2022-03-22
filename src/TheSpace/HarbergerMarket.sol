@@ -2,18 +2,18 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-import "./Property.sol";
 
 /**
  * @dev Market place with Harberger tax, inherits from `IPixelCanvas`. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
  */
-abstract contract HarbergerMarket is Multicall, Ownable {
+abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     error PriceTooLow();
     error Unauthorized();
     error TokenNotExists();
+    error InvalidTokenId(uint256 min, uint256 max);
 
     /**
      * @dev Tax record of token. Use block number to record tax collection time.
@@ -68,12 +68,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     uint256 public accumulatedUBI;
 
     // total token supply
-    uint256 public totalSupply = 1000000;
-
-    /**
-     * @dev Tradable propertys created by this contract.
-     */
-    Property public property;
+    uint256 public _totalSupply = 1000000;
 
     /**
      * @dev ERC20 token used as currency
@@ -87,9 +82,9 @@ abstract contract HarbergerMarket is Multicall, Ownable {
         string memory propertyName,
         string memory propertySymbol,
         address currencyAddress
-    ) {
+    ) ERC721(propertyName, propertySymbol) {
         // initialize Property contract with current contract as market
-        property = new Property(propertyName, propertySymbol, address(this), totalSupply);
+        // property = new Property(propertyName, propertySymbol, address(this), totalSupply);
 
         // initialize currency contract
         currency = ERC20(currencyAddress);
@@ -118,7 +113,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * Emits a {Price} event.
      */
     function setPrice(uint256 tokenId, uint256 price) external {
-        if (!property.isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
+        if (_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
         if (price == this.getPrice(tokenId)) return;
 
         bool success = this.collectTax(tokenId);
@@ -133,10 +128,10 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     }
 
     /**
-     * @dev Returns the current owner of an Harberger property with token id.
+     * @dev Returns the current owner of an Harberger property with token id. If token does not exisit, return address(0)
      */
     function getOwner(uint256 tokenId) external view returns (address owner) {
-        return property.ownerOf(tokenId);
+        return _exists(tokenId) ? ownerOf(tokenId) : address(0);
     }
 
     /**
@@ -156,8 +151,9 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * TODO: check security implications
      */
     function bid(uint256 tokenId, uint256 price) external {
-        if (property.exists(tokenId)) {
-            if (property.ownerOf(tokenId) == msg.sender) return;
+        if (_exists(tokenId)) {
+            address owner = ownerOf(tokenId);
+            if (owner == msg.sender) return;
             uint256 askPrice = this.getPrice(tokenId);
             if (price < askPrice) revert PriceTooLow();
 
@@ -166,8 +162,8 @@ abstract contract HarbergerMarket is Multicall, Ownable {
 
             if (success) {
                 // successfully clear tax
-                currency.transferFrom(msg.sender, property.ownerOf(tokenId), askPrice);
-                property.safeTransferByMarket(property.ownerOf(tokenId), msg.sender, tokenId);
+                currency.transferFrom(msg.sender, ownerOf(tokenId), askPrice);
+                _safeTransfer(owner, msg.sender, tokenId, "");
 
                 return;
             }
@@ -175,7 +171,8 @@ abstract contract HarbergerMarket is Multicall, Ownable {
 
         // if token does not exists yet, or token is defaulted
         // mint token to current sender for free
-        property.mint(msg.sender, tokenId);
+        if (tokenId > _totalSupply || tokenId < 1) revert InvalidTokenId(1, _totalSupply);
+        _safeMint(msg.sender, tokenId);
         // update tax record
         taxRecord[tokenId].lastTaxCollection = block.number;
     }
@@ -186,12 +183,12 @@ abstract contract HarbergerMarket is Multicall, Ownable {
      * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
      */
     function collectTax(uint256 tokenId) external returns (bool) {
-        if (!property.exists(tokenId)) revert TokenNotExists();
+        if (!_exists(tokenId)) revert TokenNotExists();
 
         uint256 tax = this.getTax(tokenId);
         if (tax > 0) {
             // calculate collectable amount
-            address taxpayer = property.ownerOf(tokenId);
+            address taxpayer = ownerOf(tokenId);
             uint256 allowance = currency.allowance(taxpayer, address(this));
             uint256 balance = currency.balanceOf(taxpayer);
             uint256 collectable = _min(allowance, balance);
@@ -201,7 +198,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
             uint256 collecting = _min(collectable, tax);
 
             if (collecting > 0) {
-                currency.transferFrom(property.ownerOf(tokenId), address(this), collecting);
+                currency.transferFrom(ownerOf(tokenId), address(this), collecting);
                 emit Tax(tokenId, collecting);
                 // update accumulated ubi
                 accumulatedUBI += collecting;
@@ -227,7 +224,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     function ubiAvailable(uint256 tokenId) external view returns (uint256) {
         return
             ((accumulatedUBI * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000) /
-            totalSupply -
+            totalSupply() -
             taxRecord[tokenId].ubiWithdrawn;
     }
 
@@ -235,7 +232,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
         uint256 ubi = this.ubiAvailable(tokenId);
 
         if (ubi > 0) {
-            currency.transferFrom(address(this), property.ownerOf(tokenId), ubi);
+            currency.transferFrom(address(this), ownerOf(tokenId), ubi);
             taxRecord[tokenId].ubiWithdrawn += ubi;
 
             emit UBI(tokenId, ubi);
@@ -243,7 +240,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
     }
 
     function _default(uint256 tokenId) internal {
-        property.burn(tokenId);
+        _burn(tokenId);
         _setPrice(tokenId, 0);
     }
 
@@ -251,7 +248,7 @@ abstract contract HarbergerMarket is Multicall, Ownable {
         // update price in tax record
         taxRecord[tokenId].price = price;
 
-        address owner = property.exists(tokenId) ? property.ownerOf(tokenId) : address(0);
+        address owner = _exists(tokenId) ? ownerOf(tokenId) : address(0);
 
         // emit events
         emit Price(tokenId, price, owner);
