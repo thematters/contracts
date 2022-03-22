@@ -20,7 +20,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
      *
      * TODO: more efficient storage scheme, see: https://medium.com/@novablitz/storing-structs-is-costing-you-gas-774da988895e
      */
-    struct TaxRecord {
+    struct TokenRecord {
         uint256 price;
         uint256 lastTaxCollection;
         uint256 ubiWithdrawn;
@@ -39,7 +39,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     /**
      * @dev Emitted when a token changes price.
      */
-    event Price(uint256 indexed tokenId, uint256 price, address owner);
+    event Price(uint256 indexed tokenId, uint256 price, address indexed owner);
 
     /**
      * @dev Emitted when tax configuration updates.
@@ -59,16 +59,16 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     /**
      * @dev Tax record of each token.
      */
-    mapping(uint256 => TaxRecord) public taxRecord;
+    mapping(uint256 => TokenRecord) public tokenRecord;
 
     // Setting for tax config
     mapping(ConfigOptions => uint256) public taxConfig;
 
-    // total accumulated UBI
-    uint256 public accumulatedUBI;
-
     // total token supply
     uint256 public _totalSupply = 1000000;
+
+    // total accumulated UBI
+    uint256 public accumulatedUBI;
 
     /**
      * @dev ERC20 token used as currency
@@ -95,6 +95,13 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
     }
 
     /**
+     * @dev See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
+     */
+    function totalSupply() public view virtual override returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
      * @dev Set the current price of an Harberger property with token id.
      *
      * Emits a {Price} event.
@@ -113,7 +120,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
      * Emits a {Price} event.
      */
     function setPrice(uint256 tokenId, uint256 price) external {
-        if (_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
+        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
         if (price == this.getPrice(tokenId)) return;
 
         bool success = this.collectTax(tokenId);
@@ -124,7 +131,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
      * @dev Returns the current price of an Harberger property with token id.
      */
     function getPrice(uint256 tokenId) external view returns (uint256 price) {
-        return taxRecord[tokenId].price;
+        return tokenRecord[tokenId].price;
     }
 
     /**
@@ -143,7 +150,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
         return
             (this.getPrice(tokenId) *
                 taxConfig[ConfigOptions.taxRate] *
-                (block.number - taxRecord[tokenId].lastTaxCollection)) / (1000 * 10000);
+                (block.number - tokenRecord[tokenId].lastTaxCollection)) / (1000 * 10000);
     }
 
     /**
@@ -174,7 +181,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
         if (tokenId > _totalSupply || tokenId < 1) revert InvalidTokenId(1, _totalSupply);
         _safeMint(msg.sender, tokenId);
         // update tax record
-        taxRecord[tokenId].lastTaxCollection = block.number;
+        tokenRecord[tokenId].lastTaxCollection = block.number;
     }
 
     /**
@@ -211,21 +218,21 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
                 return false;
             } else {
                 // collect tax
-                taxRecord[tokenId].lastTaxCollection = block.number;
+                tokenRecord[tokenId].lastTaxCollection = block.number;
                 return true;
             }
         } else {
             // no tax for price 0
-            taxRecord[tokenId].lastTaxCollection = block.number;
+            tokenRecord[tokenId].lastTaxCollection = block.number;
             return true;
         }
     }
 
-    function ubiAvailable(uint256 tokenId) external view returns (uint256) {
+    function ubiAvailable(uint256 tokenId) public view returns (uint256) {
         return
             ((accumulatedUBI * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000) /
             totalSupply() -
-            taxRecord[tokenId].ubiWithdrawn;
+            tokenRecord[tokenId].ubiWithdrawn;
     }
 
     function withdrawUbi(uint256 tokenId) external {
@@ -233,7 +240,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
 
         if (ubi > 0) {
             currency.transferFrom(address(this), ownerOf(tokenId), ubi);
-            taxRecord[tokenId].ubiWithdrawn += ubi;
+            tokenRecord[tokenId].ubiWithdrawn += ubi;
 
             emit UBI(tokenId, ubi);
         }
@@ -246,7 +253,7 @@ abstract contract HarbergerMarket is ERC721Enumerable, Multicall, Ownable {
 
     function _setPrice(uint256 tokenId, uint256 price) internal {
         // update price in tax record
-        taxRecord[tokenId].price = price;
+        tokenRecord[tokenId].price = price;
 
         address owner = _exists(tokenId) ? ownerOf(tokenId) : address(0);
 

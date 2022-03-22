@@ -28,9 +28,15 @@ import "./HarbergerMarket.sol";
 
 contract TheSpace is HarbergerMarket {
     /**
+     * @dev Color data of each token.
+     * TODO: Combine with TokenRecord to optimize storage?
+     */
+    mapping(uint256 => uint256) public pixelColor;
+
+    /**
      * @dev Emitted when the color of a pixel is updated.
      */
-    event Color(uint256 indexed pixelId, uint256 color, address owner);
+    event Color(uint256 indexed pixelId, uint256 color, address indexed owner);
 
     constructor(address currencyAddress) HarbergerMarket("Planck", "PLK", currencyAddress) {}
 
@@ -49,6 +55,22 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
+     * @dev Get pixel info.
+     */
+    function getPixel(uint256 tokenId)
+        external
+        view
+        returns (
+            uint256 price,
+            uint256 color,
+            uint256 ubi,
+            address owner
+        )
+    {
+        return (tokenRecord[tokenId].price, pixelColor[tokenId], ubiAvailable(tokenId), ownerOf(tokenId));
+    }
+
+    /**
      * @dev Set color for a pixels.
      *
      * Emits {Color} event.
@@ -56,6 +78,7 @@ contract TheSpace is HarbergerMarket {
     function setColor(uint256 tokenId, uint256 color) external {
         if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
 
+        pixelColor[tokenId] = color;
         emit Color(tokenId, color, ownerOf(tokenId));
     }
 }
