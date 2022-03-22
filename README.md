@@ -1,4 +1,4 @@
-# Contracts for Matters Protocol
+# Solidity Smart Contracts of Matters Lab
 
 ## Contracts
 
