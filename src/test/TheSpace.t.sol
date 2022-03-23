@@ -15,6 +15,8 @@ contract TheSpaceTest is DSTest {
 
     Hevm constant vm = Hevm(HEVM_ADDRESS);
 
+    address constant ADMIN = address(174);
+    address constant TREASURY = address(175);
     address constant DEPLOYER = address(176);
     address constant PIXEL_OWNER = address(177);
     address constant ATTACKER = address(178);
@@ -35,7 +37,7 @@ contract TheSpaceTest is DSTest {
 
         // deploy the space
         vm.prank(DEPLOYER);
-        thespace = new TheSpace(address(currency));
+        thespace = new TheSpace(address(currency), ADMIN, TREASURY);
 
         // transfer to tester
         vm.prank(DEPLOYER);

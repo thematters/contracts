@@ -38,7 +38,11 @@ contract TheSpace is HarbergerMarket {
      */
     event Color(uint256 indexed pixelId, uint256 color, address indexed owner);
 
-    constructor(address currencyAddress) HarbergerMarket("Planck", "PLK", currencyAddress) {}
+    constructor(
+        address currencyAddress_,
+        address admin_,
+        address treasury_
+    ) HarbergerMarket("Planck", "PLK", currencyAddress_, admin_, treasury_) {}
 
     /**
      * @dev Bid pixel, then set price and color.
