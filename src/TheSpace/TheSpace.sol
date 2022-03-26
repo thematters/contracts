@@ -75,7 +75,7 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @dev Set color for a pixels.
+     * @dev Set color for a pixel.
      *
      * Emits {Color} event.
      */
@@ -84,5 +84,14 @@ contract TheSpace is HarbergerMarket {
 
         pixelColor[tokenId] = color;
         emit Color(tokenId, color, ownerOf(tokenId));
+    }
+
+    /**
+     * @dev Get color for a pixel.
+     *
+     * Emits {Color} event.
+     */
+    function getColor(uint256 tokenId) public view returns (uint256) {
+        return pixelColor[tokenId];
     }
 }

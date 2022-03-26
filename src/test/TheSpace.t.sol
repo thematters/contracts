@@ -29,42 +29,35 @@ contract TheSpaceTest is DSTest {
     event Tax(uint256 indexed tokenId, uint256 amount);
 
     function setUp() public {
-        vm.prank(DEPLOYER);
+        vm.startPrank(DEPLOYER);
 
         // deploy space token
         currency = new SpaceToken();
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
-        vm.prank(DEPLOYER);
         thespace = new TheSpace(address(currency), ADMIN, TREASURY);
 
         // transfer to tester
-        vm.prank(DEPLOYER);
-        currency.transfer(PIXEL_OWNER, 1000000);
+        uint256 amount = 10000 * (10**uint256(currency.decimals()));
+        currency.transfer(PIXEL_OWNER, amount);
 
         // tester approve the space
-        vm.prank(PIXEL_OWNER);
+        vm.startPrank(PIXEL_OWNER);
         currency.approve(address(thespace), type(uint256).max);
     }
 
     function _bid() private {
-        vm.prank(PIXEL_OWNER);
-
         // bid and mint token with 0 price
         thespace.bid(PIXEL_ID, 0);
     }
 
     function _price() private {
         _bid();
-
-        vm.prank(PIXEL_OWNER);
         thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
     }
 
     function _collectTax() private {
-        vm.prank(PIXEL_OWNER);
-
         thespace.collectTax(PIXEL_ID);
     }
 
@@ -73,51 +66,86 @@ contract TheSpaceTest is DSTest {
         assertEq(thespace.balanceOf(PIXEL_OWNER), 1);
     }
 
-    // function testSetPrice() public {
-    //     _bid();
+    function testGetNonExistingPixel() public {
+        // unminted pixel
+        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID + 1);
 
-    //     vm.prank(PIXEL_OWNER);
-    //     vm.expectEmit(true, true, true, false);
-    //     emit Price(PIXEL_ID, PIXEL_PRICE, PIXEL_OWNER);
-    //     thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
+        assertEq(price, 0);
+        assertEq(color, 0);
+        assertEq(ubi, 0);
+        assertEq(owner, address(0));
+    }
 
-    //     assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
-    // }
+    function testGetExistingPixel() public {
+        // existing pixel
+        _bid();
+        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID);
 
-    // function testSetColor() public {
-    //     _bid();
+        assertEq(price, 0);
+        assertEq(color, 0);
+        assertEq(ubi, 0);
+        assertEq(owner, PIXEL_OWNER);
+    }
 
-    //     uint256 color = 5;
+    function evaluateOwnership() public {
+        // should be defaulted if no tax can be collected
+        _price();
+        vm.roll(block.number + TAX_WINDOW);
 
-    //     vm.prank(PIXEL_OWNER);
-    //     vm.expectEmit(true, true, true, false);
-    //     emit Color(PIXEL_ID, color, PIXEL_OWNER);
-    //     thespace.setColor(PIXEL_ID, color);
-    // }
+        currency.approve(address(thespace), 0);
 
-    // function testDefault() public {
-    //     _price();
+        (, bool shouldDefault) = thespace.evaluateOwnership(PIXEL_ID);
 
-    //     vm.roll(block.number + TAX_WINDOW);
+        assertTrue(shouldDefault);
+    }
 
-    //     currency.approve(address(thespace), 0);
-    //     thespace.collectTax(PIXEL_ID);
+    function testDefault() public {
+        _price();
 
-    //     assertEq(thespace.getPrice(PIXEL_ID), 0);
-    //     assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
-    // }
+        vm.roll(block.number + TAX_WINDOW);
 
-    // function testTaxCollection() public {
-    //     _price();
-    //     vm.roll(block.number + TAX_WINDOW);
+        currency.approve(address(thespace), 0);
+        thespace.collectTax(PIXEL_ID);
 
-    //     vm.prank(PIXEL_OWNER);
-    //     vm.expectEmit(true, false, false, false);
-    //     emit Tax(PIXEL_ID, 10);
-    //     thespace.collectTax(PIXEL_ID);
+        assertEq(thespace.getPrice(PIXEL_ID), 0);
+        assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
+    }
 
-    //     assertGt(thespace.accumulatedUBI(), 0);
-    // }
+    function testSetPrice() public {
+        _price();
+        assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
+    }
+
+    function testSetColorByOnwer() public {
+        _bid();
+
+        uint256 color = 5;
+        thespace.setColor(PIXEL_ID, color);
+
+        assertEq(thespace.getColor(PIXEL_ID), color);
+    }
+
+    function testCannotSetColorByAttacker() public {
+        _bid();
+
+        uint256 color = 6;
+        vm.prank(ATTACKER);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
+        thespace.setColor(PIXEL_ID, color);
+    }
+
+    function testTaxCollection() public {
+        _price();
+        vm.roll(block.number + TAX_WINDOW);
+
+        vm.expectEmit(true, false, false, false);
+        emit Tax(PIXEL_ID, 10);
+
+        thespace.collectTax(PIXEL_ID);
+
+        (uint256 accumulatedUBI, , ) = thespace.treasuryRecord();
+        assertGt(accumulatedUBI, 0);
+    }
 
     // function testUBIWithdraw() public {
     //     _price();

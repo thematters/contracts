@@ -48,60 +48,60 @@ contract LogbookNFTSVGTest is DSTest {
         vm.label(DEPLOYER, "DEPLOYER");
     }
 
-    function testTokenURI(
-        uint8 transfers,
-        uint8 logsPerTransfer,
-        uint16 tokenId
-    ) public {
-        vm.assume(transfers < 64 && transfers > 0);
-        vm.assume(logsPerTransfer < 3 && logsPerTransfer > 0);
-        vm.assume(tokenId <= CLAIM_TOKEN_END_ID && tokenId >= CLAIM_TOKEN_START_ID);
+    // function testTokenURI(
+    //     uint8 transfers,
+    //     uint8 logsPerTransfer,
+    //     uint16 tokenId
+    // ) public {
+    //     vm.assume(transfers < 64 && transfers > 0);
+    //     vm.assume(logsPerTransfer < 3 && logsPerTransfer > 0);
+    //     vm.assume(tokenId <= CLAIM_TOKEN_END_ID && tokenId >= CLAIM_TOKEN_START_ID);
 
-        // claim logbook
-        vm.prank(DEPLOYER);
-        logbook.claim(DEPLOYER, tokenId);
+    //     // claim logbook
+    //     vm.prank(DEPLOYER);
+    //     logbook.claim(DEPLOYER, tokenId);
 
-        // append logs
-        for (uint32 i = 0; i < transfers; i++) {
-            // transfer to new owner
-            address currentOwner = logbook.ownerOf(tokenId);
-            address logbookOwner = address(uint160(i + 10000));
-            assertTrue(currentOwner != logbookOwner);
+    //     // append logs
+    //     for (uint32 i = 0; i < transfers; i++) {
+    //         // transfer to new owner
+    //         address currentOwner = logbook.ownerOf(tokenId);
+    //         address logbookOwner = address(uint160(i + 10000));
+    //         assertTrue(currentOwner != logbookOwner);
 
-            vm.prank(currentOwner);
-            logbook.transferFrom(currentOwner, logbookOwner, tokenId);
+    //         vm.prank(currentOwner);
+    //         logbook.transferFrom(currentOwner, logbookOwner, tokenId);
 
-            // append logs
-            vm.startPrank(logbookOwner);
-            for (uint32 j = 0; j < logsPerTransfer; j++) {
-                logbook.publish(tokenId, Strings.toString(i * transfers));
-            }
-            vm.stopPrank();
-        }
+    //         // append logs
+    //         vm.startPrank(logbookOwner);
+    //         for (uint32 j = 0; j < logsPerTransfer; j++) {
+    //             logbook.publish(tokenId, Strings.toString(i * transfers));
+    //         }
+    //         vm.stopPrank();
+    //     }
 
-        string memory tokenURI = logbook.tokenURI(tokenId);
+    //     string memory tokenURI = logbook.tokenURI(tokenId);
 
-        string[] memory inputs = new string[](3);
-        inputs[0] = "node";
-        inputs[1] = "scripts/logbook-metadata.js";
-        inputs[2] = tokenURI;
+    //     string[] memory inputs = new string[](3);
+    //     inputs[0] = "node";
+    //     inputs[1] = "scripts/logbook-metadata.js";
+    //     inputs[2] = tokenURI;
 
-        bytes memory res = vm.ffi(inputs);
-        (Metadata memory data, SVGTexts memory texts) = abi.decode(res, (Metadata, SVGTexts));
+    //     bytes memory res = vm.ffi(inputs);
+    //     (Metadata memory data, SVGTexts memory texts) = abi.decode(res, (Metadata, SVGTexts));
 
-        // name
-        assertEq(data.name, string(abi.encodePacked("Logbook #", Strings.toString(tokenId))));
+    //     // name
+    //     assertEq(data.name, string(abi.encodePacked("Logbook #", Strings.toString(tokenId))));
 
-        // description
-        assertEq(data.description, "A book that records owners' journey in Matterverse.");
+    //     // description
+    //     assertEq(data.description, "A book that records owners' journey in Matterverse.");
 
-        // attributes
-        assertEq(data.attributes[0].traitType, "Logs");
-        assertEq(data.attributes[0].value, Strings.toString(transfers * logsPerTransfer));
+    //     // attributes
+    //     assertEq(data.attributes[0].traitType, "Logs");
+    //     assertEq(data.attributes[0].value, Strings.toString(transfers * logsPerTransfer));
 
-        // SVG texts
-        assertEq(texts.logCount, transfers * logsPerTransfer);
-        assertEq(texts.transferCount, transfers);
-        assertEq(texts.tokenId, tokenId);
-    }
+    //     // SVG texts
+    //     assertEq(texts.logCount, transfers * logsPerTransfer);
+    //     assertEq(texts.transferCount, transfers);
+    //     assertEq(texts.tokenId, tokenId);
+    // }
 }
