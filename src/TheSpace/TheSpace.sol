@@ -71,7 +71,7 @@ contract TheSpace is HarbergerMarket {
             address owner
         )
     {
-        return (tokenRecord[tokenId].price, pixelColor[tokenId], ubiAvailable(tokenId), ownerOf(tokenId));
+        return (tokenRecord[tokenId].price, pixelColor[tokenId], ubiAvailable(tokenId), getOwner(tokenId));
     }
 
     /**

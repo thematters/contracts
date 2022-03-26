@@ -116,11 +116,6 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         treasuryShare
     }
 
-    struct TaxConfig {
-        uint256 taxRate;
-        uint256 treasuryShare;
-    }
-
     // Setting for tax config
     mapping(ConfigOptions => uint256) public taxConfig;
 
@@ -198,7 +193,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     /**
      * @dev Returns the current owner of an Harberger property with token id. If token does not exisit, return address(0)
      */
-    function getOwner(uint256 tokenId) external view returns (address owner) {
+    function getOwner(uint256 tokenId) public view returns (address owner) {
         return _exists(tokenId) ? ownerOf(tokenId) : address(0);
     }
 
@@ -240,9 +235,11 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      */
 
     /**
-     * @dev calculate tax for a token
+     * @dev Calculate tax for a token
      */
     function getTax(uint256 tokenId) public view returns (uint256) {
+        if (!_exists(tokenId)) revert TokenNotExists();
+
         // calculate tax
         // `1000` for every `1000` blocks, `10000` for conversion from bps
         return
@@ -252,51 +249,60 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     }
 
     /**
-     * @dev Collect outstanding property tax for a given token, put token on tax sale if obligation not met.
-     *
-     * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
+     * @dev Calculate amount of tax that can be collected, and if token should be defaulted
      */
-    function collectTax(uint256 tokenId) public returns (bool) {
-        if (!_exists(tokenId)) revert TokenNotExists();
-
+    function evaluateOwnership(uint256 tokenId) public view returns (uint256 collectable, bool shouldDefault) {
         uint256 tax = getTax(tokenId);
         if (tax > 0) {
             // calculate collectable amount
             address taxpayer = ownerOf(tokenId);
             uint256 allowance = currency.allowance(taxpayer, address(this));
             uint256 balance = currency.balanceOf(taxpayer);
-            uint256 collectable = _min(allowance, balance);
+            uint256 available = _min(allowance, balance);
 
-            // calculate amount to be collected, the smaller one of tax and collectable
-            // then update accumulatedUBI
-            uint256 collecting = _min(collectable, tax);
-
-            if (collecting > 0) {
-                currency.transferFrom(taxpayer, address(this), collecting);
-                emit Tax(tokenId, collecting);
-
-                // update accumulated ubi
-                treasuryRecord.accumulatedUBI +=
-                    (collecting * (10000 - taxConfig[ConfigOptions.treasuryShare])) /
-                    10000;
-
-                // update accumulated treasury
-                treasuryRecord.accumulatedTreasury += (collecting * taxConfig[ConfigOptions.treasuryShare]) / 10000;
-            }
-
-            // default if tax is not fully collected
-            if (tax > collectable) {
-                // default
-                _default(tokenId);
-                return false;
+            if (available > tax) {
+                // can pay tax fully and do not need to be defaulted
+                return (tax, false);
             } else {
-                // collect tax
-                tokenRecord[tokenId].lastTaxCollection = block.number;
-                return true;
+                // cannot pay tax fully and need to be defaulted
+                return (available, true);
             }
         } else {
-            // no tax for price 0
+            // not tax needed
+            return (0, false);
+        }
+    }
+
+    /**
+     * @dev Collect outstanding property tax for a given token, put token on tax sale if obligation not met.
+     *
+     * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
+     */
+    function collectTax(uint256 tokenId) public returns (bool) {
+        (uint256 collectable, bool shouldDefault) = evaluateOwnership(tokenId);
+
+        if (collectable > 0) {
+            address taxpayer = ownerOf(tokenId);
+            // collect tax
+            currency.transferFrom(taxpayer, address(this), collectable);
+            emit Tax(tokenId, collectable);
+
+            // update accumulated ubi
+            treasuryRecord.accumulatedUBI += (collectable * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000;
+
+            // update accumulated treasury
+            treasuryRecord.accumulatedTreasury += (collectable * taxConfig[ConfigOptions.treasuryShare]) / 10000;
+
+            // update tax record
             tokenRecord[tokenId].lastTaxCollection = block.number;
+        }
+
+        if (shouldDefault) {
+            // default token and return failure to fully collect tax
+            _default(tokenId);
+            return false;
+        } else {
+            // success
             return true;
         }
     }
