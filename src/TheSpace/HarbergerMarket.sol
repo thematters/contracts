@@ -57,6 +57,11 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     event UBI(uint256 indexed tokenId, uint256 amount);
 
     /**
+     * @dev Emitted when a token is succefully bid.
+     */
+    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
+
+    /**
      * Global setup total supply and currency address
      */
 
@@ -216,6 +221,8 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
                 // successfully clear tax
                 currency.transferFrom(msg.sender, owner, askPrice);
                 _safeTransfer(owner, msg.sender, tokenId_, "");
+
+                emit Bid(tokenId_, owner, msg.sender, askPrice);
 
                 return;
             }
