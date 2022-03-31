@@ -41,6 +41,7 @@ contract TheSpaceTest is DSTest {
         // transfer to tester
         uint256 amount = 10000 * (10**uint256(currency.decimals()));
         currency.transfer(PIXEL_OWNER, amount);
+        vm.stopPrank();
 
         // tester approve the space
         vm.startPrank(PIXEL_OWNER);
@@ -129,6 +130,8 @@ contract TheSpaceTest is DSTest {
         _bid();
 
         uint256 color = 6;
+
+        vm.stopPrank();
         vm.prank(ATTACKER);
         vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
         thespace.setColor(PIXEL_ID, color);
