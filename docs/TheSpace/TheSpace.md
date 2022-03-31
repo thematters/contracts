@@ -23,17 +23,30 @@ _The Space_ is a pixel space owned by a decentralized autonomous organization (D
 
 ## Functions
 
-### `constructor(string propertyName_, string propertySymbol_, address currencyAddress_, uint256 taxRate_, uint256 totalSupply_)` (public)
+### `constructor(address currencyAddress_, address admin_, address treasury_)` (public)
 
-### `setColor(uint256 tokenId_, uint256 color_)` (external)
+### `setPixel(uint256 tokenId, uint256 bid, uint256 price, uint256 color)` (external)
 
-Set colors in batch for an array of pixels.
+Bid pixel, then set price and color.
 
-Emits {Color} events.
+### `getPixel(uint256 tokenId) → uint256 price, uint256 color, uint256 ubi, address owner` (external)
+
+Get pixel info.
+
+### `setColor(uint256 tokenId, uint256 color)` (external)
+
+Set color for a pixel.
+
+Emits {Color} event.
+
+### `getColor(uint256 tokenId) → uint256` (public)
+
+Get color for a pixel.
+
+Emits {Color} event.
 
 ## Events
 
-### `Color(uint256 pixelId, uint256 color)`
+### `Color(uint256 pixelId, uint256 color, address owner)`
 
 Emitted when the color of a pixel is updated.
-TBD: use uint8 for color encoding?
