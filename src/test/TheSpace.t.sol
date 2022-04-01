@@ -58,8 +58,8 @@ contract TheSpaceTest is DSTest {
         thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
     }
 
-    function _collectTax() private {
-        thespace.collectTax(PIXEL_ID);
+    function _settleTax() private {
+        thespace.settleTax(PIXEL_ID);
     }
 
     function testBid() public {
@@ -106,9 +106,8 @@ contract TheSpaceTest is DSTest {
         vm.roll(block.number + TAX_WINDOW);
 
         currency.approve(address(thespace), 0);
-        thespace.collectTax(PIXEL_ID);
+        thespace.settleTax(PIXEL_ID);
 
-        assertEq(thespace.getPrice(PIXEL_ID), 0);
         assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
     }
 
@@ -144,7 +143,7 @@ contract TheSpaceTest is DSTest {
         vm.expectEmit(true, false, false, false);
         emit Tax(PIXEL_ID, 10);
 
-        thespace.collectTax(PIXEL_ID);
+        thespace.settleTax(PIXEL_ID);
 
         (uint256 accumulatedUBI, , ) = thespace.treasuryRecord();
         assertGt(accumulatedUBI, 0);

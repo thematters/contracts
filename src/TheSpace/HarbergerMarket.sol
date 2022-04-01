@@ -12,24 +12,12 @@ import "./AccessRoles.sol";
  */
 contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     /**
-     * Override interface
-     */
-    function supportsInterface(bytes4 interfaceId_)
-        public
-        view
-        virtual
-        override(AccessControl, ERC721Enumerable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId_);
-    }
-
-    /**
      * Error types
      */
     error PriceTooLow();
     error Unauthorized();
     error TokenNotExists();
+    error TokenDefaulted();
     error InvalidTokenId(uint256 min, uint256 max);
 
     /**
@@ -143,6 +131,66 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     }
 
     /**
+     * Override functions
+     */
+
+    /**
+     * Override support interface
+     */
+    function supportsInterface(bytes4 interfaceId_)
+        public
+        view
+        virtual
+        override(AccessControl, ERC721Enumerable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId_);
+    }
+
+    /**
+     * @dev See {IERC721-transferFrom}. Override to collect tax before transfer.
+     */
+    function transferFrom(
+        address from_,
+        address to_,
+        uint256 tokenId_
+    ) public override(ERC721) {
+        if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
+
+        bool success = _collectTax(tokenId_);
+
+        if (success) {
+            // proceed with transfer if success
+            _transfer(from_, to_, tokenId_);
+        } else {
+            // default token if not successful
+            _default(tokenId_);
+        }
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}. Override to collect tax before transfer.
+     */
+    function safeTransferFrom(
+        address from_,
+        address to_,
+        uint256 tokenId_,
+        bytes memory data_
+    ) public override(ERC721) {
+        if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
+
+        bool success = _collectTax(tokenId_);
+
+        if (success) {
+            // proceed with transfer if success
+            _safeTransfer(from_, to_, tokenId_, data_);
+        } else {
+            // default token if not successful
+            _default(tokenId_);
+        }
+    }
+
+    /**
      * @dev See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
      */
     function totalSupply() public view virtual override returns (uint256) {
@@ -191,7 +239,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         if (price_ == getPrice(tokenId_)) return;
 
-        bool success = collectTax(tokenId_);
+        bool success = settleTax(tokenId_);
         if (success) _setPrice(tokenId_, price_);
     }
 
@@ -207,33 +255,47 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      */
     function bid(uint256 tokenId_, uint256 price_) external {
         if (_exists(tokenId_)) {
-            // skip if already own
-            address owner = ownerOf(tokenId_);
-            if (owner == msg.sender) return;
-
             uint256 askPrice = getPrice(tokenId_);
+
+            // revert if price too low
             if (price_ < askPrice) revert PriceTooLow();
 
+            address owner = ownerOf(tokenId_);
+
+            // skip if already own
+            if (owner == msg.sender) return;
+
             // clear tax
-            bool success = collectTax(tokenId_);
+            bool success = _collectTax(tokenId_);
 
+            // process with transfer
             if (success) {
-                // successfully clear tax
+                // if tax fully paid, owner get paid normally
                 currency.transferFrom(msg.sender, owner, askPrice);
-                _safeTransfer(owner, msg.sender, tokenId_, "");
-
-                emit Bid(tokenId_, owner, msg.sender, askPrice);
-
-                return;
+            } else {
+                // if tax not fully paid, token is treated as defaulted and payment is collected as tax
+                // otherwise an user can use two addressses to bid from each other to avoid tax
+                currency.transferFrom(msg.sender, address(this), askPrice);
+                _recordTax(tokenId_, askPrice);
             }
-        }
+            _safeTransfer(owner, msg.sender, tokenId_, "");
 
-        // if token does not exists yet, or token is defaulted
-        // mint token to current sender for free
-        if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
-        _safeMint(msg.sender, tokenId_);
-        // initialize tax record
-        tokenRecord[tokenId_].lastTaxCollection = block.number;
+            emit Bid(tokenId_, owner, msg.sender, askPrice);
+        } else {
+            if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
+
+            // if token does not exists yet, or token is defaulted
+            // mint token to current sender for free
+            // TBD: should we set a floor price to avoid using default + mint to avoid tax?
+            _safeMint(msg.sender, tokenId_);
+
+            // equal to bidding from address 0 with price 0
+            emit Bid(tokenId_, address(0), msg.sender, 0);
+
+            // initialize tax record and price
+            tokenRecord[tokenId_].lastTaxCollection = block.number;
+            _setPrice(tokenId_, price_);
+        }
     }
 
     /**
@@ -241,7 +303,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      */
 
     /**
-     * @dev Calculate tax for a token
+     * @dev Calculate outstanding tax for a token
      */
     function getTax(uint256 tokenId_) public view returns (uint256) {
         if (!_exists(tokenId_)) revert TokenNotExists();
@@ -280,37 +342,43 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     }
 
     /**
-     * @dev Collect outstanding property tax for a given token, put token on tax sale if obligation not met.
+     * @dev Collect outstanding tax for a given token, put token on tax sale if obligation not met.
      *
      * Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
      */
-    function collectTax(uint256 tokenId_) public returns (bool) {
+    function _collectTax(uint256 tokenId_) private returns (bool success) {
         (uint256 collectable, bool shouldDefault) = evaluateOwnership(tokenId_);
 
         if (collectable > 0) {
-            address taxpayer = ownerOf(tokenId_);
-            // collect tax
-            currency.transferFrom(taxpayer, address(this), collectable);
-            emit Tax(tokenId_, collectable);
-
-            // update accumulated ubi
-            treasuryRecord.accumulatedUBI += (collectable * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000;
-
-            // update accumulated treasury
-            treasuryRecord.accumulatedTreasury += (collectable * taxConfig[ConfigOptions.treasuryShare]) / 10000;
-
-            // update tax record
-            tokenRecord[tokenId_].lastTaxCollection = block.number;
+            // collect and record tax
+            currency.transferFrom(ownerOf(tokenId_), address(this), collectable);
+            _recordTax(tokenId_, collectable);
         }
 
-        if (shouldDefault) {
-            // default token and return failure to fully collect tax
-            _default(tokenId_);
-            return false;
-        } else {
-            // success
-            return true;
-        }
+        return !shouldDefault;
+    }
+
+    function settleTax(uint256 tokenId_) public returns (bool success) {
+        bool fullyCollected = _collectTax(tokenId_);
+
+        if (!fullyCollected) _default(tokenId_);
+
+        return fullyCollected;
+    }
+
+    /**
+     * @dev Update tax record and emit Tax event
+     */
+    function _recordTax(uint256 tokenId_, uint256 amount) private {
+        // update accumulated ubi
+        treasuryRecord.accumulatedUBI += (amount * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000;
+
+        // update accumulated treasury
+        treasuryRecord.accumulatedTreasury += (amount * taxConfig[ConfigOptions.treasuryShare]) / 10000;
+
+        // update tax record
+        tokenRecord[tokenId_].lastTaxCollection = block.number;
+        emit Tax(tokenId_, amount);
     }
 
     /**
@@ -336,16 +404,13 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
 
     function _default(uint256 tokenId_) internal {
         _burn(tokenId_);
-        _setPrice(tokenId_, 0);
     }
 
     function _setPrice(uint256 tokenId_, uint256 price_) internal {
         // update price in tax record
         tokenRecord[tokenId_].price = price_;
 
-        address owner = _exists(tokenId_) ? ownerOf(tokenId_) : address(0);
-
         // emit events
-        emit Price(tokenId_, price_, owner);
+        emit Price(tokenId_, price_, ownerOf(tokenId_));
     }
 }
