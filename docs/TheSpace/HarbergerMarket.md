@@ -1,55 +1,90 @@
 ## `HarbergerMarket`
 
-Market place with Harberger tax, inherits from `IPixelCanvas`. Market creates one ERC721 contract as property, and attaches one ERC20 contract as currency.
+Market place with Harberger tax. Market attaches one ERC20 contract as currency.
 
 ## Functions
 
-### `constructor(string propertyName_, string propertySymbol_, address currencyAddress_, uint256 taxRate_, uint256 totalSupply_)` (internal)
+### `constructor(string propertyName_, string propertySymbol_, address currencyAddress_, address admin_, address treasury_)` (public)
 
 Create Property contract, setup attached currency contract, setup tax rate
 
+### `supportsInterface(bytes4 interfaceId_) → bool` (public)
+
+Override support interface
+
+### `transferFrom(address from_, address to_, uint256 tokenId_)` (public)
+
+See {IERC721-transferFrom}. Override to collect tax before transfer.
+
+### `safeTransferFrom(address from_, address to_, uint256 tokenId_, bytes data_)` (public)
+
+See {IERC721-safeTransferFrom}. Override to collect tax before transfer.
+
+### `totalSupply() → uint256` (public)
+
+See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
+
+### `setTaxConfig(enum IHarbergerMarket.ConfigOptions option_, uint256 value_)` (external)
+
+Update current tax configuration.
+
+ADMIN_ROLE only.
+
+### `withdrawTreasury()` (external)
+
+Withdraw all available treasury.
+
+TREASURY_ROLE only.
+
+### `getPrice(uint256 tokenId_) → uint256 price` (public)
+
+Returns the current price of a token by id.
+
 ### `setPrice(uint256 tokenId_, uint256 price_)` (external)
 
-Set the current price of an Harberger property with token id.
+Set the current price of a token with id. Triggers tax settle first, price is succefully updated after tax is successfully collected.
 
-Emits a {Price} event.
+Only token owner or approved operator. Throw `Unauthorized` or `ERC721: operator query for nonexistent token` error. Emits a {Price} event if update is successful.
 
-### `getPrice(uint256 tokenId_) → uint256 price` (external)
+### `getOwner(uint256 tokenId_) → address owner` (public)
 
-Returns the current price of an Harberger property with token id.
+Returns the current owner of an Harberger property with token id.
+
+If token does not exisit, return address(0) and user can bid the token as usual.
 
 ### `bid(uint256 tokenId_, uint256 price_)` (external)
 
-Purchase property with bid higher than current price. Clear tax for owner before transfer.
-TODO: check security implications
+Purchase property with bid higher than current price. If bid price is higher than ask price, only ask price will be deducted.
 
-### `collectTax(uint256 _tokenId) → bool` (external)
+Clear tax for owner before transfer.
 
-Collect outstanding property tax for a given token, put token on tax sale if obligation not met.
+### `getTax(uint256 tokenId_) → uint256` (public)
 
-Emits a {Tax} event and a {Price} event (when properties are put on tax sale).
+Calculate outstanding tax for a token.
 
-### `withdrawUBI(uint256 _tokenId)` (external)
+### `evaluateOwnership(uint256 tokenId_) → uint256 collectable, bool shouldDefault` (public)
 
-### `_default(uint256 tokenId_)` (internal)
+Calculate amount of tax that can be collected, and determine if token should be defaulted.
+
+### `settleTax(uint256 tokenId_) → bool success` (public)
+
+Collect outstanding tax of a token and default it if needed.
+
+Anyone can trigger this function. It could be desirable for the developer team to trigger it once a while to make sure all tokens meet their tax obligation.
+
+### `ubiAvailable(uint256 tokenId_) → uint256` (public)
+
+Amount of UBI available for withdraw on given token.
+
+### `withdrawUbi(uint256 tokenId_)` (external)
+
+Withdraw UBI on given token.
 
 ### `_setPrice(uint256 tokenId_, uint256 price_)` (internal)
 
-## Events
+Internel function to set price for a token.
 
-### `Price(uint256 tokenId, uint256 price)`
-
-Emitted when a token changes price.
-
-### `Tax(uint256 tokenId, uint256 amount)`
-
-Emitted when tax is collected.
-
-### `UBI(uint256 tokenId, uint256 amount)`
-
-Emitted when UBI is distributed.
-
-### `TaxRecord`
+### `TokenRecord`
 
 uint256
 price
@@ -59,3 +94,14 @@ lastTaxCollection
 
 uint256
 ubiWithdrawn
+
+### `TreasuryRecord`
+
+uint256
+accumulatedUBI
+
+uint256
+accumulatedTreasury
+
+uint256
+treasuryWithdrawn
