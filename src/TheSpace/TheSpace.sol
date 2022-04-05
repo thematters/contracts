@@ -4,8 +4,9 @@ pragma solidity ^0.8.11;
 import "./HarbergerMarket.sol";
 
 /**
- * @dev _The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels. Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
- *
+ * @notice _The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels.
+ * Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
+ * Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMarket.md).
  *
  * #### Trading
  *
@@ -17,13 +18,14 @@ import "./HarbergerMarket.sol";
 
 contract TheSpace is HarbergerMarket {
     /**
-     * @dev Color data of each token.
+     * @notice Color data of each token.
+     *
      * TODO: Combine with TokenRecord to optimize storage?
      */
     mapping(uint256 => uint256) public pixelColor;
 
     /**
-     * @dev Emitted when the color of a pixel is updated.
+     * @notice Emitted when the color of a pixel is updated.
      */
     event Color(uint256 indexed pixelId, uint256 color, address indexed owner);
 
@@ -34,7 +36,7 @@ contract TheSpace is HarbergerMarket {
     ) HarbergerMarket("Planck", "PLK", currencyAddress_, admin_, treasury_) {}
 
     /**
-     * @dev Bid pixel, then set price and color.
+     * @notice Bid pixel, then set price and color.
      */
     function setPixel(
         uint256 tokenId,
@@ -48,7 +50,7 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @dev Get pixel info.
+     * @notice Get pixel info.
      */
     function getPixel(uint256 tokenId)
         external
@@ -64,9 +66,9 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @dev Set color for a pixel.
+     * @notice Set color for a pixel.
      *
-     * Emits {Color} event.
+     * @dev Emits {Color} event.
      */
     function setColor(uint256 tokenId, uint256 color) external {
         if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
@@ -76,9 +78,9 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @dev Get color for a pixel.
+     * @notice Get color for a pixel.
      *
-     * Emits {Color} event.
+     * @dev Emits {Color} event.
      */
     function getColor(uint256 tokenId) public view returns (uint256) {
         return pixelColor[tokenId];

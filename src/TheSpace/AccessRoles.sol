@@ -4,7 +4,11 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
- * @dev Roles for controlling HarbergerMarket contract.
+ * @notice Special roles for HarbergerMarket contract.
+ * @dev There are 3 roles:
+ * - DEFAULT_ADMIN_ROLE: default admin in OpenZeppelin AccessControl module, responsible for assigning and revoking roles of other addresses
+ * - ADMIN_ROLE: responsible for updating tax related configuration, e.g. tax rate and treasury rate.
+ * - TREASURY_ROLE: responsible for withdrawing treasury from contract.
  */
 contract AccessRoles is AccessControl {
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");

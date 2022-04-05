@@ -1,6 +1,8 @@
 ## `TheSpace`
 
-_The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels. Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
+_The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels.
+Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
+Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMarket.md).
 
 #### Trading
 
