@@ -2,53 +2,16 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
+import "./IHarbergerMarket.sol";
 import "./AccessRoles.sol";
 
 /**
  * @dev Market place with Harberger tax. Market attaches one ERC20 contract as currency.
  */
-contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
-    /**
-     * Error types
-     */
-    error PriceTooLow();
-    error Unauthorized();
-    error TokenNotExists();
-    error TokenDefaulted();
-    error InvalidTokenId(uint256 min, uint256 max);
-
-    /**
-     * Event types
-     */
-
-    /**
-     * @dev Emitted when a token changes price.
-     */
-    event Price(uint256 indexed tokenId, uint256 price, address indexed owner);
-
-    /**
-     * @dev Emitted when tax configuration updates.
-     */
-    event Config(ConfigOptions indexed option, uint256 value);
-
-    /**
-     * @dev Emitted when tax is collected.
-     */
-    event Tax(uint256 indexed tokenId, uint256 amount);
-
-    /**
-     * @dev Emitted when UBI is distributed.
-     */
-    event UBI(uint256 indexed tokenId, uint256 amount);
-
-    /**
-     * @dev Emitted when a token is succefully bid.
-     */
-    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
-
+contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
     /**
      * Global setup total supply and currency address
      */
@@ -68,7 +31,10 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      */
 
     /**
-     * @dev Record of token. Use block number to record tax collection time.
+     * @dev Record of each token.
+     * @param price Current price.
+     * @param lastTaxCollection Block number of last tax collection.
+     * @param ubiWithdrawn Amount of UBI been withdrawn.
      *
      * TODO: more efficient storage scheme, see: https://medium.com/@novablitz/storing-structs-is-costing-you-gas-774da988895e
      */
@@ -79,7 +45,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
     }
 
     /**
-     * @dev Record of each token.
+     * @dev Record for all tokens.
      */
     mapping(uint256 => TokenRecord) public tokenRecord;
 
@@ -88,7 +54,11 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      */
 
     /**
-     * @dev Record of treasury state.
+     * @dev Global state of tax and treasury.
+     * @param accumulatedUBI Total amount of currency allocated for UBI.
+     * @param accumulatedTreasury Total amount of currency allocated for treasury.
+     * @param treasuryWithdrawn Total amount of treasury been withdrawn.
+     *
      * TODO: more efficient storage scheme
      */
     struct TreasuryRecord {
@@ -101,15 +71,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
 
     /**
      * @dev Tax configuration of market.
-     * - taxRate: Tax rate in bps every 1000 blocks
-     * - treasuryShare: Share to treasury in bps.
      */
-    enum ConfigOptions {
-        taxRate,
-        treasuryShare
-    }
-
-    // Setting for tax config
     mapping(ConfigOptions => uint256) public taxConfig;
 
     /**
@@ -141,7 +103,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         public
         view
         virtual
-        override(AccessControl, ERC721Enumerable)
+        override(AccessControl, ERC721, IERC165)
         returns (bool)
     {
         return super.supportsInterface(interfaceId_);
@@ -154,7 +116,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         address from_,
         address to_,
         uint256 tokenId_
-    ) public override(ERC721) {
+    ) public override(ERC721, IERC721) {
         if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
 
         bool success = _collectTax(tokenId_);
@@ -164,7 +126,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
             _transfer(from_, to_, tokenId_);
         } else {
             // default token if not successful
-            _default(tokenId_);
+            _burn(tokenId_);
         }
     }
 
@@ -176,7 +138,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         address to_,
         uint256 tokenId_,
         bytes memory data_
-    ) public override(ERC721) {
+    ) public override(ERC721, IERC721) {
         if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
 
         bool success = _collectTax(tokenId_);
@@ -186,14 +148,14 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
             _safeTransfer(from_, to_, tokenId_, data_);
         } else {
             // default token if not successful
-            _default(tokenId_);
+            _burn(tokenId_);
         }
     }
 
     /**
      * @dev See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
      */
-    function totalSupply() public view virtual override returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
@@ -201,18 +163,14 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      * Admin only
      */
 
-    /**
-     * @dev Set the tax config for current contract. ADMIN_ROLE only.
-     */
+    /// @inheritdoc IHarbergerMarket
     function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(ADMIN_ROLE) {
         taxConfig[option_] = value_;
 
         emit Config(option_, value_);
     }
 
-    /**
-     * @dev Withdraw available treasury. TREASURY_ROLE only.
-     */
+    /// @inheritdoc IHarbergerMarket
     function withdrawTreasury() external onlyRole(TREASURY_ROLE) {
         uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
 
@@ -223,18 +181,12 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      * Read and write of token state
      */
 
-    /**
-     * @dev Returns the current price of an Harberger property with token id.
-     */
+    /// @inheritdoc IHarbergerMarket
     function getPrice(uint256 tokenId_) public view returns (uint256 price) {
         return tokenRecord[tokenId_].price;
     }
 
-    /**
-     * @dev Set the current price of an Harberger property with token id.
-     *
-     * Emits a {Price} event.
-     */
+    /// @inheritdoc IHarbergerMarket
     function setPrice(uint256 tokenId_, uint256 price_) external {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         if (price_ == getPrice(tokenId_)) return;
@@ -243,16 +195,13 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         if (success) _setPrice(tokenId_, price_);
     }
 
-    /**
-     * @dev Returns the current owner of an Harberger property with token id. If token does not exisit, return address(0).
-     */
+    /// @inheritdoc IHarbergerMarket
     function getOwner(uint256 tokenId_) public view returns (address owner) {
         return _exists(tokenId_) ? ownerOf(tokenId_) : address(0);
     }
 
-    /**
-     * @dev Purchase property with bid higher than current price. Clear tax for owner before transfer.
-     */
+    /// @inheritdoc IHarbergerMarket
+    // TODO: might need to set a minting fee to aviod repeated default and mint
     function bid(uint256 tokenId_, uint256 price_) external {
         if (_exists(tokenId_)) {
             uint256 askPrice = getPrice(tokenId_);
@@ -286,7 +235,6 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
 
             // if token does not exists yet, or token is defaulted
             // mint token to current sender for free
-            // TBD: should we set a floor price to avoid using default + mint to avoid tax?
             _safeMint(msg.sender, tokenId_);
 
             // equal to bidding from address 0 with price 0
@@ -302,9 +250,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
      * Tax & UBI
      */
 
-    /**
-     * @dev Calculate outstanding tax for a token
-     */
+    /// @inheritdoc IHarbergerMarket
     function getTax(uint256 tokenId_) public view returns (uint256) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
@@ -316,9 +262,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
                 (block.number - tokenRecord[tokenId_].lastTaxCollection)) / (1000 * 10000);
     }
 
-    /**
-     * @dev Calculate amount of tax that can be collected, and if token should be defaulted
-     */
+    /// @inheritdoc IHarbergerMarket
     function evaluateOwnership(uint256 tokenId_) public view returns (uint256 collectable, bool shouldDefault) {
         uint256 tax = getTax(tokenId_);
         if (tax > 0) {
@@ -358,16 +302,17 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         return !shouldDefault;
     }
 
+    /// @inheritdoc IHarbergerMarket
     function settleTax(uint256 tokenId_) public returns (bool success) {
         bool fullyCollected = _collectTax(tokenId_);
 
-        if (!fullyCollected) _default(tokenId_);
+        if (!fullyCollected) _burn(tokenId_);
 
         return fullyCollected;
     }
 
     /**
-     * @dev Update tax record and emit Tax event
+     * @dev Update tax record and emit Tax event.
      */
     function _recordTax(uint256 tokenId_, uint256 amount) private {
         // update accumulated ubi
@@ -381,9 +326,7 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         emit Tax(tokenId_, amount);
     }
 
-    /**
-     * @dev UBI available for withdraw on given token.
-     */
+    /// @inheritdoc IHarbergerMarket
     function ubiAvailable(uint256 tokenId_) public view returns (uint256) {
         return treasuryRecord.accumulatedUBI / _totalSupply - tokenRecord[tokenId_].ubiWithdrawn;
     }
@@ -402,10 +345,9 @@ contract HarbergerMarket is ERC721Enumerable, Multicall, AccessRoles {
         }
     }
 
-    function _default(uint256 tokenId_) internal {
-        _burn(tokenId_);
-    }
-
+    /**
+     * @dev Internel function to set price for a token.
+     */
     function _setPrice(uint256 tokenId_, uint256 price_) internal {
         // update price in tax record
         tokenRecord[tokenId_].price = price_;
