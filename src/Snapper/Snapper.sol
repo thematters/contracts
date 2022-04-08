@@ -24,9 +24,14 @@ contract Snapper is Ownable {
     uint256 public confirmations;
 
     /**
-     * @dev last snapshot block num.
+     * @dev last snapshot toBlock num.
      */
-    uint256 public lastBlocknum;
+    uint256 public lastToBlocknum;
+
+    /**
+     * @dev latest snapshot events block num.
+     */
+    uint256 public latestEventBlocknum;
 
     /**
      * @dev create Snapper contract, init confirmations.
@@ -47,12 +52,13 @@ contract Snapper is Ownable {
         string calldata snapshotCid_,
         string calldata deltaCid_
     ) external onlyOwner {
-        require(toBlocknum_ > lastBlocknum, "toBlocknum must bigger than lastBlocknum");
+        require(toBlocknum_ > lastToBlocknum, "toBlocknum must bigger than lastToBlocknum");
         require(toBlocknum_ + confirmations < block.number + 2, "target contain unstable blocks");
 
         emit Snapshot(toBlocknum_, snapshotCid_);
         emit Delta(toBlocknum_, deltaCid_);
 
-        lastBlocknum = toBlocknum_;
+        lastToBlocknum = toBlocknum_;
+        latestEventBlocknum = block.number;
     }
 }

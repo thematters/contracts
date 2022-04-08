@@ -50,9 +50,9 @@ contract SnapperTest is DSTest {
 
     function testCannotTakeSnapshotSmallToBlocknum() public {
         vm.roll(5);
-        assertEq(snapper.lastBlocknum(), 0);
+        assertEq(snapper.lastToBlocknum(), 0);
         vm.prank(DEPLOYER);
-        vm.expectRevert("toBlocknum must bigger than lastBlocknum");
+        vm.expectRevert("toBlocknum must bigger than lastToBlocknum");
         snapper.takeSnapshot(0, CID1, CID2);
     }
 
@@ -60,7 +60,8 @@ contract SnapperTest is DSTest {
         vm.roll(5);
         uint256 stableBlocknum = block.number - snapper.confirmations();
 
-        assertEq(snapper.lastBlocknum(), 0);
+        assertEq(snapper.lastToBlocknum(), 0);
+        assertEq(snapper.latestEventBlocknum(), 0);
 
         // takeSnapshot will emit Snapshot and Delta events.
         vm.expectEmit(true, false, false, true);
@@ -71,7 +72,8 @@ contract SnapperTest is DSTest {
         vm.prank(DEPLOYER);
         snapper.takeSnapshot(stableBlocknum, CID1, CID2);
 
-        // takeSnapshot will update lastBlocknum
-        assertEq(snapper.lastBlocknum(), stableBlocknum);
+        // takeSnapshot will update lastToBlocknum, latestEventBlocknum
+        assertEq(snapper.lastToBlocknum(), stableBlocknum);
+        assertEq(snapper.latestEventBlocknum(), block.number);
     }
 }
