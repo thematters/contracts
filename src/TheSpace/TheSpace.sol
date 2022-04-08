@@ -27,7 +27,7 @@ contract TheSpace is HarbergerMarket {
     /**
      * @notice Emitted when the color of a pixel is updated.
      */
-    event Color(uint256 indexed pixelId, uint256 color, address indexed owner);
+    event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
     constructor(
         address currencyAddress_,
