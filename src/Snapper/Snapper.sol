@@ -6,17 +6,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Snapper is Ownable {
     /**
      * @notice snapshot info
-     * @param blocknum block number for this snapshot
+     * @param block block number for this snapshot
      * @param cid ipfs content hash for this snapshot
      */
-    event Snapshot(uint256 indexed blocknum, string cid);
+    event Snapshot(uint256 indexed block, string cid);
 
     /**
      * @notice delta info
-     * @param blocknum block number for this delta
+     * @param fromBlock this delta start at this block, inclusive
+     * @param toBlock this delta end at this block, inclusive
      * @param cid ipfs content hash for this delta
      */
-    event Delta(uint256 indexed blocknum, string cid);
+    event Delta(uint256 indexed fromBlock, uint256 indexed toBlock, string cid);
 
     /**
      * @dev use to calculate the latest stable block number.
@@ -26,12 +27,12 @@ contract Snapper is Ownable {
     /**
      * @dev last snapshot toBlock num.
      */
-    uint256 public lastToBlocknum;
+    uint256 public lastToBlock;
 
     /**
-     * @dev latest snapshot events block num.
+     * @dev help clients getting latest events.
      */
-    uint256 public latestEventBlocknum;
+    uint256 public latestEventBlock;
 
     /**
      * @dev create Snapper contract, init confirmations.
@@ -47,18 +48,27 @@ contract Snapper is Ownable {
         confirmations = confirmations_;
     }
 
+    /**
+     * @dev take snapshot. use fromBlock_ to validate precondition.
+     * @param fromBlock_ snapshot delta start at this block num, inclusive
+     * @param toBlock_ snapshot delta end at this block num, inclusive
+     */
     function takeSnapshot(
-        uint256 toBlocknum_,
+        uint256 fromBlock_,
+        uint256 toBlock_,
         string calldata snapshotCid_,
         string calldata deltaCid_
     ) external onlyOwner {
-        require(toBlocknum_ > lastToBlocknum, "toBlocknum must bigger than lastToBlocknum");
-        require(toBlocknum_ + confirmations < block.number + 2, "target contain unstable blocks");
+        if (lastToBlock > 0) {
+            require(fromBlock_ == lastToBlock + 1, "fromBlock must be lastToBlock + 1");
+        }
+        require(toBlock_ >= fromBlock_, "toBlock must be greater than or equal to fromBlock");
+        require(toBlock_ + confirmations < block.number + 2, "target contain unstable blocks");
 
-        emit Snapshot(toBlocknum_, snapshotCid_);
-        emit Delta(toBlocknum_, deltaCid_);
+        emit Snapshot(toBlock_, snapshotCid_);
+        emit Delta(fromBlock_, toBlock_, deltaCid_);
 
-        lastToBlocknum = toBlocknum_;
-        latestEventBlocknum = block.number;
+        lastToBlock = toBlock_;
+        latestEventBlock = block.number;
     }
 }
