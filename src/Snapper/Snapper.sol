@@ -45,7 +45,7 @@ contract Snapper is Ownable {
     /**
      * @dev set safeConfirmations.
      */
-    function setConfirmations(uint256 safeConfirmations_) external onlyOwner {
+    function setSafeConfirmations(uint256 safeConfirmations_) external onlyOwner {
         safeConfirmations = safeConfirmations_;
     }
 

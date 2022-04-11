@@ -24,12 +24,12 @@ contract SnapperTest is DSTest {
 
     function testCannotSetConfirmationsByNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
-        snapper.setConfirmations(5);
+        snapper.setSafeConfirmations(5);
     }
 
     function testSetConfirmations(uint256 safeConfirmations_) public {
         vm.prank(DEPLOYER);
-        snapper.setConfirmations(safeConfirmations_);
+        snapper.setSafeConfirmations(safeConfirmations_);
         assertEq(snapper.safeConfirmations(), safeConfirmations_);
     }
 
