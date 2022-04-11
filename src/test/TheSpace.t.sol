@@ -25,7 +25,7 @@ contract TheSpaceTest is DSTest {
     uint256 PIXEL_PRICE;
 
     event Price(uint256 indexed tokenId, uint256 price, address owner);
-    event Color(uint256 indexed pixelId, uint256 color, address owner);
+    event Color(uint256 indexed pixelId, uint256 indexed color, address owner);
     event Tax(uint256 indexed tokenId, uint256 amount);
 
     function setUp() public {
