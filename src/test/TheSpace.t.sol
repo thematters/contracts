@@ -20,6 +20,7 @@ contract TheSpaceTest is DSTest {
     address constant DEPLOYER = address(176);
     address constant PIXEL_OWNER = address(177);
     address constant ATTACKER = address(178);
+    uint256 constant TOTAL_SUPPLY = 1000000;
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
     uint256 constant PIXEL_COLOR = 11;
@@ -61,6 +62,10 @@ contract TheSpaceTest is DSTest {
 
     function _settleTax() private {
         thespace.settleTax(PIXEL_ID);
+    }
+
+    function testTotalSupply() public {
+        assertEq(thespace.totalSupply(), TOTAL_SUPPLY);
     }
 
     function testBid() public {
