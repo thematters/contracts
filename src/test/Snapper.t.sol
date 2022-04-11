@@ -15,7 +15,7 @@ contract SnapperTest is DSTest {
     string constant CID2 = "QmSmGAGMGxvKADmvYYQYHTD4BobZBJcSvZffjM6QhUC74E";
 
     event Snapshot(uint256 indexed block, string cid);
-    event Delta(uint256 indexed fromBlock, uint256 indexed toBlock, string cid);
+    event Delta(uint256 indexed block, string cid);
 
     function setUp() public {
         vm.prank(DEPLOYER);
@@ -87,8 +87,8 @@ contract SnapperTest is DSTest {
         // takeSnapshot will emit Snapshot and Delta events.
         vm.expectEmit(true, false, false, true);
         emit Snapshot(stableBlock, CID1);
-        vm.expectEmit(true, true, false, true);
-        emit Delta(1, stableBlock, CID2);
+        vm.expectEmit(true, false, false, true);
+        emit Delta(stableBlock, CID2);
 
         vm.prank(DEPLOYER);
         snapper.takeSnapshot(1, stableBlock, CID1, CID2);

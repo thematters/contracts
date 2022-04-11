@@ -13,11 +13,10 @@ contract Snapper is Ownable {
 
     /**
      * @notice delta info
-     * @param fromBlock this delta start at this block, inclusive
-     * @param toBlock this delta end at this block, inclusive
+     * @param block this delta end at this block, inclusive
      * @param cid ipfs content hash for this delta
      */
-    event Delta(uint256 indexed fromBlock, uint256 indexed toBlock, string cid);
+    event Delta(uint256 indexed block, string cid);
 
     /**
      * @dev Transactions with confirmations greater than or equal to this value are considered being finalized.
@@ -67,7 +66,7 @@ contract Snapper is Ownable {
         require(toBlock_ + safeConfirmations < block.number + 2, "target contain unstable blocks");
 
         emit Snapshot(toBlock_, snapshotCid_);
-        emit Delta(fromBlock_, toBlock_, deltaCid_);
+        emit Delta(toBlock_, deltaCid_);
 
         lastToBlock = toBlock_;
         latestEventBlock = block.number;
