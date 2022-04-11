@@ -20,9 +20,10 @@ contract Snapper is Ownable {
     event Delta(uint256 indexed fromBlock, uint256 indexed toBlock, string cid);
 
     /**
-     * @dev use to calculate the latest stable block number.
+     * @dev Transactions with confirmations greater than or equal to this value are considered being finalized.
+     *      Note that Transactions in latest block have 1 block confirmation.
      */
-    uint256 public confirmations;
+    uint256 public safeConfirmations;
 
     /**
      * @dev last snapshot toBlock num.
@@ -35,17 +36,17 @@ contract Snapper is Ownable {
     uint256 public latestEventBlock;
 
     /**
-     * @dev create Snapper contract, init confirmations.
+     * @dev create Snapper contract, init safeConfirmations.
      */
-    constructor(uint256 confirmations_) {
-        confirmations = confirmations_;
+    constructor(uint256 safeConfirmations_) {
+        safeConfirmations = safeConfirmations_;
     }
 
     /**
-     * @dev set confirmations.
+     * @dev set safeConfirmations.
      */
-    function setConfirmations(uint256 confirmations_) external onlyOwner {
-        confirmations = confirmations_;
+    function setConfirmations(uint256 safeConfirmations_) external onlyOwner {
+        safeConfirmations = safeConfirmations_;
     }
 
     /**
@@ -63,7 +64,7 @@ contract Snapper is Ownable {
             require(fromBlock_ == lastToBlock + 1, "fromBlock must be lastToBlock + 1");
         }
         require(toBlock_ >= fromBlock_, "toBlock must be greater than or equal to fromBlock");
-        require(toBlock_ + confirmations < block.number + 2, "target contain unstable blocks");
+        require(toBlock_ + safeConfirmations < block.number + 2, "target contain unstable blocks");
 
         emit Snapshot(toBlock_, snapshotCid_);
         emit Delta(fromBlock_, toBlock_, deltaCid_);

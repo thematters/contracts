@@ -27,10 +27,10 @@ contract SnapperTest is DSTest {
         snapper.setConfirmations(5);
     }
 
-    function testSetConfirmations(uint256 confirmations_) public {
+    function testSetConfirmations(uint256 safeConfirmations_) public {
         vm.prank(DEPLOYER);
-        snapper.setConfirmations(confirmations_);
-        assertEq(snapper.confirmations(), confirmations_);
+        snapper.setConfirmations(safeConfirmations_);
+        assertEq(snapper.safeConfirmations(), safeConfirmations_);
     }
 
     function testCannotTakeSnapshotByNotOwner() public {
@@ -41,7 +41,7 @@ contract SnapperTest is DSTest {
 
     function testCannotTakeSnapshotNotStableBlock() public {
         vm.roll(5);
-        uint256 unstableBlock = block.number + 2 - snapper.confirmations();
+        uint256 unstableBlock = block.number + 2 - snapper.safeConfirmations();
 
         vm.prank(DEPLOYER);
         vm.expectRevert("target contain unstable blocks");
@@ -79,7 +79,7 @@ contract SnapperTest is DSTest {
 
     function testTakeSnapshot() public {
         vm.roll(5);
-        uint256 stableBlock = block.number - snapper.confirmations();
+        uint256 stableBlock = block.number - snapper.safeConfirmations();
 
         assertEq(snapper.lastToBlock(), 0);
         assertEq(snapper.latestEventBlock(), 0);
