@@ -184,7 +184,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
     /// @inheritdoc IHarbergerMarket
     function getPrice(uint256 tokenId_) public view returns (uint256 price) {
-        return tokenRecord[tokenId_].price;
+        return _exists(tokenId_) ? tokenRecord[tokenId_].price : taxConfig[ConfigOptions.mintTax];
     }
 
     /// @inheritdoc IHarbergerMarket
