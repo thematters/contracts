@@ -80,10 +80,12 @@ interface IHarbergerMarket is IERC721 {
      * @dev Options for global tax configuration.
      * @param taxRate: Tax rate in bps every 1000 blocks
      * @param treasuryShare: Share to treasury in bps.
+     * @param mintTax: Tax to mint a token. It should be non-zero to prevent attacker constantly mint, default and mint token again.
      */
     enum ConfigOptions {
         taxRate,
-        treasuryShare
+        treasuryShare,
+        mintTax
     }
 
     /**

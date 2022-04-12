@@ -88,8 +88,9 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
         currency = ERC20(currencyAddress_);
 
         // default config
-        taxConfig[ConfigOptions.taxRate] = 10;
+        taxConfig[ConfigOptions.taxRate] = 25;
         taxConfig[ConfigOptions.treasuryShare] = 500;
+        taxConfig[ConfigOptions.mintTax] = 100;
     }
 
     /**
@@ -235,6 +236,10 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
             // if token does not exists yet, or token is defaulted
             // mint token to current sender for free
+
+            currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
+            _recordTax(tokenId_, taxConfig[ConfigOptions.mintTax]);
+
             _safeMint(msg.sender, tokenId_);
 
             // equal to bidding from address 0 with price 0
