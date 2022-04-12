@@ -27,7 +27,7 @@ contract TheSpace is HarbergerMarket {
     /**
      * @notice Emitted when the color of a pixel is updated.
      */
-    event Color(uint256 indexed pixelId, uint256 color, address indexed owner);
+    event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
     constructor(
         address currencyAddress_,
@@ -39,30 +39,39 @@ contract TheSpace is HarbergerMarket {
      * @notice Bid pixel, then set price and color.
      */
     function setPixel(
-        uint256 tokenId,
-        uint256 bid,
-        uint256 price,
-        uint256 color
+        uint256 tokenId_,
+        uint256 bid_,
+        uint256 price_,
+        uint256 color_
     ) external {
-        this.bid(tokenId, bid);
-        this.setPrice(tokenId, price);
-        this.setColor(tokenId, color);
+        bid(tokenId_, bid_);
+        setPrice(tokenId_, price_);
+        setColor(tokenId_, color_);
     }
 
     /**
      * @notice Get pixel info.
      */
-    function getPixel(uint256 tokenId)
+    function getPixel(uint256 tokenId_)
         external
         view
         returns (
+            uint256 tokenId,
             uint256 price,
-            uint256 color,
+            uint256 lastTaxCollection,
             uint256 ubi,
-            address owner
+            address owner,
+            uint256 color
         )
     {
-        return (tokenRecord[tokenId].price, pixelColor[tokenId], ubiAvailable(tokenId), getOwner(tokenId));
+        return (
+            tokenId_,
+            tokenRecord[tokenId_].price,
+            tokenRecord[tokenId_].lastTaxCollection,
+            ubiAvailable(tokenId_),
+            getOwner(tokenId_),
+            pixelColor[tokenId_]
+        );
     }
 
     /**
@@ -70,7 +79,7 @@ contract TheSpace is HarbergerMarket {
      *
      * @dev Emits {Color} event.
      */
-    function setColor(uint256 tokenId, uint256 color) external {
+    function setColor(uint256 tokenId, uint256 color) public {
         if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
 
         pixelColor[tokenId] = color;

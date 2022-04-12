@@ -187,7 +187,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
     }
 
     /// @inheritdoc IHarbergerMarket
-    function setPrice(uint256 tokenId_, uint256 price_) external {
+    function setPrice(uint256 tokenId_, uint256 price_) public {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         if (price_ == getPrice(tokenId_)) return;
 
@@ -202,7 +202,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
     /// @inheritdoc IHarbergerMarket
     // TODO: might need to set a minting fee to aviod repeated default and mint
-    function bid(uint256 tokenId_, uint256 price_) external {
+    function bid(uint256 tokenId_, uint256 price_) public {
         if (_exists(tokenId_)) {
             uint256 askPrice = getPrice(tokenId_);
 

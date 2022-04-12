@@ -69,7 +69,7 @@ contract TheSpaceTest is DSTest {
 
     function testGetNonExistingPixel() public {
         // unminted pixel
-        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID + 1);
+        (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID + 1);
 
         assertEq(price, 0);
         assertEq(color, 0);
@@ -80,7 +80,7 @@ contract TheSpaceTest is DSTest {
     function testGetExistingPixel() public {
         // existing pixel
         _bid();
-        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID);
+        (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID);
 
         assertEq(price, 0);
         assertEq(color, 0);
