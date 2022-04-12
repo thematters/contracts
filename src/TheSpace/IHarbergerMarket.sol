@@ -56,16 +56,18 @@ interface IHarbergerMarket is IERC721 {
     /**
      * @notice Tax is collected for a token.
      * @param tokenId Id of token that has been taxed.
+     * @param taxpayer user address who has paid the tax.
      * @param amount Amount of tax been collected.
      */
-    event Tax(uint256 indexed tokenId, uint256 amount);
+    event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
 
     /**
      * @notice UBI (universal basic income) is withdrawn for a token.
      * @param tokenId Id of token that UBI has been withdrawn for.
+     * @param recipient user address who got this withdrawn UBI.
      * @param amount Amount of UBI withdrawn.
      */
-    event UBI(uint256 indexed tokenId, uint256 amount);
+    event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
 
     /**
      * @notice A token has been succefully bid.
