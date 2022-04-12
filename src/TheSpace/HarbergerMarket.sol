@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
 import "./IHarbergerMarket.sol";
@@ -11,7 +11,7 @@ import "./AccessRoles.sol";
 /**
  * @dev Market place with Harberger tax. Market attaches one ERC20 contract as currency.
  */
-contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
+contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, AccessRoles {
     /**
      * Global setup total supply and currency address
      */
@@ -104,7 +104,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
         public
         view
         virtual
-        override(AccessControl, ERC721, IERC165)
+        override(AccessControl, ERC721Enumerable, IERC165)
         returns (bool)
     {
         return super.supportsInterface(interfaceId_);
@@ -156,7 +156,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
     /**
      * @dev See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _totalSupply;
     }
 
