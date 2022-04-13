@@ -238,7 +238,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
             // mint token to current sender for free
 
             currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
-            _recordTax(tokenId_, taxConfig[ConfigOptions.mintTax]);
+            _recordTax(tokenId_, msg.sender, taxConfig[ConfigOptions.mintTax]);
 
             _safeMint(msg.sender, tokenId_);
 
