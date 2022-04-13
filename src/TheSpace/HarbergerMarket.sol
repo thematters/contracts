@@ -226,7 +226,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
                 // if tax not fully paid, token is treated as defaulted and payment is collected as tax
                 // otherwise an user can use two addressses to bid from each other to avoid tax
                 currency.transferFrom(msg.sender, address(this), askPrice);
-                _recordTax(tokenId_, askPrice);
+                _recordTax(tokenId_, msg.sender, askPrice);
             }
             _safeTransfer(owner, msg.sender, tokenId_, "");
 
@@ -238,7 +238,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
             // mint token to current sender for free
 
             currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
-            _recordTax(tokenId_, taxConfig[ConfigOptions.mintTax]);
+            _recordTax(tokenId_, msg.sender, taxConfig[ConfigOptions.mintTax]);
 
             _safeMint(msg.sender, tokenId_);
 
@@ -300,8 +300,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
 
         if (collectable > 0) {
             // collect and record tax
-            currency.transferFrom(ownerOf(tokenId_), address(this), collectable);
-            _recordTax(tokenId_, collectable);
+            address owner = ownerOf(tokenId_);
+            currency.transferFrom(owner, address(this), collectable);
+            _recordTax(tokenId_, owner, collectable);
         }
 
         return !shouldDefault;
@@ -319,7 +320,11 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
     /**
      * @dev Update tax record and emit Tax event.
      */
-    function _recordTax(uint256 tokenId_, uint256 amount) private {
+    function _recordTax(
+        uint256 tokenId_,
+        address taxpayer,
+        uint256 amount
+    ) private {
         // update accumulated ubi
         treasuryRecord.accumulatedUBI += (amount * (10000 - taxConfig[ConfigOptions.treasuryShare])) / 10000;
 
@@ -328,7 +333,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
 
         // update tax record
         tokenRecord[tokenId_].lastTaxCollection = block.number;
-        emit Tax(tokenId_, amount);
+        emit Tax(tokenId_, taxpayer, amount);
     }
 
     /// @inheritdoc IHarbergerMarket
@@ -344,9 +349,10 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
 
         if (ubi > 0) {
             tokenRecord[tokenId_].ubiWithdrawn += ubi;
-            currency.transfer(ownerOf(tokenId_), ubi);
+            address recipient = ownerOf(tokenId_);
+            currency.transfer(recipient, ubi);
 
-            emit UBI(tokenId_, ubi);
+            emit UBI(tokenId_, recipient, ubi);
         }
     }
 
