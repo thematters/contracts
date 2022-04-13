@@ -22,6 +22,7 @@ contract TheSpaceTest is DSTest {
     address constant ATTACKER = address(178);
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
+    uint256 constant PIXEL_COLOR = 11;
     uint256 PIXEL_PRICE;
 
     event Price(uint256 indexed tokenId, uint256 price, address owner);
@@ -69,7 +70,7 @@ contract TheSpaceTest is DSTest {
 
     function testGetNonExistingPixel() public {
         // unminted pixel
-        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID + 1);
+        (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID + 1);
 
         assertEq(price, 0);
         assertEq(color, 0);
@@ -80,7 +81,7 @@ contract TheSpaceTest is DSTest {
     function testGetExistingPixel() public {
         // existing pixel
         _bid();
-        (uint256 price, uint256 color, uint256 ubi, address owner) = thespace.getPixel(PIXEL_ID);
+        (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID);
 
         assertEq(price, 0);
         assertEq(color, 0);
@@ -114,6 +115,14 @@ contract TheSpaceTest is DSTest {
     function testSetPrice() public {
         _price();
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
+    }
+
+    function testSetPixel() public {
+        _price();
+        uint256 newPrice = PIXEL_PRICE + 100;
+        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
+        assertEq(thespace.getPrice(PIXEL_ID), newPrice);
+        assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
     }
 
     function testSetColorByOnwer() public {

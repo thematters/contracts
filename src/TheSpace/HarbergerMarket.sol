@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
 import "./IHarbergerMarket.sol";
@@ -11,7 +11,7 @@ import "./AccessRoles.sol";
 /**
  * @dev Market place with Harberger tax. Market attaches one ERC20 contract as currency.
  */
-contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
+contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, AccessRoles {
     /**
      * Global setup total supply and currency address
      */
@@ -88,8 +88,9 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
         currency = ERC20(currencyAddress_);
 
         // default config
-        taxConfig[ConfigOptions.taxRate] = 10;
+        taxConfig[ConfigOptions.taxRate] = 25;
         taxConfig[ConfigOptions.treasuryShare] = 500;
+        taxConfig[ConfigOptions.mintTax] = 100;
     }
 
     /**
@@ -103,7 +104,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
         public
         view
         virtual
-        override(AccessControl, ERC721, IERC165)
+        override(AccessControl, ERC721Enumerable, IERC165)
         returns (bool)
     {
         return super.supportsInterface(interfaceId_);
@@ -155,7 +156,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
     /**
      * @dev See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public view override returns (uint256) {
         return _totalSupply;
     }
 
@@ -183,11 +184,11 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
     /// @inheritdoc IHarbergerMarket
     function getPrice(uint256 tokenId_) public view returns (uint256 price) {
-        return tokenRecord[tokenId_].price;
+        return _exists(tokenId_) ? tokenRecord[tokenId_].price : taxConfig[ConfigOptions.mintTax];
     }
 
     /// @inheritdoc IHarbergerMarket
-    function setPrice(uint256 tokenId_, uint256 price_) external {
+    function setPrice(uint256 tokenId_, uint256 price_) public {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         if (price_ == getPrice(tokenId_)) return;
 
@@ -202,7 +203,7 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
     /// @inheritdoc IHarbergerMarket
     // TODO: might need to set a minting fee to aviod repeated default and mint
-    function bid(uint256 tokenId_, uint256 price_) external {
+    function bid(uint256 tokenId_, uint256 price_) public {
         if (_exists(tokenId_)) {
             uint256 askPrice = getPrice(tokenId_);
 
@@ -235,6 +236,10 @@ contract HarbergerMarket is ERC721, IHarbergerMarket, Multicall, AccessRoles {
 
             // if token does not exists yet, or token is defaulted
             // mint token to current sender for free
+
+            currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
+            _recordTax(tokenId_, taxConfig[ConfigOptions.mintTax]);
+
             _safeMint(msg.sender, tokenId_);
 
             // equal to bidding from address 0 with price 0
