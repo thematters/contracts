@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Snapper is Ownable {
     /**
      * @notice snapshot info
-     * @param block block number for this snapshot
+     * @param block block number for this snapshot. 0 is a special value, meaning this is a initial snapshot.
      * @param cid ipfs content hash for this snapshot
      */
     event Snapshot(uint256 indexed block, string cid);
@@ -37,8 +37,10 @@ contract Snapper is Ownable {
     /**
      * @dev create Snapper contract, init safeConfirmations.
      */
-    constructor(uint256 safeConfirmations_) {
+    constructor(uint256 safeConfirmations_, string memory initSnapshotCid) {
         safeConfirmations = safeConfirmations_;
+        latestEventBlock = block.number;
+        emit Snapshot(0, initSnapshotCid);
     }
 
     /**

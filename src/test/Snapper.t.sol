@@ -11,6 +11,7 @@ contract SnapperTest is DSTest {
     Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant DEPLOYER = address(176);
+    string constant CID0 = "QmYCw8HExhNnoxvc4FQQwtjK5bTZ3NKU2Np6TbNBX2ypW0";
     string constant CID1 = "QmYCw8HExhNnoxvc4FQQwtjK5bTZ3NKU2Np6TbNBX2ypWJ";
     string constant CID2 = "QmSmGAGMGxvKADmvYYQYHTD4BobZBJcSvZffjM6QhUC74E";
 
@@ -19,7 +20,7 @@ contract SnapperTest is DSTest {
 
     function setUp() public {
         vm.prank(DEPLOYER);
-        snapper = new Snapper(2);
+        snapper = new Snapper(2, CID0);
     }
 
     function testCannotSetConfirmationsByNotOwner() public {
