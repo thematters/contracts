@@ -205,15 +205,15 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
     // TODO: might need to set a minting fee to aviod repeated default and mint
     function bid(uint256 tokenId_, uint256 price_) public {
         if (_exists(tokenId_)) {
+            // skip if already own
+            address owner = ownerOf(tokenId_);
+            if (owner == msg.sender) return;
+
+            // check price
             uint256 askPrice = getPrice(tokenId_);
 
             // revert if price too low
             if (price_ < askPrice) revert PriceTooLow();
-
-            address owner = ownerOf(tokenId_);
-
-            // skip if already own
-            if (owner == msg.sender) return;
 
             // clear tax
             bool success = _collectTax(tokenId_);
@@ -223,10 +223,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
                 // if tax fully paid, owner get paid normally
                 currency.transferFrom(msg.sender, owner, askPrice);
             } else {
-                // if tax not fully paid, token is treated as defaulted and payment is collected as tax
-                // otherwise an user can use two addressses to bid from each other to avoid tax
-                currency.transferFrom(msg.sender, address(this), askPrice);
-                _recordTax(tokenId_, msg.sender, askPrice);
+                // if tax not fully paid, token is treated as defaulted and mint tax is collected
+                currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
+                _recordTax(tokenId_, msg.sender, taxConfig[ConfigOptions.mintTax]);
             }
             _safeTransfer(owner, msg.sender, tokenId_, "");
 
