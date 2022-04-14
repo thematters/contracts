@@ -30,17 +30,21 @@ contract Snapper is Ownable {
     uint256 public lastToBlock;
 
     /**
-     * @dev help clients getting latest events.
+     * @dev help clients getting latest data.
      */
-    uint256 public latestEventBlock;
+    uint256 private _latestSnapshotBlock;
+    string private _latestSnapshotCid;
 
     /**
-     * @dev create Snapper contract, init safeConfirmations.
+     * @dev create Snapper contract, init safeConfirmations and first snapshot.
      */
-    constructor(uint256 safeConfirmations_, string memory initSnapshotCid) {
+    constructor(uint256 safeConfirmations_, string memory snapshotCid_) {
         safeConfirmations = safeConfirmations_;
-        latestEventBlock = block.number;
-        emit Snapshot(0, initSnapshotCid);
+
+        _latestSnapshotBlock = block.number;
+        _latestSnapshotCid = snapshotCid_;
+
+        emit Snapshot(0, snapshotCid_);
     }
 
     /**
@@ -67,10 +71,15 @@ contract Snapper is Ownable {
         require(toBlock_ >= fromBlock_, "toBlock must be greater than or equal to fromBlock");
         require(toBlock_ + safeConfirmations < block.number + 2, "target contain unstable blocks");
 
+        lastToBlock = toBlock_;
+        _latestSnapshotBlock = block.number;
+        _latestSnapshotCid = snapshotCid_;
+
         emit Snapshot(toBlock_, snapshotCid_);
         emit Delta(toBlock_, deltaCid_);
+    }
 
-        lastToBlock = toBlock_;
-        latestEventBlock = block.number;
+    function latestSnapshotInfo() external view returns (uint256 latestSnapshotBlock, string memory latestSnapshotCid) {
+        return (_latestSnapshotBlock, _latestSnapshotCid);
     }
 }

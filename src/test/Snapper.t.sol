@@ -20,6 +20,7 @@ contract SnapperTest is DSTest {
 
     function setUp() public {
         vm.prank(DEPLOYER);
+        vm.roll(1);
         snapper = new Snapper(2, CID0);
     }
 
@@ -83,7 +84,9 @@ contract SnapperTest is DSTest {
         uint256 stableBlock = block.number - snapper.safeConfirmations();
 
         assertEq(snapper.lastToBlock(), 0);
-        assertEq(snapper.latestEventBlock(), 0);
+        (uint256 lbk, string memory lcid) = snapper.latestSnapshotInfo();
+        assertEq(lbk, 1);
+        assertEq(lcid, CID0);
 
         // takeSnapshot will emit Snapshot and Delta events.
         vm.expectEmit(true, false, false, true);
@@ -96,6 +99,8 @@ contract SnapperTest is DSTest {
 
         // takeSnapshot will update lastToBlock, latestEventBlock
         assertEq(snapper.lastToBlock(), stableBlock);
-        assertEq(snapper.latestEventBlock(), block.number);
+        (uint256 lbk2, string memory lcid2) = snapper.latestSnapshotInfo();
+        assertEq(lbk2, 5);
+        assertEq(lcid2, CID1);
     }
 }
