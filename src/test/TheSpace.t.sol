@@ -28,7 +28,8 @@ contract TheSpaceTest is DSTest {
 
     event Price(uint256 indexed tokenId, uint256 price, address owner);
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
-    event Tax(uint256 indexed tokenId, uint256 amount);
+    event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
+    event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
 
     function setUp() public {
         vm.startPrank(DEPLOYER);
@@ -216,8 +217,8 @@ contract TheSpaceTest is DSTest {
         _price();
         vm.roll(block.number + TAX_WINDOW);
 
-        vm.expectEmit(true, false, false, false);
-        emit Tax(PIXEL_ID, 10);
+        vm.expectEmit(true, true, false, false);
+        emit Tax(PIXEL_ID, PIXEL_OWNER, 10);
 
         thespace.settleTax(PIXEL_ID);
 
