@@ -19,88 +19,70 @@ contract SnapperTest is DSTest {
     event Delta(uint256 indexed block, string cid);
 
     function setUp() public {
-        vm.prank(DEPLOYER);
-        vm.roll(1);
-        snapper = new Snapper(2, CID0);
-    }
+        vm.roll(2);
 
-    function testCannotSetConfirmationsByNotOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
-        snapper.setSafeConfirmations(5);
-    }
+        // emit initial Snapshot Event when creating contracts.
+        // vm.expectEmit(true, false, false, true);
+        // emit Snapshot(1, CID1);
 
-    function testSetConfirmations(uint256 safeConfirmations_) public {
         vm.prank(DEPLOYER);
-        snapper.setSafeConfirmations(safeConfirmations_);
-        assertEq(snapper.safeConfirmations(), safeConfirmations_);
+        snapper = new Snapper(1, CID0);
     }
 
     function testCannotTakeSnapshotByNotOwner() public {
         vm.roll(5);
         vm.expectRevert("Ownable: caller is not the owner");
-        snapper.takeSnapshot(1, 1, CID1, CID2);
-    }
-
-    function testCannotTakeSnapshotNotStableBlock() public {
-        vm.roll(5);
-        uint256 unstableBlock = block.number + 2 - snapper.safeConfirmations();
-
-        vm.prank(DEPLOYER);
-        vm.expectRevert("target contain unstable blocks");
-        snapper.takeSnapshot(1, unstableBlock, CID1, CID2);
-
-        vm.prank(DEPLOYER);
-        snapper.takeSnapshot(1, unstableBlock - 1, CID1, CID2);
-    }
-
-    function testCannotTakeSnapshotSmallerToBlock() public {
-        vm.roll(5);
-        vm.prank(DEPLOYER);
-        vm.expectRevert("toBlock must be greater than or equal to fromBlock");
-        snapper.takeSnapshot(2, 1, CID1, CID2);
-        vm.prank(DEPLOYER);
-        snapper.takeSnapshot(1, 1, CID1, CID2);
-        assertEq(snapper.lastToBlock(), 1);
-    }
-
-    function testCannotTakeSnapshotSmallFromBlock() public {
-        vm.roll(5);
-        assertEq(snapper.lastToBlock(), 0);
-        vm.prank(DEPLOYER);
-        snapper.takeSnapshot(1, 1, CID1, CID2);
-        assertEq(snapper.lastToBlock(), 1);
-
-        vm.prank(DEPLOYER);
-        vm.expectRevert("fromBlock must be lastToBlock + 1");
         snapper.takeSnapshot(1, 2, CID1, CID2);
+    }
+
+    function testCannotTakeSnapshotWrongLastBlock() public {
+        vm.roll(5);
 
         vm.prank(DEPLOYER);
-        snapper.takeSnapshot(2, 2, CID1, CID2);
-        assertEq(snapper.lastToBlock(), 2);
+        vm.expectRevert("`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        snapper.takeSnapshot(0, 2, CID1, CID2);
+
+        vm.prank(DEPLOYER);
+        vm.expectRevert("`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        snapper.takeSnapshot(3, 4, CID1, CID2);
+
+        vm.prank(DEPLOYER);
+        snapper.takeSnapshot(1, 2, CID1, CID2);
+    }
+
+    function testCannotTakeSnapshotWrongSnapshotBlock() public {
+        vm.roll(5);
+
+        vm.prank(DEPLOYER);
+        vm.expectRevert("`snapshotBlock` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        snapper.takeSnapshot(1, 1, CID1, CID2);
+
+        vm.prank(DEPLOYER);
+        vm.expectRevert("`snapshotBlock` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        snapper.takeSnapshot(1, 0, CID1, CID2);
     }
 
     function testTakeSnapshot() public {
         vm.roll(5);
-        uint256 stableBlock = block.number - snapper.safeConfirmations();
 
-        assertEq(snapper.lastToBlock(), 0);
-        (uint256 lbk, string memory lcid) = snapper.latestSnapshotInfo();
-        assertEq(lbk, 1);
-        assertEq(lcid, CID0);
+        uint256 snapshotBlock = 3;
+
+        (uint256 bk1, string memory cid1) = snapper.latestSnapshotInfo();
+        assertEq(bk1, 1);
+        assertEq(cid1, CID0);
 
         // takeSnapshot will emit Snapshot and Delta events.
         vm.expectEmit(true, false, false, true);
-        emit Snapshot(stableBlock, CID1);
+        emit Snapshot(snapshotBlock, CID1);
         vm.expectEmit(true, false, false, true);
-        emit Delta(stableBlock, CID2);
+        emit Delta(snapshotBlock, CID2);
 
         vm.prank(DEPLOYER);
-        snapper.takeSnapshot(1, stableBlock, CID1, CID2);
+        snapper.takeSnapshot(1, snapshotBlock, CID1, CID2);
 
-        // takeSnapshot will update lastToBlock, latestEventBlock
-        assertEq(snapper.lastToBlock(), stableBlock);
-        (uint256 lbk2, string memory lcid2) = snapper.latestSnapshotInfo();
-        assertEq(lbk2, 5);
-        assertEq(lcid2, CID1);
+        // takeSnapshot will update latestSnapshotInfo
+        (uint256 bk2, string memory cid2) = snapper.latestSnapshotInfo();
+        assertEq(bk2, snapshotBlock);
+        assertEq(cid2, CID1);
     }
 }
