@@ -41,11 +41,11 @@ contract Snapper is Ownable {
     /**
      * @dev take snapshot. use lastSnapshotBlock_ to validate precondition.
      * @param lastSnapshotBlock_ block number last snapshot of.
-     * @param snapshotBlock block number this snapshot of,
+     * @param snapshotBlock_ block number this snapshot of,
      */
     function takeSnapshot(
         uint256 lastSnapshotBlock_,
-        uint256 snapshotBlock,
+        uint256 snapshotBlock_,
         string calldata snapshotCid_,
         string calldata deltaCid_
     ) external onlyOwner {
@@ -54,15 +54,15 @@ contract Snapper is Ownable {
             "`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`"
         );
         require(
-            snapshotBlock > lastSnapshotBlock_,
-            "`snapshotBlock` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`"
+            snapshotBlock_ > lastSnapshotBlock_,
+            "`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`"
         );
 
-        _latestSnapshotBlock = snapshotBlock;
+        _latestSnapshotBlock = snapshotBlock_;
         _latestSnapshotCid = snapshotCid_;
 
-        emit Snapshot(snapshotBlock, snapshotCid_);
-        emit Delta(snapshotBlock, deltaCid_);
+        emit Snapshot(snapshotBlock_, snapshotCid_);
+        emit Delta(snapshotBlock_, deltaCid_);
     }
 
     /**

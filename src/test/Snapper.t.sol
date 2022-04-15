@@ -54,11 +54,11 @@ contract SnapperTest is DSTest {
         vm.roll(5);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`snapshotBlock` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert("`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
         snapper.takeSnapshot(1, 1, CID1, CID2);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`snapshotBlock` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert("`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
         snapper.takeSnapshot(1, 0, CID1, CID2);
     }
 
