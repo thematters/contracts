@@ -174,6 +174,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     function withdrawTreasury() external onlyRole(TREASURY_ADMIN) {
         uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
 
+        treasuryRecord.treasuryWithdrawn += amount;
+
         currency.transfer(msg.sender, amount);
     }
 
