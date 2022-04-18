@@ -6,12 +6,12 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
 import "./IHarbergerMarket.sol";
-import "./AccessRoles.sol";
+import "./ACLManager.sol";
 
 /**
  * @dev Market place with Harberger tax. Market attaches one ERC20 contract as currency.
  */
-contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, AccessRoles {
+contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLManager {
     /**
      * Global setup total supply and currency address
      */
@@ -19,7 +19,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
     /**
      * @dev Total possible NFTs
      */
-    uint256 public _totalSupply = 1000000;
+    uint256 private _totalSupply = 1000000;
 
     /**
      * @dev ERC20 token used as currency
@@ -36,7 +36,6 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
      * @param lastTaxCollection Block number of last tax collection.
      * @param ubiWithdrawn Amount of UBI been withdrawn.
      *
-     * TODO: more efficient storage scheme, see: https://medium.com/@novablitz/storing-structs-is-costing-you-gas-774da988895e
      */
     struct TokenRecord {
         uint256 price;
@@ -45,7 +44,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
     }
 
     /**
-     * @dev Record for all tokens.
+     * @dev Record for all tokens (tokenId => TokenRecord).
      */
     mapping(uint256 => TokenRecord) public tokenRecord;
 
@@ -59,7 +58,6 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
      * @param accumulatedTreasury Total amount of currency allocated for treasury.
      * @param treasuryWithdrawn Total amount of treasury been withdrawn.
      *
-     * TODO: more efficient storage scheme
      */
     struct TreasuryRecord {
         uint256 accumulatedUBI;
@@ -81,9 +79,10 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
         string memory propertyName_,
         string memory propertySymbol_,
         address currencyAddress_,
-        address admin_,
-        address treasury_
-    ) ERC721(propertyName_, propertySymbol_) AccessRoles(admin_, treasury_) {
+        address aclManager_,
+        address marketAdmin_,
+        address treasuryAdmin_
+    ) ERC721(propertyName_, propertySymbol_) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
         // initialize currency contract
         currency = ERC20(currencyAddress_);
 
@@ -98,7 +97,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
      */
 
     /**
-     * Override support interface
+     * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId_)
         public
@@ -107,7 +106,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
         override(AccessControl, ERC721Enumerable, IERC165)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId_);
+        return interfaceId_ == type(IHarbergerMarket).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     /**
@@ -165,14 +164,14 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
      */
 
     /// @inheritdoc IHarbergerMarket
-    function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(ADMIN_ROLE) {
+    function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(MARKET_ADMIN) {
         taxConfig[option_] = value_;
 
         emit Config(option_, value_);
     }
 
     /// @inheritdoc IHarbergerMarket
-    function withdrawTreasury() external onlyRole(TREASURY_ROLE) {
+    function withdrawTreasury() external onlyRole(TREASURY_ADMIN) {
         uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
 
         currency.transfer(msg.sender, amount);
