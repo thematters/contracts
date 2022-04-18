@@ -230,9 +230,12 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
                 currency.transferFrom(msg.sender, address(this), mintTax);
                 _recordTax(tokenId_, msg.sender, mintTax);
             }
-            _transfer(owner, msg.sender, tokenId_);
+            _safeTransfer(owner, msg.sender, tokenId_, "");
 
+            // TODO: askPrice || mintTax?
             emit Bid(tokenId_, owner, msg.sender, askPrice);
+
+            // TODO: setPrice?
         } else {
             if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
 
