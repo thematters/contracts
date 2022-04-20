@@ -227,6 +227,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
                 currency.transferFrom(msg.sender, owner, askPrice);
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected
+
+                if (price_ < mintTax) revert PriceTooLow();
                 currency.transferFrom(msg.sender, address(this), mintTax);
                 _recordTax(tokenId_, msg.sender, mintTax);
             }
@@ -237,8 +239,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
             if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
 
             // if token does not exists yet, or token is defaulted
-            // mint token to current sender for free
 
+            if (price_ < mintTax) revert PriceTooLow();
             currency.transferFrom(msg.sender, address(this), mintTax);
             _recordTax(tokenId_, msg.sender, mintTax);
 
