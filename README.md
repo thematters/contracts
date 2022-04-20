@@ -99,6 +99,8 @@ make deploy-logbook
 make deploy-the-space-currency
 # Deploy the space contract
 make deploy-the-space
+# Deploy the snapper contract
+make deploy-snapper
 ```
 
 ### Deploy on testnet or mainnet:

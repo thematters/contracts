@@ -28,6 +28,10 @@ deploy-the-space-currency: clean
 deploy-the-space: clean
 	@forge create TheSpace --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${THESPACE_CURRENCY_ADDRESS} --constructor-args ${THESPACE_ACL_MANAGER_ADDRESS} --constructor-args ${THESPACE_MARKET_ADMIN_ADDRESS} --constructor-args ${THESPACE_TREASURY_ADMIN_ADDRESS} --legacy
 
+## snapper
+deploy-snapper: clean
+	@forge create Snapper --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${THESPACE_CREATION_BLOCKNUM} --constructor-args ${THESPACE_INITIAL_SNAPSHOT_CID} --legacy
+
 # Verifications
 check-verification:
 	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
