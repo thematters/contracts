@@ -51,8 +51,8 @@ contract TheSpaceTest is DSTest {
     }
 
     function _bid() private {
-        // bid and mint token with 0 price
-        thespace.bid(PIXEL_ID, 0);
+        // bid and mint token with 100 price
+        thespace.bid(PIXEL_ID, 100);
     }
 
     function _price() private {
@@ -84,7 +84,7 @@ contract TheSpaceTest is DSTest {
         _bid();
         (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID);
 
-        assertEq(price, 0);
+        assertEq(price, 100);
         assertEq(color, 0);
         assertEq(ubi, 0);
         assertEq(owner, PIXEL_OWNER);
