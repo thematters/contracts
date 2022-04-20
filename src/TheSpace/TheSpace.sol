@@ -10,8 +10,7 @@ import "./HarbergerMarket.sol";
  *
  * #### Trading
  *
- * - User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.
- * - User buy land: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+ * - User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.  * - User buy land: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
  * - User set land price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
  *
  */
@@ -20,7 +19,6 @@ contract TheSpace is HarbergerMarket {
     /**
      * @notice Color data of each token.
      *
-     * TODO: Combine with TokenRecord to optimize storage?
      */
     mapping(uint256 => uint256) public pixelColor;
 
@@ -31,9 +29,10 @@ contract TheSpace is HarbergerMarket {
 
     constructor(
         address currencyAddress_,
-        address admin_,
-        address treasury_
-    ) HarbergerMarket("Planck", "PLK", currencyAddress_, admin_, treasury_) {}
+        address aclManager_,
+        address marketAdmin_,
+        address treasuryAdmin_
+    ) HarbergerMarket("Planck", "PLK", currencyAddress_, aclManager_, marketAdmin_, treasuryAdmin_) {}
 
     /**
      * @notice Bid pixel, then set price and color.
