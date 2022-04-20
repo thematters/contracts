@@ -204,6 +204,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
     /// @inheritdoc IHarbergerMarket
     // TODO: might need to set a minting fee to aviod repeated default and mint
     function bid(uint256 tokenId_, uint256 price_) public {
+        uint256 mintTax = taxConfig[ConfigOptions.mintTax];
+
         if (_exists(tokenId_)) {
             // skip if already own
             address owner = ownerOf(tokenId_);
@@ -224,8 +226,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
                 currency.transferFrom(msg.sender, owner, askPrice);
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected
-                currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
-                _recordTax(tokenId_, msg.sender, taxConfig[ConfigOptions.mintTax]);
+                if (price_ < mintTax) revert PriceTooLow();
+                currency.transferFrom(msg.sender, address(this), mintTax);
+                _recordTax(tokenId_, msg.sender, mintTax);
             }
             _safeTransfer(owner, msg.sender, tokenId_, "");
 
@@ -234,10 +237,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, Acces
             if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
 
             // if token does not exists yet, or token is defaulted
-            // mint token to current sender for free
-
-            currency.transferFrom(msg.sender, address(this), taxConfig[ConfigOptions.mintTax]);
-            _recordTax(tokenId_, msg.sender, taxConfig[ConfigOptions.mintTax]);
+            if (price_ < mintTax) revert PriceTooLow();
+            currency.transferFrom(msg.sender, address(this), mintTax);
+            _recordTax(tokenId_, msg.sender, mintTax);
 
             _safeMint(msg.sender, tokenId_);
 
