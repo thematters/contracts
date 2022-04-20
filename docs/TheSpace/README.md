@@ -84,5 +84,5 @@ For any pixel, an user can query the following information to help decide whethe
 
 - [TheSpace](./TheSpace.md): main entrance and interface. Inherit from [HarbergerMarket](./HarbergerMarket.md), and implements pixel-specific logical such as setting and reading colors.
 - [HarbergerMarket](./HarbergerMarket.md): logic for trading ERC721 tokens under Harberger Tax and issuing UBI according to the number of token owned.
-- [AccessRoles](./AccessRoles.md): special roles that can update settings or withdraw treasury on HarbergerMarket.
+- [ACLManager](./ACLManager.md): special roles that can update settings or withdraw treasury on HarbergerMarket.
 - [SpaceToken](./SpaceToken.md): standard ERC20 token that can be used as currency in HarbergerMarket.
