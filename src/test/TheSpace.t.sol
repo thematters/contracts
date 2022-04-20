@@ -15,8 +15,9 @@ contract TheSpaceTest is DSTest {
 
     Hevm constant vm = Hevm(HEVM_ADDRESS);
 
-    address constant ADMIN = address(174);
-    address constant TREASURY = address(175);
+    address constant ACL_MANAGER = address(173);
+    address constant MARKET_ADMIN = address(174);
+    address constant TREASURY_ADMIN = address(175);
     address constant DEPLOYER = address(176);
     address constant PIXEL_OWNER = address(177);
     address constant ATTACKER = address(178);
@@ -38,7 +39,7 @@ contract TheSpaceTest is DSTest {
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
-        thespace = new TheSpace(address(currency), ADMIN, TREASURY);
+        thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
 
         // transfer to tester
         uint256 amount = 10000 * (10**uint256(currency.decimals()));
