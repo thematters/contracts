@@ -101,8 +101,7 @@ make deploy-the-space-currency
 make deploy-the-space
 
 # Deploy the snapper contract
-# Should preprare THESPACE_CREATION_BLOCKNUM and THESPACE_INITIAL_SNAPSHOT_CID (a 1000x1000 png file) env variable
-
+# Preprare THESPACE_CREATION_BLOCKNUM and THESPACE_INITIAL_SNAPSHOT_CID (a png file IPFS CID) env variable first, then:
 make deploy-snapper
 ```
 
