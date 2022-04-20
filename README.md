@@ -99,7 +99,10 @@ make deploy-logbook
 make deploy-the-space-currency
 # Deploy the space contract
 make deploy-the-space
+
 # Deploy the snapper contract
+# Should preprare THESPACE_CREATION_BLOCKNUM and THESPACE_INITIAL_SNAPSHOT_CID (a 1000x1000 png file) env variable
+
 make deploy-snapper
 ```
 
