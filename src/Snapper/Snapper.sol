@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Snapper is Ownable {
     /**
      * @notice snapshot info
-     * @param block the block number the snapshot of.
+     * @param block the block number snapshotted for The Space.
      * @param cid IPFS CID of the snapshot file.
      */
     event Snapshot(uint256 indexed block, string cid);
@@ -39,8 +39,8 @@ contract Snapper is Ownable {
 
     /**
      * @dev Emits {Snapshot} and {Delta} events.
-     * @param lastSnapshotBlock_ the block number last snapshot of. use to validate precondition.
-     * @param snapshotBlock_ the block number the snapshot of,
+     * @param lastSnapshotBlock_ last block number snapshotted for The Space. use to validate precondition.
+     * @param snapshotBlock_ the block number snapshotted for The Space this time.
      */
     function takeSnapshot(
         uint256 lastSnapshotBlock_,
