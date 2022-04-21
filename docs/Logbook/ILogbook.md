@@ -149,7 +149,7 @@ uint160
 createdAt
 
 uint256
-from
+parent
 
 uint256
 forkPrice

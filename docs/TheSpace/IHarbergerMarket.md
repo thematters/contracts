@@ -12,7 +12,7 @@ Update current tax configuration.
 
 ADMIN_ROLE only.
 
-### `withdrawTreasury()` (external)
+### `withdrawTreasury(address to)` (external)
 
 Withdraw all available treasury.
 
@@ -72,11 +72,11 @@ A token updated price.
 
 Global configuration for tax is updated.
 
-### `Tax(uint256 tokenId, uint256 amount)`
+### `Tax(uint256 tokenId, address taxpayer, uint256 amount)`
 
 Tax is collected for a token.
 
-### `UBI(uint256 tokenId, uint256 amount)`
+### `UBI(uint256 tokenId, address recipient, uint256 amount)`
 
 UBI (universal basic income) is withdrawn for a token.
 
