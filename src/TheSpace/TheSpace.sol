@@ -93,4 +93,34 @@ contract TheSpace is HarbergerMarket {
     function getColor(uint256 tokenId) public view returns (uint256) {
         return pixelColor[tokenId];
     }
+
+    /**
+     * @notice Get owned tokens for a user.
+     *
+     * @dev offset based pagination
+     */
+    function getTokensByOwner(
+        address owner,
+        uint256 limit,
+        uint256 offset
+    ) external view returns (uint256[] memory) {
+        if (limit == 0) {
+            return new uint256[](0);
+        }
+        uint256 total = balanceOf(owner);
+        if (offset >= total) {
+            return new uint256[](0);
+        }
+        uint256 left = total - offset;
+        uint256 pageSize = left > limit ? limit : left;
+
+        uint256[] memory tokens = new uint256[](pageSize);
+
+        for (uint256 i = 0; i < pageSize; i++) {
+            uint256 tokenIndex = i + offset;
+            tokens[i] = tokenOfOwnerByIndex(owner, tokenIndex);
+        }
+
+        return tokens;
+    }
 }
