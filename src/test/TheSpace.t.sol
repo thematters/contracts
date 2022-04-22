@@ -65,8 +65,8 @@ contract TheSpaceTest is DSTest {
     }
 
     function _bidThis(uint256 tokenId) private {
-        // bid and mint token with 0 price
-        thespace.bid(tokenId, 0);
+        // bid and mint token with 100 price
+        thespace.bid(tokenId, 100);
     }
 
     function _price() private {
