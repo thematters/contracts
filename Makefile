@@ -6,7 +6,7 @@ update:; forge update
 
 # Build & test
 clean    :; forge clean
-snapshot :; forge snapshot --gas-report
+snapshot :; forge snapshot --gas-report --include-fuzz-tests
 build: clean
 	forge build
 test:
