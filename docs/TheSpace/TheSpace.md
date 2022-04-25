@@ -12,17 +12,17 @@ Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMa
 
 ## Functions
 
-### `constructor(address currencyAddress_, address admin_, address treasury_)` (public)
+### `constructor(address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
-### `setPixel(uint256 tokenId, uint256 bid, uint256 price, uint256 color)` (external)
+### `setPixel(uint256 tokenId_, uint256 bid_, uint256 price_, uint256 color_)` (external)
 
 Bid pixel, then set price and color.
 
-### `getPixel(uint256 tokenId) → uint256 price, uint256 color, uint256 ubi, address owner` (external)
+### `getPixel(uint256 tokenId_) → uint256 tokenId, uint256 price, uint256 lastTaxCollection, uint256 ubi, address owner, uint256 color` (external)
 
 Get pixel info.
 
-### `setColor(uint256 tokenId, uint256 color)` (external)
+### `setColor(uint256 tokenId, uint256 color)` (public)
 
 Set color for a pixel.
 
@@ -31,8 +31,6 @@ Emits {Color} event.
 ### `getColor(uint256 tokenId) → uint256` (public)
 
 Get color for a pixel.
-
-Emits {Color} event.
 
 ## Events
 

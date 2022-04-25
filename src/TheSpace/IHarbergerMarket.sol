@@ -106,7 +106,7 @@ interface IHarbergerMarket is IERC721 {
      * @notice Withdraw all available treasury.
      * @dev TREASURY_ROLE only.
      */
-    function withdrawTreasury() external;
+    function withdrawTreasury(address to) external;
 
     /**
      * Trading

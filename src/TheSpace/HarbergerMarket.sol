@@ -171,12 +171,12 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     }
 
     /// @inheritdoc IHarbergerMarket
-    function withdrawTreasury() external onlyRole(TREASURY_ADMIN) {
+    function withdrawTreasury(address to) external onlyRole(TREASURY_ADMIN) {
         uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
 
-        treasuryRecord.treasuryWithdrawn += amount;
+        treasuryRecord.treasuryWithdrawn = treasuryRecord.accumulatedTreasury;
 
-        currency.transfer(msg.sender, amount);
+        currency.transfer(to, amount);
     }
 
     /**
@@ -185,13 +185,17 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function getPrice(uint256 tokenId_) public view returns (uint256 price) {
-        return _exists(tokenId_) ? tokenRecord[tokenId_].price : taxConfig[ConfigOptions.mintTax];
+        return _exists(tokenId_) ? _getPrice(tokenId_) : taxConfig[ConfigOptions.mintTax];
+    }
+
+    function _getPrice(uint256 tokenId_) internal view returns (uint256 price) {
+        return tokenRecord[tokenId_].price;
     }
 
     /// @inheritdoc IHarbergerMarket
     function setPrice(uint256 tokenId_, uint256 price_) public {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
-        if (price_ == getPrice(tokenId_)) return;
+        if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
         if (success) _setPrice(tokenId_, price_);
@@ -203,7 +207,6 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     }
 
     /// @inheritdoc IHarbergerMarket
-    // TODO: might need to set a minting fee to aviod repeated default and mint
     function bid(uint256 tokenId_, uint256 price_) public {
         uint256 mintTax = taxConfig[ConfigOptions.mintTax];
 
@@ -213,7 +216,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
             if (owner == msg.sender) return;
 
             // check price
-            uint256 askPrice = getPrice(tokenId_);
+            uint256 askPrice = _getPrice(tokenId_);
 
             // revert if price too low
             if (price_ < askPrice) revert PriceTooLow();
@@ -249,9 +252,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
             // equal to bidding from address 0 with price 0
             emit Bid(tokenId_, address(0), msg.sender, 0);
 
-            // initialize tax record and price
-            tokenRecord[tokenId_].lastTaxCollection = block.number;
-            _setPrice(tokenId_, price_);
+            // initialize price
+            _setPrice(tokenId_, price_, msg.sender);
         }
     }
 
@@ -263,7 +265,10 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     function getTax(uint256 tokenId_) public view returns (uint256) {
         if (!_exists(tokenId_)) revert TokenNotExists();
 
-        // calculate tax
+        return _getTax(tokenId_);
+    }
+
+    function _getTax(uint256 tokenId_) internal view returns (uint256) {
         // `1000` for every `1000` blocks, `10000` for conversion from bps
         return
             (getPrice(tokenId_) *
@@ -274,6 +279,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     /// @inheritdoc IHarbergerMarket
     function evaluateOwnership(uint256 tokenId_) public view returns (uint256 collectable, bool shouldDefault) {
         uint256 tax = getTax(tokenId_);
+
         if (tax > 0) {
             // calculate collectable amount
             address taxpayer = ownerOf(tokenId_);
@@ -281,7 +287,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
             uint256 balance = currency.balanceOf(taxpayer);
             uint256 available = allowance < balance ? allowance : balance;
 
-            if (available > tax) {
+            if (available >= tax) {
                 // can pay tax fully and do not need to be defaulted
                 return (tax, false);
             } else {
@@ -314,11 +320,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function settleTax(uint256 tokenId_) public returns (bool success) {
-        bool fullyCollected = _collectTax(tokenId_);
-
-        if (!fullyCollected) _burn(tokenId_);
-
-        return fullyCollected;
+        success = _collectTax(tokenId_);
+        if (!success) _burn(tokenId_);
     }
 
     /**
@@ -368,10 +371,18 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
      * @dev Internel function to set price for a token.
      */
     function _setPrice(uint256 tokenId_, uint256 price_) internal {
+        _setPrice(tokenId_, price_, ownerOf(tokenId_));
+    }
+
+    function _setPrice(
+        uint256 tokenId_,
+        uint256 price_,
+        address owner
+    ) internal {
         // update price in tax record
         tokenRecord[tokenId_].price = price_;
 
         // emit events
-        emit Price(tokenId_, price_, ownerOf(tokenId_));
+        emit Price(tokenId_, price_, owner);
     }
 }
