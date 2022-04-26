@@ -1,19 +1,18 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
+import "forge-std/console2.sol";
+
 import "@openzeppelin/contracts/utils/Base64.sol";
-import {DSTest} from "ds-test/test.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import {console} from "./utils/Console.sol";
-import {Hevm} from "./utils/Hevm.sol";
 import {Logbook} from "../Logbook/Logbook.sol";
 import {ILogbook} from "../Logbook/ILogbook.sol";
 
-contract LogbookTest is DSTest {
+contract LogbookTest is Test {
     Logbook private logbook;
-
-    Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant DEPLOYER = address(176);
     address constant TRAVELOGGERS_OWNER = address(177);

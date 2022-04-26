@@ -1,19 +1,16 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
-import {DSTest} from "ds-test/test.sol";
-
-import {console} from "./utils/Console.sol";
-import {Hevm} from "./utils/Hevm.sol";
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
+import "forge-std/console2.sol";
 
 import {TheSpace} from "../TheSpace/TheSpace.sol";
 import {SpaceToken} from "../TheSpace/SpaceToken.sol";
 
-contract TheSpaceTest is DSTest {
+contract TheSpaceTest is Test {
     TheSpace private thespace;
     SpaceToken private currency;
-
-    Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant ACL_MANAGER = address(173);
     address constant MARKET_ADMIN = address(174);
