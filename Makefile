@@ -36,4 +36,4 @@ verify-logbook:
 	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args ${LOGBOOK_ABI_ENCODE_CONSTRUCTOR_ARGS} --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${LOGBOOK_CONTRACT_ADDRESS} src/Logbook/Logbook.sol:Logbook ${ETHERSCAN_API_KEY}
 
 verify-the-space:
-	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args ${THESPACE_CURRENCY_ADDRESS} --constructor-args ${THESPACE_ACL_MANAGER_ADDRESS} --constructor-args ${THESPACE_MARKET_ADMIN_ADDRESS} --constructor-args ${THESPACE_TREASURY_ADMIN_ADDRESS} --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${THESPACE_CONTRACT_ADDRESS} src/TheSpace/TheSpace.sol:TheSpace ${ETHERSCAN_API_KEY}
+	@forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimizations 200 --constructor-args ${THESPACE_ABI_ENCODE_CONSTRUCTOR_ARGS} --compiler-version v0.8.13+commit.abaa5c0e ${THESPACE_CONTRACT_ADDRESS} src/TheSpace/TheSpace.sol:TheSpace ${ETHERSCAN_API_KEY}
