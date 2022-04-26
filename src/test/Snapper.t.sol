@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
-import {DSTest} from "ds-test/test.sol";
-import {Hevm} from "./utils/Hevm.sol";
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
+import "forge-std/console2.sol";
+
 import {Snapper} from "../Snapper/Snapper.sol";
 
-contract SnapperTest is DSTest {
+contract SnapperTest is Test {
     Snapper private snapper;
-
-    Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant DEPLOYER = address(176);
     string constant CID0 = "QmYCw8HExhNnoxvc4FQQwtjK5bTZ3NKU2Np6TbNBX2ypW0";

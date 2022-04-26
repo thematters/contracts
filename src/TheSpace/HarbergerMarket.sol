@@ -87,9 +87,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         currency = ERC20(currencyAddress_);
 
         // default config
-        taxConfig[ConfigOptions.taxRate] = 25;
+        taxConfig[ConfigOptions.taxRate] = 75;
         taxConfig[ConfigOptions.treasuryShare] = 500;
-        taxConfig[ConfigOptions.mintTax] = 100;
+        taxConfig[ConfigOptions.mintTax] = 1000000000000000000;
     }
 
     /**
@@ -218,19 +218,17 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
             // check price
             uint256 askPrice = _getPrice(tokenId_);
 
-            // revert if price too low
-            if (price_ < askPrice) revert PriceTooLow();
-
             // clear tax
             bool success = _collectTax(tokenId_);
 
             // process with transfer
             if (success) {
+                // revert if price too low
+                if (price_ < askPrice) revert PriceTooLow();
                 // if tax fully paid, owner get paid normally
                 currency.transferFrom(msg.sender, owner, askPrice);
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected
-
                 if (price_ < mintTax) revert PriceTooLow();
                 currency.transferFrom(msg.sender, address(this), mintTax);
                 _recordTax(tokenId_, msg.sender, mintTax);
