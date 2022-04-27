@@ -11,8 +11,8 @@ import "./HarbergerMarket.sol";
  * #### Trading
  *
  * - User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.
- * - User buy land: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
- * - User set land price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+ * - User buy pixel: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+ * - User set pixel price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
  *
  */
 
@@ -76,7 +76,6 @@ contract TheSpace is HarbergerMarket {
 
     /**
      * @notice Set color for a pixel.
-     *
      * @dev Emits {Color} event.
      */
     function setColor(uint256 tokenId, uint256 color) public {
@@ -88,7 +87,6 @@ contract TheSpace is HarbergerMarket {
 
     /**
      * @notice Get color for a pixel.
-     *
      */
     function getColor(uint256 tokenId) public view returns (uint256) {
         return pixelColor[tokenId];
@@ -96,7 +94,6 @@ contract TheSpace is HarbergerMarket {
 
     /**
      * @notice Get owned tokens for a user.
-     *
      * @dev offset based pagination
      */
     function getTokensByOwner(

@@ -1,12 +1,14 @@
 //SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.11;
 
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
-import {TheSpace} from "../TheSpace/TheSpace.sol";
-import {SpaceToken} from "../TheSpace/SpaceToken.sol";
+import {TheSpace} from "../../TheSpace/TheSpace.sol";
+import {SpaceToken} from "../../TheSpace/SpaceToken.sol";
+import {IACLManager} from "../../TheSpace/IACLManager.sol";
+import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
 
 contract BaseTheSpaceTest is Test {
     TheSpace internal thespace;
@@ -29,6 +31,15 @@ contract BaseTheSpaceTest is Test {
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
     event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
     event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
+
+    // enums
+    IACLManager.Role constant ROLE_ACL_MANAGER = IACLManager.Role.aclManager;
+    IACLManager.Role constant ROLE_MARKET_ADMIN = IACLManager.Role.marketAdmin;
+    IACLManager.Role constant ROLE_TREASURY_ADMIN = IACLManager.Role.treasuryAdmin;
+
+    IHarbergerMarket.ConfigOptions constant CONFIG_TAX_RATE = IHarbergerMarket.ConfigOptions.taxRate;
+    IHarbergerMarket.ConfigOptions constant CONFIG_TREASURY_SHARE = IHarbergerMarket.ConfigOptions.treasuryShare;
+    IHarbergerMarket.ConfigOptions constant CONFIG_MINT_TAX = IHarbergerMarket.ConfigOptions.mintTax;
 
     function setUp() public {
         vm.startPrank(DEPLOYER);

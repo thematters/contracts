@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  * @dev Market attaches one ERC20 contract as currency.
  */
 interface IHarbergerMarket is IERC721 {
-    /**
-     * Error types
-     */
+    //////////////////////////////
+    /// Error types
+    //////////////////////////////
 
     /**
      * @dev Price too low to bid the given token.
@@ -34,9 +34,9 @@ interface IHarbergerMarket is IERC721 {
      */
     error InvalidTokenId(uint256 min, uint256 max);
 
-    /**
-     * Event types
-     */
+    //////////////////////////////
+    /// Event types
+    //////////////////////////////
 
     /**
      * @notice A token updated price.
@@ -47,7 +47,7 @@ interface IHarbergerMarket is IERC721 {
     event Price(uint256 indexed tokenId, uint256 price, address indexed owner);
 
     /**
-     * @notice Global configuration for tax is updated.
+     * @notice Global configuration is updated.
      * @param option Field of config been updated.
      * @param value New value after update.
      */
@@ -90,9 +90,9 @@ interface IHarbergerMarket is IERC721 {
         mintTax
     }
 
-    /**
-     * Configuration / Admin
-     */
+    //////////////////////////////
+    /// Configuration / Admin
+    //////////////////////////////
 
     /**
      * @notice Update current tax configuration.
@@ -108,9 +108,9 @@ interface IHarbergerMarket is IERC721 {
      */
     function withdrawTreasury(address to) external;
 
-    /**
-     * Trading
-     */
+    //////////////////////////////
+    /// Trading
+    //////////////////////////////
 
     /**
      * @notice Returns the current price of a token by id.
@@ -143,9 +143,9 @@ interface IHarbergerMarket is IERC721 {
      */
     function bid(uint256 tokenId_, uint256 price_) external;
 
-    /**
-     * Tax & UBI
-     */
+    //////////////////////////////
+    /// Tax & UBI
+    //////////////////////////////
 
     /**
      * @notice Calculate outstanding tax for a token.
