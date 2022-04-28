@@ -35,7 +35,7 @@ contract Snapper is Ownable {
     string private _latestSnapshotCid;
 
     /**
-     * @notice create Snapper contract, init safeConfirmations and emit initial snapshot.
+     * @notice create Snapper contract with initial snapshot.
      * @dev Emits {Snapshot} event.
      * @param theSpaceCreationBlock_ the Contract Creation block number of The Space contract.
      * @param snapshotCid_ the initial pixels picture IPFS CID of The Space.

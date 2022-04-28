@@ -4,7 +4,7 @@
 
 ### `constructor(uint256 theSpaceCreationBlock_, string snapshotCid_)` (public)
 
-create Snapper contract, init safeConfirmations and emit initial snapshot.
+create Snapper contract with initial snapshot.
 
 Emits {Snapshot} event.
 
