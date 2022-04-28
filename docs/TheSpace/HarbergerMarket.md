@@ -14,15 +14,21 @@ See {IERC165-supportsInterface}.
 
 ### `transferFrom(address from_, address to_, uint256 tokenId_)` (public)
 
-See {IERC721-transferFrom}. Override to collect tax before transfer.
+See {IERC721-transferFrom}.
+
+Override to collect tax before transfer.
 
 ### `safeTransferFrom(address from_, address to_, uint256 tokenId_, bytes data_)` (public)
 
-See {IERC721-safeTransferFrom}. Override to collect tax before transfer.
+See {IERC721-safeTransferFrom}.
+
+Override to collect tax before transfer.
 
 ### `totalSupply() → uint256` (public)
 
-See {IERC20-totalSupply}. Always return total possible amount of supply, instead of current token in circulation.
+See {IERC20-totalSupply}.
+
+Always return total possible amount of supply, instead of current token in circulation.
 
 ### `setTaxConfig(enum IHarbergerMarket.ConfigOptions option_, uint256 value_)` (external)
 

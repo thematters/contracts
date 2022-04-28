@@ -7,8 +7,8 @@ Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMa
 #### Trading
 
 - User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.
-- User buy land: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
-- User set land price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+- User buy pixel: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+- User set pixel price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
 
 ## Functions
 
@@ -31,6 +31,12 @@ Emits {Color} event.
 ### `getColor(uint256 tokenId) → uint256` (public)
 
 Get color for a pixel.
+
+### `getTokensByOwner(address owner, uint256 limit, uint256 offset) → uint256[]` (external)
+
+Get owned tokens for a user.
+
+offset based pagination
 
 ## Events
 
