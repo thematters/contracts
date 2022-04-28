@@ -5,6 +5,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Snapper is Ownable {
     /**
+     * @dev `lastSnapshotBlock_` must be equal to `_latestSnapshotBlock` in `takeSnapshot` method
+     */
+    error InvalidLastSnapshotBlock(uint256 last, uint256 latest);
+
+    /**
+     * @dev `snapshotBlock_` must be greater than `_latestSnapshotBlock` in `takeSnapshot` method
+     */
+    error InvalidSnapshotBlock(uint256 target, uint256 latest);
+
+    /**
      * @notice snapshot info
      * @param block the block number snapshotted for The Space.
      * @param cid IPFS CID of the snapshot file.
@@ -48,14 +58,10 @@ contract Snapper is Ownable {
         string calldata snapshotCid_,
         string calldata deltaCid_
     ) external onlyOwner {
-        require(
-            lastSnapshotBlock_ == _latestSnapshotBlock,
-            "`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`"
-        );
-        require(
-            snapshotBlock_ > _latestSnapshotBlock,
-            "`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`"
-        );
+        if (lastSnapshotBlock_ != _latestSnapshotBlock)
+            revert InvalidLastSnapshotBlock(lastSnapshotBlock_, _latestSnapshotBlock);
+
+        if (snapshotBlock_ <= _latestSnapshotBlock) revert InvalidSnapshotBlock(snapshotBlock_, _latestSnapshotBlock);
 
         _latestSnapshotBlock = snapshotBlock_;
         _latestSnapshotCid = snapshotCid_;

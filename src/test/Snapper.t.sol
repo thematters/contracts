@@ -15,6 +15,9 @@ contract SnapperTest is Test {
     string constant CID1 = "QmYCw8HExhNnoxvc4FQQwtjK5bTZ3NKU2Np6TbNBX2ypWJ";
     string constant CID2 = "QmSmGAGMGxvKADmvYYQYHTD4BobZBJcSvZffjM6QhUC74E";
 
+    // error InvalidLastSnapshotBlock(uint256 last, uint256 latest);
+    // error InvalidSnapshotBlock(uint256 target, uint256 latest);
+
     event Snapshot(uint256 indexed block, string cid);
     event Delta(uint256 indexed block, string cid);
 
@@ -39,11 +42,11 @@ contract SnapperTest is Test {
         vm.roll(5);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert(abi.encodeWithSignature("InvalidLastSnapshotBlock(uint256,uint256)", 0, 1));
         snapper.takeSnapshot(0, 2, CID1, CID2);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`lastSnapshotBlock_` must be equal to `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert(abi.encodeWithSignature("InvalidLastSnapshotBlock(uint256,uint256)", 3, 1));
         snapper.takeSnapshot(3, 4, CID1, CID2);
 
         vm.prank(DEPLOYER);
@@ -54,11 +57,11 @@ contract SnapperTest is Test {
         vm.roll(5);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert(abi.encodeWithSignature("InvalidSnapshotBlock(uint256,uint256)", 1, 1));
         snapper.takeSnapshot(1, 1, CID1, CID2);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert("`snapshotBlock_` must be greater than `latestSnapshotBlock` returned by `latestSnapshotInfo`");
+        vm.expectRevert(abi.encodeWithSignature("InvalidSnapshotBlock(uint256,uint256)", 0, 1));
         snapper.takeSnapshot(1, 0, CID1, CID2);
     }
 
