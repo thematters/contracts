@@ -47,10 +47,10 @@ contract BaseTheSpaceTest is Test {
         // deploy space token
         currency = new SpaceToken();
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
-        MINT_TAX = 1 * (10**uint256(currency.decimals()));
 
         // deploy the space
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        MINT_TAX = thespace.taxConfig(CONFIG_MINT_TAX);
 
         // transfer to tester
         uint256 amount = 10000 * (10**uint256(currency.decimals()));

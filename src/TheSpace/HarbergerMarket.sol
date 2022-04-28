@@ -89,7 +89,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         // default config
         taxConfig[ConfigOptions.taxRate] = 75;
         taxConfig[ConfigOptions.treasuryShare] = 500;
-        taxConfig[ConfigOptions.mintTax] = 1000000000000000000;
+        taxConfig[ConfigOptions.mintTax] = 1 * (10**uint256(currency.decimals()));
     }
 
     //////////////////////////////
@@ -167,7 +167,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     //////////////////////////////
 
     /// @inheritdoc IHarbergerMarket
-    function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(Role.aclManager) {
+    function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(Role.marketAdmin) {
         taxConfig[option_] = value_;
 
         emit Config(option_, value_);

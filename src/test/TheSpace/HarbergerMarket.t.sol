@@ -3,7 +3,7 @@ pragma solidity ^0.8.11;
 
 import "./BaseTheSpace.t.sol";
 
-contract TheSpaceTest is BaseTheSpaceTest {
+contract HarbergerMarketTest is BaseTheSpaceTest {
     /**
      * Total Supply
      */
@@ -18,14 +18,52 @@ contract TheSpaceTest is BaseTheSpaceTest {
     /**
      * @dev Config
      */
-    function testGetConfig() public {}
+    function testGetConfig() public {
+        assertGe(thespace.taxConfig(CONFIG_TAX_RATE), 0);
+        assertGe(thespace.taxConfig(CONFIG_TREASURY_SHARE), 0);
+        assertGe(thespace.taxConfig(CONFIG_MINT_TAX), 0);
+    }
 
-    function testCannotSetConfigByAttacker() public {}
+    function testCannotSetConfigByAttacker() public {
+        vm.expectRevert(abi.encodeWithSignature("RoleRequired(uint8)", ROLE_MARKET_ADMIN));
+
+        vm.stopPrank();
+        vm.prank(ATTACKER);
+        thespace.setTaxConfig(CONFIG_TAX_RATE, 1000);
+    }
 
     function testSetTaxRate() public {
+        vm.stopPrank();
+
         // set tax rate
+        uint256 taxRate = 1000;
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_TAX_RATE, taxRate);
+
         // bid a pixel
+        vm.prank(PIXEL_OWNER);
+        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, PIXEL_PRICE, 1);
+
         // roll the block.number and check tax
+        uint256 blockRollsTo = block.number + TAX_WINDOW;
+        (, uint256 lastTaxCollection, ) = thespace.tokenRecord(PIXEL_ID);
+        uint256 tax = (PIXEL_PRICE * taxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
+        vm.roll(blockRollsTo);
+        assertEq(thespace.getTax(PIXEL_ID), tax);
+
+        // change tax rate and recheck
+        uint256 newTaxRate = 10;
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_TAX_RATE, newTaxRate);
+        uint256 newTax = (PIXEL_PRICE * newTaxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
+        vm.roll(blockRollsTo);
+        assertEq(thespace.getTax(PIXEL_ID), newTax);
+
+        // zero tax
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_TAX_RATE, 0);
+        vm.roll(blockRollsTo);
+        assertEq(thespace.getTax(PIXEL_ID), 0);
     }
 
     function testSetTreasuryShare() public {
