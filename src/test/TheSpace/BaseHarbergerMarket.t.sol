@@ -20,16 +20,15 @@ contract BaseHarbergerMarket is Test {
 
     address constant DEPLOYER = address(200);
     address constant PIXEL_OWNER = address(201);
-    address constant ATTACKER = address(202);
-    address constant TREASURY = address(203);
-    address constant OPERATOR = address(204);
+    address constant PIXEL_OWNER_1 = address(202);
+    address constant OPERATOR = address(203);
+    address constant ATTACKER = address(204);
+    address constant TREASURY = address(205);
 
-    uint256 constant TOTAL_SUPPLY = 1000000;
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
     uint256 constant PIXEL_COLOR = 11;
     uint256 public PIXEL_PRICE;
-    uint256 public MINT_TAX;
 
     event Price(uint256 indexed tokenId, uint256 price, address owner);
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
@@ -54,39 +53,23 @@ contract BaseHarbergerMarket is Test {
 
         // deploy the space
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
-        MINT_TAX = thespace.taxConfig(CONFIG_MINT_TAX);
 
         // transfer to tester
-        uint256 amount = 10000 * (10**uint256(currency.decimals()));
+        uint256 amount = 10 * PIXEL_PRICE;
         currency.transfer(PIXEL_OWNER, amount);
+        currency.transfer(PIXEL_OWNER_1, amount);
         vm.stopPrank();
 
         // tester approve the space
-        vm.startPrank(PIXEL_OWNER);
+        vm.prank(PIXEL_OWNER_1);
+        currency.approve(address(thespace), type(uint256).max);
+
+        vm.prank(PIXEL_OWNER);
         currency.approve(address(thespace), type(uint256).max);
     }
 
     function _rollBlock() internal {
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         vm.roll(blockRollsTo);
-    }
-
-    function _bid() internal {
-        // bid and mint token with 1 $SPACE
-        thespace.bid(PIXEL_ID, MINT_TAX);
-    }
-
-    function _bidThis(uint256 tokenId) internal {
-        // bid and mint token with 1 $SPACE
-        thespace.bid(tokenId, MINT_TAX);
-    }
-
-    function _price() internal {
-        _bid();
-        thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
-    }
-
-    function _settleTax() internal {
-        thespace.settleTax(PIXEL_ID);
     }
 }

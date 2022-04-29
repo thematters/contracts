@@ -270,11 +270,15 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     }
 
     function _getTax(uint256 tokenId_) internal view returns (uint256) {
+        uint256 price = _getPrice(tokenId_);
+
+        if (price == 0) return 0;
+
+        uint256 taxRate = taxConfig[ConfigOptions.taxRate];
+        uint256 lastTaxCollection = tokenRecord[tokenId_].lastTaxCollection;
+
         // `1000` for every `1000` blocks, `10000` for conversion from bps
-        return
-            (getPrice(tokenId_) *
-                taxConfig[ConfigOptions.taxRate] *
-                (block.number - tokenRecord[tokenId_].lastTaxCollection)) / (1000 * 10000);
+        return ((price * taxRate * (block.number - lastTaxCollection)) / (1000 * 10000));
     }
 
     /// @inheritdoc IHarbergerMarket
@@ -333,13 +337,13 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         address taxpayer,
         uint256 amount
     ) private {
+        // update accumulated treasury
         uint256 treasuryShare = taxConfig[ConfigOptions.treasuryShare];
+        uint256 treasuryAdded = (amount * treasuryShare) / 10000;
+        treasuryRecord.accumulatedTreasury += treasuryAdded;
 
         // update accumulated ubi
-        treasuryRecord.accumulatedUBI += (amount * (10000 - treasuryShare)) / 10000;
-
-        // update accumulated treasury
-        treasuryRecord.accumulatedTreasury += (amount * treasuryShare) / 10000;
+        treasuryRecord.accumulatedUBI += (amount - treasuryAdded);
 
         // update tax record
         tokenRecord[tokenId_].lastTaxCollection = block.number;
