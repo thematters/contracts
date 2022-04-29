@@ -209,6 +209,24 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
     }
 
+    function testBatchBid() public {
+        bytes[] memory data = new bytes[](3);
+
+        // bid PIXEL_ID as PIXEL_OWNER
+        _bid();
+
+        data[0] = abi.encodeWithSignature("bid(uint256,uint256)", PIXEL_ID, PIXEL_PRICE);
+        data[1] = abi.encodeWithSignature("bid(uint256,uint256)", PIXEL_ID + 1, PIXEL_PRICE);
+        data[2] = abi.encodeWithSignature("bid(uint256,uint256)", PIXEL_ID + 2, PIXEL_PRICE);
+
+        vm.prank(PIXEL_OWNER_1);
+        thespace.multicall(data);
+
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
+        assertEq(thespace.getOwner(PIXEL_ID + 1), PIXEL_OWNER_1);
+        assertEq(thespace.getOwner(PIXEL_ID + 2), PIXEL_OWNER_1);
+    }
+
     // function testBidDefaultedToken() public {
     //     // bid a token and set a high price
     //     _bid(PIXEL_PRICE, type(uint256).max);
