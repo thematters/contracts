@@ -8,33 +8,31 @@ contract TheSpaceTest is BaseHarbergerMarket {
      * @dev Pixel
      */
     function testGetNonExistingPixel() public {
-        // unminted pixel
-        (, uint256 price, , uint256 ubi, address owner, uint256 color) = thespace.getPixel(PIXEL_ID + 1);
+        TheSpace.Pixel memory pixel = thespace.getPixel(PIXEL_ID);
 
-        assertEq(price, 0);
-        assertEq(color, 0);
-        assertEq(ubi, 0);
-        assertEq(owner, address(0));
+        assertEq(pixel.price, 0);
+        assertEq(pixel.color, 0);
+        assertEq(pixel.owner, address(0));
     }
 
-    // function testGetExistingPixel() public {
-    //     // existing pixel
-    //     _bid();
-    //     (, uint256 price, , , address owner, uint256 color) = thespace.getPixel(PIXEL_ID);
+    function testGetExistingPixel() public {
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+        TheSpace.Pixel memory pixel = thespace.getPixel(PIXEL_ID);
 
-    //     assertEq(price, MINT_TAX);
-    //     assertEq(color, 0);
-    //     // assertEq(ubi, 0);
-    //     assertEq(owner, PIXEL_OWNER);
-    // }
+        assertEq(pixel.price, PIXEL_PRICE);
+        assertEq(pixel.color, 0);
+        assertEq(pixel.owner, PIXEL_OWNER);
+    }
 
-    // function testSetPixel() public {
-    //     _price();
-    //     uint256 newPrice = PIXEL_PRICE + 100;
-    //     thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
-    //     assertEq(thespace.getPrice(PIXEL_ID), newPrice);
-    //     assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
-    // }
+    function testSetPixel(uint256 newPrice) public {
+        _bid();
+
+        vm.prank(PIXEL_OWNER);
+        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
+
+        assertEq(thespace.getPrice(PIXEL_ID), newPrice);
+        assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
+    }
 
     function testBatchSetPixels() public {}
 
@@ -43,25 +41,25 @@ contract TheSpaceTest is BaseHarbergerMarket {
      */
     function testGetColor() public {}
 
-    // function testSetColorByOnwer() public {
-    //     _bid();
+    function testSetColorByOnwer() public {
+        _bid();
 
-    //     uint256 color = 5;
-    //     thespace.setColor(PIXEL_ID, color);
+        uint256 color = 5;
+        vm.prank(PIXEL_OWNER);
+        thespace.setColor(PIXEL_ID, color);
 
-    //     assertEq(thespace.getColor(PIXEL_ID), color);
-    // }
+        assertEq(thespace.getColor(PIXEL_ID), color);
+    }
 
-    // function testCannotSetColorByAttacker() public {
-    //     _bid();
+    function testCannotSetColorByAttacker() public {
+        _bid();
 
-    //     uint256 color = 6;
+        uint256 color = 6;
 
-    //     vm.stopPrank();
-    //     vm.prank(ATTACKER);
-    //     vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
-    //     thespace.setColor(PIXEL_ID, color);
-    // }
+        vm.prank(ATTACKER);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("Unauthorized()"))));
+        thespace.setColor(PIXEL_ID, color);
+    }
 
     /**
      * @dev Owner Tokens

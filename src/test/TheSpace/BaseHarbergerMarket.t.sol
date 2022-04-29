@@ -68,6 +68,44 @@ contract BaseHarbergerMarket is Test {
         currency.approve(address(thespace), type(uint256).max);
     }
 
+    function _bid() internal {
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+    }
+
+    function _bid(uint256 bidPrice) internal {
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, bidPrice);
+    }
+
+    function _bid(uint256 bidPrice, uint256 newPrice) internal {
+        vm.startPrank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, bidPrice);
+        thespace.setPrice(PIXEL_ID, newPrice);
+        vm.stopPrank();
+    }
+
+    function _bidAs(address bidder, uint256 bidPrice) internal {
+        vm.prank(bidder);
+        thespace.bid(PIXEL_ID, bidPrice);
+    }
+
+    function _bidAs(
+        address bidder,
+        uint256 bidPrice,
+        uint256 newPrice
+    ) internal {
+        vm.startPrank(bidder);
+        thespace.bid(PIXEL_ID, bidPrice);
+        thespace.setPrice(PIXEL_ID, newPrice);
+        vm.stopPrank();
+    }
+
+    function _bidThis(uint256 tokenId, uint256 bidPrice) internal {
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(tokenId, bidPrice);
+    }
+
     function _rollBlock() internal {
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         vm.roll(blockRollsTo);

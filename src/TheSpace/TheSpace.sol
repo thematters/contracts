@@ -28,6 +28,18 @@ contract TheSpace is HarbergerMarket {
      */
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
+    /**
+     * @dev Pixel object.
+     */
+    struct Pixel {
+        uint256 tokenId;
+        uint256 price;
+        uint256 lastTaxCollection;
+        uint256 ubi;
+        address owner;
+        uint256 color;
+    }
+
     constructor(
         address currencyAddress_,
         address aclManager_,
@@ -40,31 +52,20 @@ contract TheSpace is HarbergerMarket {
      */
     function setPixel(
         uint256 tokenId_,
-        uint256 bid_,
-        uint256 price_,
+        uint256 bidPrice_,
+        uint256 newPrice_,
         uint256 color_
     ) external {
-        bid(tokenId_, bid_);
-        setPrice(tokenId_, price_);
+        bid(tokenId_, bidPrice_);
+        setPrice(tokenId_, newPrice_);
         setColor(tokenId_, color_);
     }
 
     /**
      * @notice Get pixel info.
      */
-    function getPixel(uint256 tokenId_)
-        external
-        view
-        returns (
-            uint256 tokenId,
-            uint256 price,
-            uint256 lastTaxCollection,
-            uint256 ubi,
-            address owner,
-            uint256 color
-        )
-    {
-        return (
+    function getPixel(uint256 tokenId_) external view returns (Pixel memory pixel) {
+        pixel = Pixel(
             tokenId_,
             tokenRecord[tokenId_].price,
             tokenRecord[tokenId_].lastTaxCollection,
