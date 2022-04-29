@@ -57,8 +57,8 @@ contract TheSpace is HarbergerMarket {
         uint256 color_
     ) external {
         bid(tokenId_, bidPrice_);
-        setPrice(tokenId_, newPrice_);
-        setColor(tokenId_, color_);
+        _setPrice(tokenId_, newPrice_, msg.sender);
+        _setColor(tokenId_, color_, msg.sender);
     }
 
     /**
@@ -79,11 +79,19 @@ contract TheSpace is HarbergerMarket {
      * @notice Set color for a pixel.
      * @dev Emits {Color} event.
      */
-    function setColor(uint256 tokenId, uint256 color) public {
-        if (!_isApprovedOrOwner(msg.sender, tokenId)) revert Unauthorized();
+    function setColor(uint256 tokenId_, uint256 color_) public {
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
 
-        pixelColor[tokenId] = color;
-        emit Color(tokenId, color, ownerOf(tokenId));
+        _setColor(tokenId_, color_, ownerOf(tokenId_));
+    }
+
+    function _setColor(
+        uint256 tokenId_,
+        uint256 color_,
+        address owner_
+    ) public {
+        pixelColor[tokenId_] = color_;
+        emit Color(tokenId_, color_, owner_);
     }
 
     /**
@@ -98,25 +106,25 @@ contract TheSpace is HarbergerMarket {
      * @dev offset based pagination
      */
     function getTokensByOwner(
-        address owner,
-        uint256 limit,
-        uint256 offset
+        address owner_,
+        uint256 limit_,
+        uint256 offset_
     ) external view returns (uint256[] memory) {
-        if (limit == 0) {
+        if (limit_ == 0) {
             return new uint256[](0);
         }
-        uint256 total = balanceOf(owner);
-        if (offset >= total) {
+        uint256 total = balanceOf(owner_);
+        if (offset_ >= total) {
             return new uint256[](0);
         }
-        uint256 left = total - offset;
-        uint256 pageSize = left > limit ? limit : left;
+        uint256 left = total - offset_;
+        uint256 pageSize = left > limit_ ? limit_ : left;
 
         uint256[] memory tokens = new uint256[](pageSize);
 
         for (uint256 i = 0; i < pageSize; i++) {
-            uint256 tokenIndex = i + offset;
-            tokens[i] = tokenOfOwnerByIndex(owner, tokenIndex);
+            uint256 tokenIndex = i + offset_;
+            tokens[i] = tokenOfOwnerByIndex(owner_, tokenIndex);
         }
 
         return tokens;

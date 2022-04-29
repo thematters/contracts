@@ -34,14 +34,52 @@ contract TheSpaceTest is BaseHarbergerMarket {
         assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
     }
 
-    function testBatchSetPixels() public {}
+    function testBatchSetPixels(uint16 price, uint8 color) public {
+        uint256 finalPrice = uint256(price) + 1;
+        uint256 finalColor = 5;
+
+        bytes[] memory data = new bytes[](3);
+
+        // bid pixel
+        data[0] = abi.encodeWithSignature(
+            "setPixel(uint256,uint256,uint256,uint256)",
+            PIXEL_ID,
+            PIXEL_PRICE,
+            uint256(price),
+            uint256(color)
+        );
+
+        // set price
+        data[1] = abi.encodeWithSignature(
+            "setPixel(uint256,uint256,uint256,uint256)",
+            PIXEL_ID,
+            PIXEL_PRICE,
+            finalPrice,
+            uint256(color)
+        );
+
+        // set color
+        data[2] = abi.encodeWithSignature(
+            "setPixel(uint256,uint256,uint256,uint256)",
+            PIXEL_ID,
+            PIXEL_PRICE,
+            finalPrice,
+            finalColor
+        );
+
+        vm.prank(PIXEL_OWNER);
+        thespace.multicall(data);
+
+        assertEq(thespace.getPrice(PIXEL_ID), finalPrice);
+        assertEq(thespace.getColor(PIXEL_ID), finalColor);
+    }
 
     /**
      * @dev Color
      */
     function testGetColor() public {}
 
-    function testSetColorByOnwer() public {
+    function testSetColor() public {
         _bid();
 
         uint256 color = 5;
