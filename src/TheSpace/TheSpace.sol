@@ -141,4 +141,47 @@ contract TheSpace is HarbergerMarket {
 
         return tokens;
     }
+
+    /**
+     * @notice Get owned pixels for a user using pagination.
+     *
+     * @dev use getTokensByOwner internally
+     * @return total owned pixel total amount for this user
+     * @return size page size
+     * @return page page number
+     * @return pixels pixels in this page
+     */
+    function getPixelsPageByOwner(
+        address owner_,
+        uint256 size_,
+        uint256 page_
+    )
+        external
+        view
+        returns (
+            uint256 total,
+            uint256 size,
+            uint256 page,
+            Pixel[] memory pixels
+        )
+    {
+        if (page_ == 0) {
+            return (balanceOf(owner_), size_, page_, new Pixel[](0));
+        }
+
+        uint256[] memory _tokens = getTokensByOwner(owner_, size_, size_ * (page_ - 1));
+        Pixel[] memory _pixels = new Pixel[](_tokens.length);
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            uint256 _tokenId = _tokens[i];
+            _pixels[i] = Pixel(
+                _tokenId,
+                tokenRecord[_tokenId].price,
+                tokenRecord[_tokenId].lastTaxCollection,
+                ubiAvailable(_tokenId),
+                getOwner(_tokenId),
+                pixelColor[_tokenId]
+            );
+        }
+        return (balanceOf(owner_), size_, page_, _pixels);
+    }
 }
