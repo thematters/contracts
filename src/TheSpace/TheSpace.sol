@@ -16,6 +16,18 @@ import "./HarbergerMarket.sol";
  *
  */
 
+/**
+ * @dev Pixel object.
+ */
+struct Pixel {
+    uint256 tokenId;
+    uint256 price;
+    uint256 lastTaxCollection;
+    uint256 ubi;
+    address owner;
+    uint256 color;
+}
+
 contract TheSpace is HarbergerMarket {
     /**
      * @notice Color data of each token.
@@ -118,11 +130,11 @@ contract TheSpace is HarbergerMarket {
             return new uint256[](0);
         }
         uint256 left = total - offset_;
-        uint256 pageSize = left > limit_ ? limit_ : left;
+        uint256 size = left > limit_ ? limit_ : left;
 
-        uint256[] memory tokens = new uint256[](pageSize);
+        uint256[] memory tokens = new uint256[](size);
 
-        for (uint256 i = 0; i < pageSize; i++) {
+        for (uint256 i = 0; i < size; i++) {
             uint256 tokenIndex = i + offset_;
             tokens[i] = tokenOfOwnerByIndex(owner_, tokenIndex);
         }
