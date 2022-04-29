@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import "./BaseTheSpace.t.sol";
+import "./BaseHarbergerMarket.t.sol";
 
-contract ACLManagerTest is BaseTheSpaceTest {
+contract ACLManagerTest is BaseHarbergerMarket {
     address constant NEW_ACL_MANAGER = address(300);
     address constant NEW_MARKET_ADMIN = address(301);
 

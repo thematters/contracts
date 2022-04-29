@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import "./BaseTheSpace.t.sol";
+import "./BaseHarbergerMarket.t.sol";
 
-contract TheSpaceTest is BaseTheSpaceTest {
+contract TheSpaceTest is BaseHarbergerMarket {
     /**
      * @dev Pixel
      */

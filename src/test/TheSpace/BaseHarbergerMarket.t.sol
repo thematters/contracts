@@ -10,22 +10,26 @@ import {SpaceToken} from "../../TheSpace/SpaceToken.sol";
 import {IACLManager} from "../../TheSpace/IACLManager.sol";
 import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
 
-contract BaseTheSpaceTest is Test {
+contract BaseHarbergerMarket is Test {
     TheSpace internal thespace;
     SpaceToken internal currency;
 
-    address constant ACL_MANAGER = address(173);
-    address constant MARKET_ADMIN = address(174);
-    address constant TREASURY_ADMIN = address(175);
-    address constant DEPLOYER = address(176);
-    address constant PIXEL_OWNER = address(177);
-    address constant ATTACKER = address(178);
+    address constant ACL_MANAGER = address(100);
+    address constant MARKET_ADMIN = address(101);
+    address constant TREASURY_ADMIN = address(102);
+
+    address constant DEPLOYER = address(200);
+    address constant PIXEL_OWNER = address(201);
+    address constant ATTACKER = address(202);
+    address constant TREASURY = address(203);
+    address constant OPERATOR = address(204);
+
     uint256 constant TOTAL_SUPPLY = 1000000;
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
     uint256 constant PIXEL_COLOR = 11;
-    uint256 PIXEL_PRICE;
-    uint256 MINT_TAX;
+    uint256 public PIXEL_PRICE;
+    uint256 public MINT_TAX;
 
     event Price(uint256 indexed tokenId, uint256 price, address owner);
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
@@ -60,6 +64,11 @@ contract BaseTheSpaceTest is Test {
         // tester approve the space
         vm.startPrank(PIXEL_OWNER);
         currency.approve(address(thespace), type(uint256).max);
+    }
+
+    function _rollBlock() internal {
+        uint256 blockRollsTo = block.number + TAX_WINDOW;
+        vm.roll(blockRollsTo);
     }
 
     function _bid() internal {

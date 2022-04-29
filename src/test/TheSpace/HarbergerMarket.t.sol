@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import "./BaseTheSpace.t.sol";
+import "./BaseHarbergerMarket.t.sol";
 
-contract HarbergerMarketTest is BaseTheSpaceTest {
+contract HarbergerMarketTest is BaseHarbergerMarket {
     /**
      * Total Supply
      */
@@ -42,9 +42,9 @@ contract HarbergerMarketTest is BaseTheSpaceTest {
 
         // bid a pixel
         vm.prank(PIXEL_OWNER);
-        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, PIXEL_PRICE, 1);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
 
-        // roll the block.number and check tax
+        // roll block.number and check tax
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         (, uint256 lastTaxCollection, ) = thespace.tokenRecord(PIXEL_ID);
         uint256 tax = (PIXEL_PRICE * taxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
@@ -67,29 +67,137 @@ contract HarbergerMarketTest is BaseTheSpaceTest {
     }
 
     function testSetTreasuryShare() public {
+        vm.stopPrank();
+
         // set treasury share
+        uint256 share = 1000;
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_TREASURY_SHARE, share);
+
         // bid a pixel
-        // roll the block.number, collect tax, and check treasury
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+
+        // check treasury share
+        _rollBlock();
+        uint256 tax = thespace.getTax(PIXEL_ID);
+        (, uint256 prevTreasury, ) = thespace.treasuryRecord();
+        uint256 expectTreasury = prevTreasury + ((tax * share) / 10000);
+        assertGt(prevTreasury, 0);
+
+        thespace.settleTax(PIXEL_ID);
+
+        (, uint256 newTreasury, ) = thespace.treasuryRecord();
+        assertEq(newTreasury, expectTreasury);
+        assertGt(newTreasury, 0);
     }
 
     function testSetMintTax() public {
+        vm.stopPrank();
+
         // set mint tax
-        // bid a pixel
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+
+        // bid a pixel with mint tax as amount
+        uint256 prevBalance = currency.balanceOf(PIXEL_OWNER);
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, mintTax);
+        assertEq(currency.balanceOf(PIXEL_OWNER), prevBalance - mintTax);
     }
 
-    function testWithdrawTreasury() public {}
+    function testWithdrawTreasury() public {
+        vm.stopPrank();
+
+        // bid a pixel
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+
+        // collect tax
+        _rollBlock();
+        thespace.settleTax(PIXEL_ID);
+
+        uint256 prevTreasuryBalance = currency.balanceOf(TREASURY);
+        uint256 prevContractBalance = currency.balanceOf(address(thespace));
+        (, uint256 accumulatedTreasury, uint256 treasuryWithdrawn) = thespace.treasuryRecord();
+        uint256 amount = accumulatedTreasury - treasuryWithdrawn;
+
+        // withdraw treasury
+        vm.prank(TREASURY_ADMIN);
+        thespace.withdrawTreasury(TREASURY);
+
+        // check treasury balance
+        assertEq(currency.balanceOf(TREASURY), prevTreasuryBalance + amount);
+        (, , uint256 newTreasuryWithdrawn) = thespace.treasuryRecord();
+        assertEq(newTreasuryWithdrawn, accumulatedTreasury);
+
+        // check contract balance
+        assertEq(currency.balanceOf(address(thespace)), prevContractBalance - amount);
+    }
 
     /**
      * @dev Price
      */
-    function testGetPrice() public {}
+    function testGetPixelPrice() public {
+        vm.stopPrank();
 
-    function testSetPrice() public {
-        _price();
+        // bid a pixel
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
     }
 
-    function testCannotGetPriceByNonOwner() public {}
+    function testGetNonExistingPixelPrice() public {
+        assertEq(thespace.getPrice(PIXEL_ID + 1), MINT_TAX);
+    }
+
+    function testSetPixelPrice() public {
+        vm.stopPrank();
+
+        uint256 price = 1000;
+
+        // bid a pixel and set price
+        vm.startPrank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+        thespace.setPrice(PIXEL_ID, price);
+        vm.stopPrank();
+
+        assertEq(thespace.getPrice(PIXEL_ID), price);
+    }
+
+    function testSetPixelPriceByOperator() public {
+        vm.stopPrank();
+
+        uint256 price = 99;
+
+        // bid a pixel and set price
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+
+        // approve pixel to operator
+        vm.prank(PIXEL_OWNER);
+        thespace.approve(OPERATOR, PIXEL_ID);
+
+        // set price
+        vm.prank(OPERATOR);
+        thespace.setPrice(PIXEL_ID, price);
+        assertEq(thespace.getPrice(PIXEL_ID), price);
+    }
+
+    function testCannotSetPriceByNonOwner() public {
+        vm.stopPrank();
+
+        // bid a pixel and set price
+        vm.prank(PIXEL_OWNER);
+        thespace.bid(PIXEL_ID, PIXEL_PRICE);
+
+        // someone tries to set price
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.prank(ATTACKER);
+        thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
+    }
 
     /**
      * @dev Owner
@@ -126,7 +234,7 @@ contract HarbergerMarketTest is BaseTheSpaceTest {
     function testEvaluateOwnership() public {
         // should be defaulted if no tax can be collected
         _price();
-        vm.roll(block.number + TAX_WINDOW);
+        _rollBlock();
 
         currency.approve(address(thespace), 0);
 
@@ -137,8 +245,7 @@ contract HarbergerMarketTest is BaseTheSpaceTest {
 
     function testDefault() public {
         _price();
-
-        vm.roll(block.number + TAX_WINDOW);
+        _rollBlock();
 
         currency.approve(address(thespace), 0);
         thespace.settleTax(PIXEL_ID);
@@ -153,7 +260,7 @@ contract HarbergerMarketTest is BaseTheSpaceTest {
 
     function testSettleTax() public {
         _price();
-        vm.roll(block.number + TAX_WINDOW);
+        _rollBlock();
 
         vm.expectEmit(true, true, false, false);
         emit Tax(PIXEL_ID, PIXEL_OWNER, 10);
