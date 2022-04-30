@@ -123,23 +123,23 @@ contract TheSpace is HarbergerMarket {
             Pixel[] memory pixels
         )
     {
-        uint256 total = balanceOf(owner_);
+        uint256 _total = balanceOf(owner_);
         if (limit_ == 0) {
-            return (total, limit_, offset_, new Pixel[](0));
+            return (_total, limit_, offset_, new Pixel[](0));
         }
-        if (offset_ >= total) {
-            return (total, limit_, offset_, new Pixel[](0));
+        if (offset_ >= _total) {
+            return (_total, limit_, offset_, new Pixel[](0));
         }
-        uint256 left = total - offset_;
+        uint256 left = _total - offset_;
         uint256 size = left > limit_ ? limit_ : left;
 
         Pixel[] memory _pixels = new Pixel[](size);
 
         for (uint256 i = 0; i < size; i++) {
             uint256 tokenId = tokenOfOwnerByIndex(owner_, i + offset_);
-            pixels[i] = _getPixel(tokenId);
+            _pixels[i] = _getPixel(tokenId);
         }
 
-        return (total, limit_, offset_, _pixels);
+        return (_total, limit_, offset_, _pixels);
     }
 }
