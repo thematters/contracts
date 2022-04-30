@@ -16,18 +16,6 @@ import "./HarbergerMarket.sol";
  *
  */
 
-/**
- * @dev Pixel object.
- */
-struct Pixel {
-    uint256 tokenId;
-    uint256 price;
-    uint256 lastTaxCollection;
-    uint256 ubi;
-    address owner;
-    uint256 color;
-}
-
 contract TheSpace is HarbergerMarket {
     /**
      * @notice Color data of each token.
@@ -77,6 +65,10 @@ contract TheSpace is HarbergerMarket {
      * @notice Get pixel info.
      */
     function getPixel(uint256 tokenId_) external view returns (Pixel memory pixel) {
+        return _getPixel(tokenId_);
+    }
+
+    function _getPixel(uint256 tokenId_) internal view returns (Pixel memory pixel) {
         pixel = Pixel(
             tokenId_,
             tokenRecord[tokenId_].price,
@@ -114,74 +106,40 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @notice Get owned tokens for a user.
+     * @notice Get owned pixels for a user using pagination.
      * @dev offset based pagination
      */
-    function getTokensByOwner(
+    function getPixelsByOwner(
         address owner_,
         uint256 limit_,
         uint256 offset_
-    ) external view returns (uint256[] memory) {
-        if (limit_ == 0) {
-            return new uint256[](0);
-        }
-        uint256 total = balanceOf(owner_);
-        if (offset_ >= total) {
-            return new uint256[](0);
-        }
-        uint256 left = total - offset_;
-        uint256 size = left > limit_ ? limit_ : left;
-
-        uint256[] memory tokens = new uint256[](size);
-
-        for (uint256 i = 0; i < size; i++) {
-            uint256 tokenIndex = i + offset_;
-            tokens[i] = tokenOfOwnerByIndex(owner_, tokenIndex);
-        }
-
-        return tokens;
-    }
-
-    /**
-     * @notice Get owned pixels for a user using pagination.
-     *
-     * @dev use getTokensByOwner internally
-     * @return total owned pixel total amount for this user
-     * @return size page size
-     * @return page page number
-     * @return pixels pixels in this page
-     */
-    function getPixelsPageByOwner(
-        address owner_,
-        uint256 size_,
-        uint256 page_
     )
         external
         view
         returns (
             uint256 total,
-            uint256 size,
-            uint256 page,
+            uint256 limit,
+            uint256 offset,
             Pixel[] memory pixels
         )
     {
-        if (page_ == 0) {
-            return (balanceOf(owner_), size_, page_, new Pixel[](0));
+        uint256 total = balanceOf(owner_);
+        if (limit_ == 0) {
+            return (total, limit_, offset_, new Pixel[](0));
+        }
+        if (offset_ >= total) {
+            return (total, limit_, offset_, new Pixel[](0));
+        }
+        uint256 left = total - offset_;
+        uint256 size = left > limit_ ? limit_ : left;
+
+        Pixel[] memory _pixels = new Pixel[](size);
+
+        for (uint256 i = 0; i < size; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(owner_, i + offset_);
+            pixels[i] = _getPixel(tokenId);
         }
 
-        uint256[] memory _tokens = getTokensByOwner(owner_, size_, size_ * (page_ - 1));
-        Pixel[] memory _pixels = new Pixel[](_tokens.length);
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            uint256 _tokenId = _tokens[i];
-            _pixels[i] = Pixel(
-                _tokenId,
-                tokenRecord[_tokenId].price,
-                tokenRecord[_tokenId].lastTaxCollection,
-                ubiAvailable(_tokenId),
-                getOwner(_tokenId),
-                pixelColor[_tokenId]
-            );
-        }
-        return (balanceOf(owner_), size_, page_, _pixels);
+        return (total, limit_, offset_, _pixels);
     }
 }
