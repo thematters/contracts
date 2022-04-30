@@ -18,6 +18,11 @@ interface IHarbergerMarket is IERC721 {
     error PriceTooLow();
 
     /**
+     * @dev Price too high to set.
+     */
+    error PriceTooHigh();
+
+    /**
      * @dev Sender is not authorized for given operation.
      */
     error Unauthorized();
