@@ -5,12 +5,17 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./IHarbergerMarket.sol";
+// import "./IHarbergerMarket.sol";
 
 /**
  * @dev Storage contract for Harberger Market.
  */
-abstract contract Storage is ERC721Enumerable, Ownable {
+contract Storage is ERC721Enumerable, Ownable {
+    /**
+     * @dev Cannot transfer directly, use market to bid
+     */
+    error CannotTransfer(address market);
+
     /**
      * @notice A token updated price.
      * @param tokenId Id of token that updated price.
@@ -124,12 +129,14 @@ abstract contract Storage is ERC721Enumerable, Ownable {
      * @dev Create Property contract, setup attached currency contract, setup tax rate
      */
     constructor(
+        string memory propertyName_,
+        string memory propertySymbol_,
         uint256 totalSupply_,
         uint256 taxRate_,
         uint256 treasuryShare_,
         uint256 mintTax_,
         address currencyAddress_
-    ) {
+    ) ERC721(propertyName_, propertySymbol_) {
         // initialize total supply
         _totalSupply = totalSupply_;
         // initialize currency contract
@@ -215,5 +222,45 @@ abstract contract Storage is ERC721Enumerable, Ownable {
     //////////////////////////////
     function burn(uint256 tokenId_) external onlyOwner {
         _burn(tokenId_);
+    }
+
+    /**
+     * @notice See {IERC721-transferFrom}.
+     * @dev Override to collect tax before transfer.
+     */
+    function transferFrom(
+        address,
+        address,
+        uint256
+    ) public view override(ERC721) {
+        revert CannotTransfer(owner());
+    }
+
+    /**
+     * @notice See {IERC721-safeTransferFrom}.
+     * @dev Override to collect tax before transfer.
+     */
+    function safeTransferFrom(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public view override(ERC721) {
+        revert CannotTransfer(owner());
+    }
+
+    //////////////////////////////
+    /// ERC20 related
+    //////////////////////////////
+    function transferCurrency(address to_, uint256 amount_) external onlyOwner {
+        currency.transfer(to_, amount_);
+    }
+
+    function transferCurrencyFrom(
+        address from_,
+        address to_,
+        uint256 amount_
+    ) external onlyOwner {
+        currency.transferFrom(from_, to_, amount_);
     }
 }
