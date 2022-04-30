@@ -219,51 +219,59 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function bid(uint256 tokenId_, uint256 price_) public {
+        address owner = getOwner(tokenId_);
+        uint256 askPrice = _getPrice(tokenId_);
         uint256 mintTax = taxConfig[ConfigOptions.mintTax];
+
+        // bid price and payee is calculated based on tax and token status
+        uint256 bidPrice;
+        address payee;
 
         if (_exists(tokenId_)) {
             // skip if already own
-            address owner = ownerOf(tokenId_);
             if (owner == msg.sender) return;
-
-            // check price
-            uint256 askPrice = _getPrice(tokenId_);
 
             // clear tax
             bool success = _collectTax(tokenId_);
 
             // process with transfer
             if (success) {
-                // revert if price too low
-                if (price_ < askPrice) revert PriceTooLow();
                 // if tax fully paid, owner get paid normally
-                currency.transferFrom(msg.sender, owner, askPrice);
+                bidPrice = askPrice;
+                payee = owner;
             } else {
-                // if tax not fully paid, token is treated as defaulted and mint tax is collected
-                if (price_ < mintTax) revert PriceTooLow();
-                currency.transferFrom(msg.sender, address(this), mintTax);
+                // if tax not fully paid, token is treated as defaulted and mint tax is collected and recorded
+                bidPrice = mintTax;
+                payee = address(this);
                 _recordTax(tokenId_, msg.sender, mintTax);
             }
-            _safeTransfer(owner, msg.sender, tokenId_, "");
 
-            emit Bid(tokenId_, owner, msg.sender, askPrice);
+            // settle ERC721 token
+            _safeTransfer(owner, msg.sender, tokenId_, "");
         } else {
+            // mint token to caller
+            // check token id validity
             if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
 
-            // if token does not exists yet, or token is defaulted
-
-            if (price_ < mintTax) revert PriceTooLow();
-            currency.transferFrom(msg.sender, address(this), mintTax);
+            // int tax is collected and recorded
+            bidPrice = mintTax;
+            payee = address(this);
             _recordTax(tokenId_, msg.sender, mintTax);
 
+            // settle ERC721 token
             _safeMint(msg.sender, tokenId_);
-
-            // equal to bidding from address 0 with price 0
-            emit Bid(tokenId_, address(0), msg.sender, 0);
-
-            // initialize price
-            _setPrice(tokenId_, price_, msg.sender);
         }
+
+        // revert if price too low
+        if (price_ < bidPrice) revert PriceTooLow();
+
+        // settle ERC20 token
+        currency.transferFrom(msg.sender, payee, bidPrice);
+        // emit bid event
+        emit Bid(tokenId_, owner, msg.sender, bidPrice);
+
+        // update price to ask price if difference
+        if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
     }
 
     //////////////////////////////
