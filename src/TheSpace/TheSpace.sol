@@ -41,11 +41,12 @@ contract TheSpace is HarbergerMarket {
     }
 
     constructor(
+        uint256 totalSupply_,
         address currencyAddress_,
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
-    ) HarbergerMarket("Planck", "PLK", 100000, currencyAddress_, aclManager_, marketAdmin_, treasuryAdmin_) {}
+    ) HarbergerMarket("Planck", "PLK", totalSupply_, currencyAddress_, aclManager_, marketAdmin_, treasuryAdmin_) {}
 
     /**
      * @notice Bid pixel, then set price and color.

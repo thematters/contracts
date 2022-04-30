@@ -54,7 +54,7 @@ contract BaseHarbergerMarket is Test {
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
-        thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        thespace = new TheSpace(1000000, address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
         // transfer to tester
