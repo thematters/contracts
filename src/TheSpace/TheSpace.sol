@@ -45,7 +45,7 @@ contract TheSpace is HarbergerMarket {
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
-    ) HarbergerMarket("Planck", "PLK", currencyAddress_, aclManager_, marketAdmin_, treasuryAdmin_) {}
+    ) HarbergerMarket("Planck", "PLK", 100000, currencyAddress_, aclManager_, marketAdmin_, treasuryAdmin_) {}
 
     /**
      * @notice Bid pixel, then set price and color.
@@ -57,7 +57,7 @@ contract TheSpace is HarbergerMarket {
         uint256 color_
     ) external {
         bid(tokenId_, bidPrice_);
-        _setPrice(tokenId_, newPrice_, msg.sender);
+        registry.setPrice(tokenId_, newPrice_);
         _setColor(tokenId_, color_, msg.sender);
     }
 
@@ -65,14 +65,12 @@ contract TheSpace is HarbergerMarket {
      * @notice Get pixel info.
      */
     function getPixel(uint256 tokenId_) external view returns (Pixel memory pixel) {
-        return _getPixel(tokenId_);
-    }
+        (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
-    function _getPixel(uint256 tokenId_) internal view returns (Pixel memory pixel) {
         pixel = Pixel(
             tokenId_,
-            tokenRecord[tokenId_].price,
-            tokenRecord[tokenId_].lastTaxCollection,
+            price,
+            lastTaxCollection,
             ubiAvailable(tokenId_),
             getOwner(tokenId_),
             pixelColor[tokenId_]
@@ -84,9 +82,9 @@ contract TheSpace is HarbergerMarket {
      * @dev Emits {Color} event.
      */
     function setColor(uint256 tokenId_, uint256 color_) public {
-        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
+        if (!registry.isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
 
-        _setColor(tokenId_, color_, ownerOf(tokenId_));
+        _setColor(tokenId_, color_, registry.ownerOf(tokenId_));
     }
 
     function _setColor(
@@ -123,10 +121,11 @@ contract TheSpace is HarbergerMarket {
             Pixel[] memory pixels
         )
     {
-        uint256 _total = balanceOf(owner_);
+        uint256 _total = registry.balanceOf(owner_);
         if (limit_ == 0) {
             return (_total, limit_, offset_, new Pixel[](0));
         }
+
         if (offset_ >= _total) {
             return (_total, limit_, offset_, new Pixel[](0));
         }
@@ -136,8 +135,8 @@ contract TheSpace is HarbergerMarket {
         Pixel[] memory _pixels = new Pixel[](size);
 
         for (uint256 i = 0; i < size; i++) {
-            uint256 tokenId = tokenOfOwnerByIndex(owner_, i + offset_);
-            _pixels[i] = _getPixel(tokenId);
+            uint256 tokenId = registry.tokenOfOwnerByIndex(owner_, i + offset_);
+            _pixels[i] = getPixel(tokenId);
         }
 
         return (_total, limit_, offset_, _pixels);

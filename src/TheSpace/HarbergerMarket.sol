@@ -1,81 +1,17 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Multicall.sol";
 
 import "./IHarbergerMarket.sol";
 import "./ACLManager.sol";
+import "./Registry.sol";
 
 /**
  * @dev Market place with Harberger tax. Market attaches one ERC20 contract as currency.
  */
-contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLManager {
-    //////////////////////////////
-    /// Global setup total supply and currency address
-    //////////////////////////////
-
-    /**
-     * @dev Total possible NFTs
-     */
-    uint256 private _totalSupply = 1000000;
-
-    /**
-     * @dev ERC20 token used as currency
-     */
-    ERC20 public immutable currency;
-
-    /**
-     * @dev Max price
-     */
-    uint256 public immutable maxPrice;
-
-    //////////////////////////////
-    /// State variables for each token
-    //////////////////////////////
-
-    /**
-     * @dev Record of each token.
-     * @param price Current price.
-     * @param lastTaxCollection Block number of last tax collection.
-     * @param ubiWithdrawn Amount of UBI been withdrawn.
-     *
-     */
-    struct TokenRecord {
-        uint256 price;
-        uint256 lastTaxCollection;
-        uint256 ubiWithdrawn;
-    }
-
-    /**
-     * @notice Record for all tokens (tokenId => TokenRecord).
-     */
-    mapping(uint256 => TokenRecord) public tokenRecord;
-
-    //////////////////////////////
-    ///  Tax related global states
-    //////////////////////////////
-
-    /**
-     * @dev Global state of tax and treasury.
-     * @param accumulatedUBI Total amount of currency allocated for UBI.
-     * @param accumulatedTreasury Total amount of currency allocated for treasury.
-     * @param treasuryWithdrawn Total amount of treasury been withdrawn.
-     *
-     */
-    struct TreasuryRecord {
-        uint256 accumulatedUBI;
-        uint256 accumulatedTreasury;
-        uint256 treasuryWithdrawn;
-    }
-
-    TreasuryRecord public treasuryRecord;
-
-    /**
-     * @dev Tax configuration of market.
-     */
-    mapping(ConfigOptions => uint256) public taxConfig;
+contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
+    Registry public registry;
 
     /**
      * @dev Create Property contract, setup attached currency contract, setup tax rate
@@ -83,97 +19,35 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     constructor(
         string memory propertyName_,
         string memory propertySymbol_,
+        uint256 totalSupply_,
         address currencyAddress_,
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
-    ) ERC721(propertyName_, propertySymbol_) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
-        // initialize currency contract
-        currency = ERC20(currencyAddress_);
-
-        // initialize max price
-        maxPrice = currency.totalSupply();
-
-        // default config
-        taxConfig[ConfigOptions.taxRate] = 75;
-        taxConfig[ConfigOptions.treasuryShare] = 500;
-        taxConfig[ConfigOptions.mintTax] = 0;
+    ) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
+        registry = new Registry(
+            propertyName_,
+            propertySymbol_,
+            totalSupply_,
+            75, // taxRate
+            500, // treasuryShare
+            0, // mintTax
+            currencyAddress_
+        );
     }
-
-    //////////////////////////////
-    /// Override functions
-    //////////////////////////////
 
     /**
      * @notice See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId_)
-        public
-        view
-        virtual
-        override(ERC721Enumerable, IERC165)
-        returns (bool)
-    {
-        return interfaceId_ == type(IHarbergerMarket).interfaceId || super.supportsInterface(interfaceId_);
+    function supportsInterface(bytes4 interfaceId_) external view virtual returns (bool) {
+        return interfaceId_ == type(IHarbergerMarket).interfaceId;
     }
 
     /**
-     * @notice See {IERC721-transferFrom}.
-     * @dev Override to collect tax before transfer.
+     * @notice switch logic contract to another one
      */
-    function transferFrom(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) public override(ERC721, IERC721) {
-        if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
-
-        bool success = _collectTax(tokenId_);
-
-        if (success) {
-            // free transfer equals to setting price to 0
-            _setPrice(tokenId_, 0);
-
-            // proceed with transfer if success
-            _transfer(from_, to_, tokenId_);
-        } else {
-            // default token if not successful
-            _burn(tokenId_);
-        }
-    }
-
-    /**
-     * @notice See {IERC721-safeTransferFrom}.
-     * @dev Override to collect tax before transfer.
-     */
-    function safeTransferFrom(
-        address from_,
-        address to_,
-        uint256 tokenId_,
-        bytes memory data_
-    ) public override(ERC721, IERC721) {
-        if (!_isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
-
-        bool success = _collectTax(tokenId_);
-
-        if (success) {
-            // free transfer equals to setting price to 0
-            _setPrice(tokenId_, 0);
-
-            // proceed with transfer if success
-            _safeTransfer(from_, to_, tokenId_, data_);
-        } else {
-            // default token if not successful
-            _burn(tokenId_);
-        }
-    }
-
-    /**
-     * @notice See {IERC20-totalSupply}.
-     * @dev Always return total possible amount of supply, instead of current token in circulation.
-     */
-    function totalSupply() public view override returns (uint256) {
-        return _totalSupply;
+    function upgradeContract(address newContract) external onlyRole(Role.aclManager) {
+        registry.transferOwnership(newContract);
     }
 
     //////////////////////////////
@@ -182,18 +56,12 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyRole(Role.marketAdmin) {
-        taxConfig[option_] = value_;
-
-        emit Config(option_, value_);
+        registry.setTaxConfig(option_, value_);
     }
 
     /// @inheritdoc IHarbergerMarket
-    function withdrawTreasury(address to) external onlyRole(Role.treasuryAdmin) {
-        uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
-
-        treasuryRecord.treasuryWithdrawn = treasuryRecord.accumulatedTreasury;
-
-        currency.transfer(to, amount);
+    function withdrawTreasury(address to_) external onlyRole(Role.treasuryAdmin) {
+        registry.withdrawTreasury(to_);
     }
 
     //////////////////////////////
@@ -202,38 +70,39 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function getPrice(uint256 tokenId_) public view returns (uint256 price) {
-        return _exists(tokenId_) ? _getPrice(tokenId_) : taxConfig[ConfigOptions.mintTax];
+        return registry.exists(tokenId_) ? _getPrice(tokenId_) : registry.taxConfig(ConfigOptions.mintTax);
     }
 
-    function _getPrice(uint256 tokenId_) internal view returns (uint256 price) {
-        return tokenRecord[tokenId_].price;
+    function _getPrice(uint256 tokenId_) internal view returns (uint256) {
+        (uint256 price, , ) = registry.tokenRecord(tokenId_);
+        return price;
     }
 
     /// @inheritdoc IHarbergerMarket
     function setPrice(uint256 tokenId_, uint256 price_) public {
-        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
+        if (!registry.isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
-        if (success) _setPrice(tokenId_, price_);
+        if (success) setPrice(tokenId_, price_);
     }
 
     /// @inheritdoc IHarbergerMarket
     function getOwner(uint256 tokenId_) public view returns (address owner) {
-        return _exists(tokenId_) ? ownerOf(tokenId_) : address(0);
+        return registry.exists(tokenId_) ? registry.ownerOf(tokenId_) : address(0);
     }
 
     /// @inheritdoc IHarbergerMarket
     function bid(uint256 tokenId_, uint256 price_) public {
         address owner = getOwner(tokenId_);
         uint256 askPrice = _getPrice(tokenId_);
-        uint256 mintTax = taxConfig[ConfigOptions.mintTax];
+        uint256 mintTax = registry.taxConfig(ConfigOptions.mintTax);
 
         // bid price and payee is calculated based on tax and token status
         uint256 bidPrice;
         address payee;
 
-        if (_exists(tokenId_)) {
+        if (registry.exists(tokenId_)) {
             // skip if already own
             if (owner == msg.sender) return;
 
@@ -249,35 +118,31 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected and recorded
                 bidPrice = mintTax;
                 payee = address(this);
-                _recordTax(tokenId_, msg.sender, mintTax);
+                registry.recordTax(tokenId_, msg.sender, mintTax);
             }
 
             // settle ERC721 token
-            _safeTransfer(owner, msg.sender, tokenId_, "");
+            registry.safeTransferByMarket(owner, msg.sender, tokenId_);
         } else {
-            // mint token to caller
-            // check token id validity
-            if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
-
             // int tax is collected and recorded
             bidPrice = mintTax;
             payee = address(this);
-            _recordTax(tokenId_, msg.sender, mintTax);
+            registry.recordTax(tokenId_, msg.sender, mintTax);
 
             // settle ERC721 token
-            _safeMint(msg.sender, tokenId_);
+            registry.mint(msg.sender, tokenId_);
         }
 
         // revert if price too low
         if (price_ < bidPrice) revert PriceTooLow();
 
         // settle ERC20 token
-        currency.transferFrom(msg.sender, payee, bidPrice);
+        registry.transferCurrencyFrom(msg.sender, payee, bidPrice);
         // emit bid event
         emit Bid(tokenId_, owner, msg.sender, bidPrice);
 
         // update price to ask price if difference
-        if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
+        if (price_ > askPrice) registry.setPrice(tokenId_, price_);
     }
 
     //////////////////////////////
@@ -286,18 +151,17 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
     /// @inheritdoc IHarbergerMarket
     function getTax(uint256 tokenId_) public view returns (uint256) {
-        if (!_exists(tokenId_)) revert TokenNotExists();
+        if (!registry.exists(tokenId_)) revert TokenNotExists();
 
         return _getTax(tokenId_);
     }
 
     function _getTax(uint256 tokenId_) internal view returns (uint256) {
-        uint256 price = _getPrice(tokenId_);
+        (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
         if (price == 0) return 0;
 
-        uint256 taxRate = taxConfig[ConfigOptions.taxRate];
-        uint256 lastTaxCollection = tokenRecord[tokenId_].lastTaxCollection;
+        uint256 taxRate = registry.taxConfig(ConfigOptions.taxRate);
 
         // `1000` for every `1000` blocks, `10000` for conversion from bps
         return ((price * taxRate * (block.number - lastTaxCollection)) / (1000 * 10000));
@@ -309,9 +173,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
         if (tax > 0) {
             // calculate collectable amount
-            address taxpayer = ownerOf(tokenId_);
-            uint256 allowance = currency.allowance(taxpayer, address(this));
-            uint256 balance = currency.balanceOf(taxpayer);
+            address taxpayer = registry.ownerOf(tokenId_);
+            uint256 allowance = registry.currency().allowance(taxpayer, address(this));
+            uint256 balance = registry.currency().balanceOf(taxpayer);
             uint256 available = allowance < balance ? allowance : balance;
 
             if (available >= tax) {
@@ -337,9 +201,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
 
         if (collectable > 0) {
             // collect and record tax
-            address owner = ownerOf(tokenId_);
-            currency.transferFrom(owner, address(this), collectable);
-            _recordTax(tokenId_, owner, collectable);
+            address owner = registry.ownerOf(tokenId_);
+            registry.transferCurrencyFrom(owner, address(this), collectable);
+            registry.recordTax(tokenId_, owner, collectable);
         }
 
         return !shouldDefault;
@@ -348,34 +212,15 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     /// @inheritdoc IHarbergerMarket
     function settleTax(uint256 tokenId_) public returns (bool success) {
         success = _collectTax(tokenId_);
-        if (!success) _burn(tokenId_);
-    }
-
-    /**
-     * @notice Update tax record and emit Tax event.
-     */
-    function _recordTax(
-        uint256 tokenId_,
-        address taxpayer_,
-        uint256 amount_
-    ) private {
-        // update accumulated treasury
-        uint256 treasuryShare = taxConfig[ConfigOptions.treasuryShare];
-        uint256 treasuryAdded = (amount_ * treasuryShare) / 10000;
-        treasuryRecord.accumulatedTreasury += treasuryAdded;
-
-        // update accumulated ubi
-        treasuryRecord.accumulatedUBI += (amount_ - treasuryAdded);
-
-        // update tax record
-        tokenRecord[tokenId_].lastTaxCollection = block.number;
-
-        emit Tax(tokenId_, taxpayer_, amount_);
+        if (!success) registry.burn(tokenId_);
     }
 
     /// @inheritdoc IHarbergerMarket
     function ubiAvailable(uint256 tokenId_) public view returns (uint256) {
-        return treasuryRecord.accumulatedUBI / _totalSupply - tokenRecord[tokenId_].ubiWithdrawn;
+        (uint256 accumulatedUBI, , ) = registry.treasuryRecord();
+        (, , uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
+
+        return accumulatedUBI / registry.totalSupply() - ubiWithdrawn;
     }
 
     /**
@@ -385,33 +230,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         uint256 ubi = ubiAvailable(tokenId_);
 
         if (ubi > 0) {
-            tokenRecord[tokenId_].ubiWithdrawn += ubi;
-
-            address recipient = ownerOf(tokenId_);
-            currency.transfer(recipient, ubi);
-
-            emit UBI(tokenId_, recipient, ubi);
+            registry.withdrawUbi(tokenId_, ubi);
         }
-    }
-
-    /**
-     * @notice Internel function to set price for a token.
-     */
-    function _setPrice(uint256 tokenId_, uint256 price_) internal {
-        _setPrice(tokenId_, price_, ownerOf(tokenId_));
-    }
-
-    function _setPrice(
-        uint256 tokenId_,
-        uint256 price_,
-        address owner
-    ) internal {
-        if (price_ > maxPrice) revert PriceTooHigh();
-
-        // update price in tax record
-        tokenRecord[tokenId_].price = price_;
-
-        // emit events
-        emit Price(tokenId_, price_, owner);
     }
 }

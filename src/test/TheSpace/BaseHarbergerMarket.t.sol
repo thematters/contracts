@@ -6,6 +6,7 @@ import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
 import {TheSpace} from "../../TheSpace/TheSpace.sol";
+import {Registry} from "../../TheSpace/Registry.sol";
 import {SpaceToken} from "../../TheSpace/SpaceToken.sol";
 import {IACLManager} from "../../TheSpace/IACLManager.sol";
 import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
@@ -13,6 +14,7 @@ import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
 contract BaseHarbergerMarket is Test {
     TheSpace internal thespace;
     SpaceToken internal currency;
+    Registry internal registry;
 
     address constant ACL_MANAGER = address(100);
     address constant MARKET_ADMIN = address(101);
@@ -53,6 +55,7 @@ contract BaseHarbergerMarket is Test {
 
         // deploy the space
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        registry = thespace.registry();
 
         // transfer to tester
         uint256 amount = 10 * PIXEL_PRICE;
@@ -62,10 +65,10 @@ contract BaseHarbergerMarket is Test {
 
         // tester approve the space
         vm.prank(PIXEL_OWNER_1);
-        currency.approve(address(thespace), type(uint256).max);
+        currency.approve(address(registry), type(uint256).max);
 
         vm.prank(PIXEL_OWNER);
-        currency.approve(address(thespace), type(uint256).max);
+        currency.approve(address(registry), type(uint256).max);
     }
 
     function _bid() internal {

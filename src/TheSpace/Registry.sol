@@ -5,16 +5,23 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// import "./IHarbergerMarket.sol";
+import "./IHarbergerMarket.sol";
 
 /**
  * @dev Storage contract for Harberger Market.
  */
-contract Storage is ERC721Enumerable, Ownable {
+contract Registry is ERC721Enumerable, Ownable {
     /**
      * @dev Cannot transfer directly, use market to bid
      */
     error CannotTransfer(address market);
+
+    /**
+     * @dev Token id is out of range.
+     * @param min Lower range of possible token id.
+     * @param max Higher range of possible token id.
+     */
+    error InvalidTokenId(uint256 min, uint256 max);
 
     /**
      * @notice A token updated price.
@@ -29,7 +36,7 @@ contract Storage is ERC721Enumerable, Ownable {
      * @param option Field of config been updated.
      * @param value New value after update.
      */
-    event Config(ConfigOptions indexed option, uint256 value);
+    event Config(IHarbergerMarket.ConfigOptions indexed option, uint256 value);
 
     /**
      * @notice Tax is collected for a token.
@@ -63,7 +70,7 @@ contract Storage is ERC721Enumerable, Ownable {
     /**
      * @dev Total possible number of ERC721 token
      */
-    uint256 public _totalSupply;
+    uint256 private _totalSupply;
 
     /**
      * @dev ERC20 token used as currency
@@ -111,19 +118,10 @@ contract Storage is ERC721Enumerable, Ownable {
 
     TreasuryRecord public treasuryRecord;
 
-    //  TreasuryRecord public treasuryRecord;
-
-    /// @inheritdoc IHarbergerMarket
-    enum ConfigOptions {
-        taxRate,
-        treasuryShare,
-        mintTax
-    }
-
     /**
      * @dev Tax configuration of market.
      */
-    mapping(ConfigOptions => uint256) public taxConfig;
+    mapping(IHarbergerMarket.ConfigOptions => uint256) public taxConfig;
 
     /**
      * @dev Create Property contract, setup attached currency contract, setup tax rate
@@ -143,9 +141,17 @@ contract Storage is ERC721Enumerable, Ownable {
         currency = ERC20(currencyAddress_);
 
         // initialize tax config
-        taxConfig[ConfigOptions.taxRate] = taxRate_;
-        taxConfig[ConfigOptions.treasuryShare] = treasuryShare_;
-        taxConfig[ConfigOptions.mintTax] = mintTax_;
+        taxConfig[IHarbergerMarket.ConfigOptions.taxRate] = taxRate_;
+        taxConfig[IHarbergerMarket.ConfigOptions.treasuryShare] = treasuryShare_;
+        taxConfig[IHarbergerMarket.ConfigOptions.mintTax] = mintTax_;
+    }
+
+    /**
+     * @notice See {IERC20-totalSupply}.
+     * @dev Always return total possible amount of supply, instead of current token in circulation.
+     */
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupply;
     }
 
     //////////////////////////////
@@ -156,10 +162,18 @@ contract Storage is ERC721Enumerable, Ownable {
         _totalSupply = totalSupply_;
     }
 
-    function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyOwner {
+    function setTaxConfig(IHarbergerMarket.ConfigOptions option_, uint256 value_) external onlyOwner {
         taxConfig[option_] = value_;
 
         emit Config(option_, value_);
+    }
+
+    function withdrawTreasury(address to) external onlyOwner {
+        uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
+
+        treasuryRecord.treasuryWithdrawn = treasuryRecord.accumulatedTreasury;
+
+        currency.transfer(to, amount);
     }
 
     //////////////////////////////
@@ -175,7 +189,7 @@ contract Storage is ERC721Enumerable, Ownable {
         uint256 amount_
     ) external onlyOwner {
         // update accumulated treasury
-        uint256 treasuryShare = taxConfig[ConfigOptions.treasuryShare];
+        uint256 treasuryShare = taxConfig[IHarbergerMarket.ConfigOptions.treasuryShare];
         uint256 treasuryAdded = (amount_ * treasuryShare) / 10000;
         treasuryRecord.accumulatedTreasury += treasuryAdded;
 
@@ -189,39 +203,57 @@ contract Storage is ERC721Enumerable, Ownable {
     }
 
     //
-    function setPrice(
-        uint256 tokenId_,
-        uint256 price_,
-        address owner
-    ) external onlyOwner {
+    function setPrice(uint256 tokenId_, uint256 price_) external onlyOwner {
         // update price in tax record
         tokenRecord[tokenId_].price = price_;
 
         // emit events
-        emit Price(tokenId_, price_, owner);
+        emit Price(tokenId_, price_, ownerOf(tokenId_));
     }
 
     /**
      * @notice Withdraw UBI on given token.
      */
-    function withdrawUbi(
-        uint256 tokenId_,
-        address recipient_,
-        uint256 amount_
-    ) external {
+    function withdrawUbi(uint256 tokenId_, uint256 amount_) external {
         tokenRecord[tokenId_].ubiWithdrawn += amount_;
 
         address recipient = ownerOf(tokenId_);
         currency.transfer(recipient, amount_);
 
-        emit UBI(tokenId_, recipient_, amount_);
+        emit UBI(tokenId_, recipient, amount_);
     }
 
     //////////////////////////////
     /// ERC721 related
     //////////////////////////////
+
+    //////////////////////////////
+    /// Market only writing operations
+    //////////////////////////////
+
+    function mint(address to_, uint256 tokenId_) external onlyOwner {
+        if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
+        _safeMint(to_, tokenId_);
+    }
+
     function burn(uint256 tokenId_) external onlyOwner {
         _burn(tokenId_);
+    }
+
+    function safeTransferByMarket(
+        address from_,
+        address to_,
+        uint256 tokenId_
+    ) external onlyOwner {
+        _safeTransfer(from_, to_, tokenId_, "");
+    }
+
+    function exists(uint256 tokenId_) external view returns (bool) {
+        return _exists(tokenId_);
+    }
+
+    function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool) {
+        return _isApprovedOrOwner(spender_, tokenId_);
     }
 
     /**

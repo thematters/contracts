@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
  * @notice ERC721-compatible contract that allows token to be traded under Harberger tax.
  * @dev Market attaches one ERC20 contract as currency.
  */
-interface IHarbergerMarket is IERC721 {
+interface IHarbergerMarket {
     //////////////////////////////
     /// Error types
     //////////////////////////////
@@ -38,6 +38,15 @@ interface IHarbergerMarket is IERC721 {
      * @param max Higher range of possible token id.
      */
     error InvalidTokenId(uint256 min, uint256 max);
+
+    //////////////////////////////
+    /// Enum
+    //////////////////////////////
+    enum ConfigOptions {
+        taxRate,
+        treasuryShare,
+        mintTax
+    }
 
     //////////////////////////////
     /// Event types
@@ -82,18 +91,6 @@ interface IHarbergerMarket is IERC721 {
      * @param amount Amount of currency used for bidding.
      */
     event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
-
-    /**
-     * @dev Options for global tax configuration.
-     * @param taxRate: Tax rate in bps every 1000 blocks
-     * @param treasuryShare: Share to treasury in bps.
-     * @param mintTax: Tax to mint a token. It should be non-zero to prevent attacker constantly mint, default and mint token again.
-     */
-    enum ConfigOptions {
-        taxRate,
-        treasuryShare,
-        mintTax
-    }
 
     //////////////////////////////
     /// Configuration / Admin
