@@ -267,6 +267,11 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testCannotBidExceedAllowance() public {
+        // set mint tax
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+
         // revoke currency approval
         vm.prank(PIXEL_OWNER);
         currency.approve(address(thespace), 0);

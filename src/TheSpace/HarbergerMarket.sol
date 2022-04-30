@@ -89,7 +89,7 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         // default config
         taxConfig[ConfigOptions.taxRate] = 75;
         taxConfig[ConfigOptions.treasuryShare] = 500;
-        taxConfig[ConfigOptions.mintTax] = 1 * (10**uint256(currency.decimals()));
+        taxConfig[ConfigOptions.mintTax] = 0;
     }
 
     //////////////////////////////
