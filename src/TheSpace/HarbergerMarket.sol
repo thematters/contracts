@@ -131,6 +131,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         bool success = _collectTax(tokenId_);
 
         if (success) {
+            // free transfer equals to setting price to 0
+            _setPrice(tokenId_, 0);
+
             // proceed with transfer if success
             _transfer(from_, to_, tokenId_);
         } else {
@@ -154,6 +157,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         bool success = _collectTax(tokenId_);
 
         if (success) {
+            // free transfer equals to setting price to 0
+            _setPrice(tokenId_, 0);
+
             // proceed with transfer if success
             _safeTransfer(from_, to_, tokenId_, data_);
         } else {
@@ -350,21 +356,21 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
      */
     function _recordTax(
         uint256 tokenId_,
-        address taxpayer,
-        uint256 amount
+        address taxpayer_,
+        uint256 amount_
     ) private {
         // update accumulated treasury
         uint256 treasuryShare = taxConfig[ConfigOptions.treasuryShare];
-        uint256 treasuryAdded = (amount * treasuryShare) / 10000;
+        uint256 treasuryAdded = (amount_ * treasuryShare) / 10000;
         treasuryRecord.accumulatedTreasury += treasuryAdded;
 
         // update accumulated ubi
-        treasuryRecord.accumulatedUBI += (amount - treasuryAdded);
+        treasuryRecord.accumulatedUBI += (amount_ - treasuryAdded);
 
         // update tax record
         tokenRecord[tokenId_].lastTaxCollection = block.number;
 
-        emit Tax(tokenId_, taxpayer, amount);
+        emit Tax(tokenId_, taxpayer_, amount_);
     }
 
     /// @inheritdoc IHarbergerMarket

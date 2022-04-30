@@ -216,8 +216,8 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
         assertEq(thespace.balanceOf(PIXEL_OWNER_1), 1);
 
-        // check price: bid a existing pixel won't change the price
-        assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
+        // check price: bid a existing pixel with higher bid price should update the price
+        assertEq(thespace.getPrice(PIXEL_ID), newBidPrice);
     }
 
     function testBatchBid() public {
