@@ -70,7 +70,7 @@ A token updated price.
 
 ### `Config(enum IHarbergerMarket.ConfigOptions option, uint256 value)`
 
-Global configuration for tax is updated.
+Global configuration is updated.
 
 ### `Tax(uint256 tokenId, address taxpayer, uint256 amount)`
 

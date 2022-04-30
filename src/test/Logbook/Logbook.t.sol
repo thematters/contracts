@@ -8,8 +8,8 @@ import "forge-std/console2.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import {Logbook} from "../Logbook/Logbook.sol";
-import {ILogbook} from "../Logbook/ILogbook.sol";
+import {Logbook} from "../../Logbook/Logbook.sol";
+import {ILogbook} from "../../Logbook/ILogbook.sol";
 
 contract LogbookTest is Test {
     Logbook private logbook;

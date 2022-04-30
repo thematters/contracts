@@ -7,33 +7,61 @@ Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMa
 #### Trading
 
 - User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.
-- User buy land: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
-- User set land price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+- User buy pixel: call [`bid` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
+- User set pixel price: call [`setPrice` function](./IHarbergerMarket.md) on `HarbergerMarket` contract.
 
 ## Functions
 
 ### `constructor(address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
-### `setPixel(uint256 tokenId_, uint256 bid_, uint256 price_, uint256 color_)` (external)
+### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
 
 Bid pixel, then set price and color.
 
-### `getPixel(uint256 tokenId_) → uint256 tokenId, uint256 price, uint256 lastTaxCollection, uint256 ubi, address owner, uint256 color` (external)
+### `getPixel(uint256 tokenId_) → struct TheSpace.Pixel pixel` (external)
 
 Get pixel info.
 
-### `setColor(uint256 tokenId, uint256 color)` (public)
+### `setColor(uint256 tokenId_, uint256 color_)` (public)
 
 Set color for a pixel.
 
 Emits {Color} event.
 
+### `_setColor(uint256 tokenId_, uint256 color_, address owner_)` (public)
+
 ### `getColor(uint256 tokenId) → uint256` (public)
 
 Get color for a pixel.
+
+### `getTokensByOwner(address owner_, uint256 limit_, uint256 offset_) → uint256[]` (external)
+
+Get owned tokens for a user.
+
+offset based pagination
 
 ## Events
 
 ### `Color(uint256 pixelId, uint256 color, address owner)`
 
 Emitted when the color of a pixel is updated.
+
+### `Pixel`
+
+uint256
+tokenId
+
+uint256
+price
+
+uint256
+lastTaxCollection
+
+uint256
+ubi
+
+address
+owner
+
+uint256
+color
