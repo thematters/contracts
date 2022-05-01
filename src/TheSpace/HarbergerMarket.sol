@@ -24,7 +24,12 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     /**
      * @dev ERC20 token used as currency
      */
-    ERC20 public currency;
+    ERC20 public immutable currency;
+
+    /**
+     * @dev Max price
+     */
+    uint256 public immutable maxPrice;
 
     //////////////////////////////
     /// State variables for each token
@@ -85,6 +90,9 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
     ) ERC721(propertyName_, propertySymbol_) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
         // initialize currency contract
         currency = ERC20(currencyAddress_);
+
+        // initialize max price
+        maxPrice = currency.totalSupply();
 
         // default config
         taxConfig[ConfigOptions.taxRate] = 75;
@@ -384,6 +392,8 @@ contract HarbergerMarket is ERC721Enumerable, IHarbergerMarket, Multicall, ACLMa
         uint256 price_,
         address owner
     ) internal {
+        if (price_ > maxPrice) revert PriceTooHigh();
+
         // update price in tax record
         tokenRecord[tokenId_].price = price_;
 

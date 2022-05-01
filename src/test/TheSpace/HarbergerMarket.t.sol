@@ -127,9 +127,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
      * @dev Price
      */
     function testGetPixelPrice() public {
-        // bid a token
         _bid();
-
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
     }
 
@@ -139,13 +137,16 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testSetPixelPrice(uint256 price) public {
+        vm.assume(price <= thespace.maxPrice());
+
         // bid a token and set price
         _bid(PIXEL_PRICE, price);
-
         assertEq(thespace.getPrice(PIXEL_ID), price);
     }
 
     function testSetPixelPriceByOperator(uint256 price) public {
+        vm.assume(price <= thespace.maxPrice());
+
         // bid a token and set price
         _bid();
 
@@ -167,6 +168,16 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
         vm.prank(ATTACKER);
         thespace.setPrice(PIXEL_ID, PIXEL_PRICE);
+    }
+
+    function testSetPriceTooHigh() public {
+        _bid();
+
+        uint256 newPrice = thespace.maxPrice() + 1;
+
+        vm.expectRevert(abi.encodeWithSignature("PriceTooHigh()"));
+        vm.prank(PIXEL_OWNER);
+        thespace.setPrice(PIXEL_ID, newPrice);
     }
 
     /**
@@ -227,15 +238,15 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         assertEq(thespace.getOwner(PIXEL_ID + 2), PIXEL_OWNER_1);
     }
 
-    // function testBidDefaultedToken() public {
-    //     // bid a token and set a high price
-    //     _bid(PIXEL_PRICE, type(uint256).max);
+    function testBidDefaultedToken() public {
+        // bid a token and set a high price
+        _bid(PIXEL_PRICE, thespace.maxPrice());
 
-    //     // check tax is greater than balance
-    //     _rollBlock();
-    //     uint256 tax = thespace.getTax(PIXEL_ID);
-    //     assertGt(tax, thespace.balanceOf(PIXEL_OWNER_1));
-    // }
+        // check tax is greater than balance
+        _rollBlock();
+        uint256 tax = thespace.getTax(PIXEL_ID);
+        assertGt(tax, thespace.balanceOf(PIXEL_OWNER_1));
+    }
 
     function testCannotBidOutBoundTokens() public {
         uint256 totalSupply = thespace.totalSupply();
@@ -335,8 +346,8 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         vm.stopPrank();
     }
 
-    function testGetTax() public {
-        uint256 blockRollsTo = block.number + TAX_WINDOW;
+    function testGetTax(uint40 taxWindow) public {
+        uint256 blockRollsTo = block.number + taxWindow;
         uint256 taxRate = thespace.taxConfig(CONFIG_TAX_RATE);
 
         // bid and set price
@@ -348,7 +359,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         assertEq(thespace.getTax(PIXEL_ID), tax);
 
         // zero price
-        _bid(PIXEL_PRICE, 0);
+        _bidAs(PIXEL_OWNER_1, PIXEL_PRICE, 0);
         vm.roll(block.number + TAX_WINDOW);
         assertEq(thespace.getTax(PIXEL_ID), 0);
     }

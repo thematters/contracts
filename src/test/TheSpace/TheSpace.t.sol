@@ -25,6 +25,8 @@ contract TheSpaceTest is BaseHarbergerMarket {
     }
 
     function testSetPixel(uint256 newPrice) public {
+        vm.assume(newPrice <= thespace.maxPrice());
+
         _bid();
 
         vm.prank(PIXEL_OWNER);
