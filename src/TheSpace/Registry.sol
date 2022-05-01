@@ -170,10 +170,8 @@ contract Registry is ERC721Enumerable, Ownable {
 
     function withdrawTreasury(address to) external onlyOwner {
         uint256 amount = treasuryRecord.accumulatedTreasury - treasuryRecord.treasuryWithdrawn;
-
-        treasuryRecord.treasuryWithdrawn = treasuryRecord.accumulatedTreasury;
-
         currency.transfer(to, amount);
+        treasuryRecord.treasuryWithdrawn = treasuryRecord.accumulatedTreasury;
     }
 
     //////////////////////////////

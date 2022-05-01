@@ -84,7 +84,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
-        if (success) setPrice(tokenId_, price_);
+        if (success) registry.setPrice(tokenId_, price_);
     }
 
     /// @inheritdoc IHarbergerMarket
@@ -117,7 +117,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected and recorded
                 bidPrice = mintTax;
-                payee = address(this);
+                payee = address(registry);
                 registry.recordTax(tokenId_, msg.sender, mintTax);
             }
 
@@ -126,7 +126,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
         } else {
             // int tax is collected and recorded
             bidPrice = mintTax;
-            payee = address(this);
+            payee = address(registry);
             registry.recordTax(tokenId_, msg.sender, mintTax);
 
             // settle ERC721 token
@@ -174,7 +174,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
         if (tax > 0) {
             // calculate collectable amount
             address taxpayer = registry.ownerOf(tokenId_);
-            uint256 allowance = registry.currency().allowance(taxpayer, address(this));
+            uint256 allowance = registry.currency().allowance(taxpayer, address(registry));
             uint256 balance = registry.currency().balanceOf(taxpayer);
             uint256 available = allowance < balance ? allowance : balance;
 
@@ -202,7 +202,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
         if (collectable > 0) {
             // collect and record tax
             address owner = registry.ownerOf(tokenId_);
-            registry.transferCurrencyFrom(owner, address(this), collectable);
+            registry.transferCurrencyFrom(owner, address(registry), collectable);
             registry.recordTax(tokenId_, owner, collectable);
         }
 
