@@ -109,6 +109,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
      * @dev Internal function to set price without checking
      */
     function _setPrice(uint256 tokenId_, uint256 price_) private {
+        if (price_ > registry.currency().totalSupply()) revert PriceTooHigh();
         (, uint256 lastTaxCollection, uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
 
         registry.setTokenRecord(tokenId_, price_, lastTaxCollection, ubiWithdrawn);

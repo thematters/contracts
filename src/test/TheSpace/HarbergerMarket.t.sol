@@ -137,7 +137,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testSetPixelPrice(uint256 price) public {
-        vm.assume(price <= thespace.maxPrice());
+        vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
         _bid(PIXEL_PRICE, price);
@@ -145,7 +145,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testSetPixelPriceByOperator(uint256 price) public {
-        vm.assume(price <= thespace.maxPrice());
+        vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
         _bid();
@@ -173,7 +173,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     function testSetPriceTooHigh() public {
         _bid();
 
-        uint256 newPrice = thespace.maxPrice() + 1;
+        uint256 newPrice = registry.currency().totalSupply() + 1;
 
         vm.expectRevert(abi.encodeWithSignature("PriceTooHigh()"));
         vm.prank(PIXEL_OWNER);
@@ -240,7 +240,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
     function testBidDefaultedToken() public {
         // bid a token and set a high price
-        _bid(PIXEL_PRICE, thespace.maxPrice());
+        _bid(PIXEL_PRICE, registry.currency().totalSupply());
 
         // check tax is greater than balance
         _rollBlock();

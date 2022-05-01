@@ -26,7 +26,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
     /**
      * @dev ERC20 token used as currency
      */
-    ERC20 public currency;
+    ERC20 public immutable currency;
 
     /**
      * @notice Record for all tokens (tokenId => TokenRecord).

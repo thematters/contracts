@@ -25,7 +25,7 @@ contract TheSpaceTest is BaseHarbergerMarket {
     }
 
     function testSetPixel(uint256 newPrice) public {
-        vm.assume(newPrice <= thespace.maxPrice());
+        vm.assume(newPrice <= registry.currency().totalSupply());
 
         _bid();
 
@@ -119,7 +119,7 @@ contract TheSpaceTest is BaseHarbergerMarket {
     function testGetPixelsByOwnerWithNoPixels() public {
         TheSpace.Pixel[] memory empty = new TheSpace.Pixel[](0);
 
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 0);
         (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
             PIXEL_OWNER,
             1,
@@ -142,7 +142,7 @@ contract TheSpaceTest is BaseHarbergerMarket {
         _bidThis(tokenId1, PIXEL_PRICE);
         one[0] = thespace.getPixel(tokenId1);
 
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 1);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 1);
         // get this pixel
         (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
             PIXEL_OWNER,
@@ -185,7 +185,7 @@ contract TheSpaceTest is BaseHarbergerMarket {
         two[1] = thespace.getPixel(tokenId2);
 
         // query with limit>=total
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 2);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 2);
         (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
             PIXEL_OWNER,
             2,

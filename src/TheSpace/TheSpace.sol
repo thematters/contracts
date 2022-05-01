@@ -66,6 +66,13 @@ contract TheSpace is HarbergerMarket {
      * @notice Get pixel info.
      */
     function getPixel(uint256 tokenId_) external view returns (Pixel memory pixel) {
+        return _getPixel(tokenId_);
+    }
+
+    /**
+     * @notice Get pixel info.
+     */
+    function _getPixel(uint256 tokenId_) internal view returns (Pixel memory pixel) {
         (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
         pixel = Pixel(
@@ -137,7 +144,7 @@ contract TheSpace is HarbergerMarket {
 
         for (uint256 i = 0; i < size; i++) {
             uint256 tokenId = registry.tokenOfOwnerByIndex(owner_, i + offset_);
-            _pixels[i] = getPixel(tokenId);
+            _pixels[i] = _getPixel(tokenId);
         }
 
         return (_total, limit_, offset_, _pixels);
