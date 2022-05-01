@@ -65,6 +65,10 @@ contract TheSpace is HarbergerMarket {
      * @notice Get pixel info.
      */
     function getPixel(uint256 tokenId_) external view returns (Pixel memory pixel) {
+        return _getPixel(tokenId_);
+    }
+
+    function _getPixel(uint256 tokenId_) internal view returns (Pixel memory pixel) {
         pixel = Pixel(
             tokenId_,
             tokenRecord[tokenId_].price,
@@ -102,31 +106,40 @@ contract TheSpace is HarbergerMarket {
     }
 
     /**
-     * @notice Get owned tokens for a user.
+     * @notice Get owned pixels for a user using pagination.
      * @dev offset based pagination
      */
-    function getTokensByOwner(
+    function getPixelsByOwner(
         address owner_,
         uint256 limit_,
         uint256 offset_
-    ) external view returns (uint256[] memory) {
+    )
+        external
+        view
+        returns (
+            uint256 total,
+            uint256 limit,
+            uint256 offset,
+            Pixel[] memory pixels
+        )
+    {
+        uint256 _total = balanceOf(owner_);
         if (limit_ == 0) {
-            return new uint256[](0);
+            return (_total, limit_, offset_, new Pixel[](0));
         }
-        uint256 total = balanceOf(owner_);
-        if (offset_ >= total) {
-            return new uint256[](0);
+        if (offset_ >= _total) {
+            return (_total, limit_, offset_, new Pixel[](0));
         }
-        uint256 left = total - offset_;
-        uint256 pageSize = left > limit_ ? limit_ : left;
+        uint256 left = _total - offset_;
+        uint256 size = left > limit_ ? limit_ : left;
 
-        uint256[] memory tokens = new uint256[](pageSize);
+        Pixel[] memory _pixels = new Pixel[](size);
 
-        for (uint256 i = 0; i < pageSize; i++) {
-            uint256 tokenIndex = i + offset_;
-            tokens[i] = tokenOfOwnerByIndex(owner_, tokenIndex);
+        for (uint256 i = 0; i < size; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(owner_, i + offset_);
+            _pixels[i] = _getPixel(tokenId);
         }
 
-        return tokens;
+        return (_total, limit_, offset_, _pixels);
     }
 }

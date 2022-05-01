@@ -104,60 +104,114 @@ contract TheSpaceTest is BaseHarbergerMarket {
     /**
      * @dev Owner Tokens
      */
-    function _assertEqArray(uint256[] memory a, uint256[] memory b) private {
+    function _assertEqArray(TheSpace.Pixel[] memory a, TheSpace.Pixel[] memory b) private {
         assert(a.length == b.length);
         for (uint256 i = 0; i < a.length; i++) {
-            assertEq(a[i], b[i]);
+            assertEq(a[i].tokenId, b[i].tokenId);
+            assertEq(a[i].price, b[i].price);
+            assertEq(a[i].lastTaxCollection, b[i].lastTaxCollection);
+            assertEq(a[i].ubi, b[i].ubi);
+            assertEq(a[i].owner, b[i].owner);
+            assertEq(a[i].color, b[i].color);
         }
     }
 
-    // function testGetTokensByOwner() public {
-    //     uint256 tokenId1 = 100;
-    //     uint256 tokenId2 = 101;
-    //     uint256[] memory empty = new uint256[](0);
+    function testGetPixelsByOwnerWithNoPixels() public {
+        TheSpace.Pixel[] memory empty = new TheSpace.Pixel[](0);
 
-    //     // no tokens.
-    //     assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 0), empty);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 1), empty);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 0, 0), empty);
+        assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
+        (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
+            PIXEL_OWNER,
+            1,
+            0
+        );
+        assertEq(total0, 0);
+        assertEq(limit0, 1);
+        assertEq(offset0, 0);
+        _assertEqArray(pixels0, empty);
+        (, , , TheSpace.Pixel[] memory pixels1) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 1);
+        _assertEqArray(pixels1, empty);
+        (, , , TheSpace.Pixel[] memory pixels2) = thespace.getPixelsByOwner(PIXEL_OWNER, 0, 0);
+        _assertEqArray(pixels2, empty);
+    }
 
-    //     // one token, get this token.
-    //     _bidThis(tokenId1);
-    //     uint256[] memory one = new uint256[](1);
-    //     one[0] = tokenId1;
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 0), one);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 10, 0), one);
+    function testGetPixelsByOwnerWithOnePixel() public {
+        uint256 tokenId1 = 100;
+        TheSpace.Pixel[] memory empty = new TheSpace.Pixel[](0);
+        TheSpace.Pixel[] memory one = new TheSpace.Pixel[](1);
+        _bidThis(tokenId1, PIXEL_PRICE);
+        one[0] = thespace.getPixel(tokenId1);
 
-    //     // one token, call with limit 0.
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 0, 0), empty);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 0, 1), empty);
+        assertEq(thespace.balanceOf(PIXEL_OWNER), 1);
+        // get this pixel
+        (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
+            PIXEL_OWNER,
+            1,
+            0
+        );
+        assertEq(total0, 1);
+        assertEq(limit0, 1);
+        assertEq(offset0, 0);
+        _assertEqArray(pixels0, one);
+        (, , , TheSpace.Pixel[] memory pixels1) = thespace.getPixelsByOwner(PIXEL_OWNER, 10, 0);
+        _assertEqArray(pixels1, one);
+        // query with limit=0
+        (uint256 total2, uint256 limit2, , TheSpace.Pixel[] memory pixels2) = thespace.getPixelsByOwner(
+            PIXEL_OWNER,
+            0,
+            0
+        );
+        assertEq(total2, 1);
+        assertEq(limit2, 0);
+        _assertEqArray(pixels2, empty);
+        (, , , TheSpace.Pixel[] memory pixels3) = thespace.getPixelsByOwner(PIXEL_OWNER, 0, 1);
+        _assertEqArray(pixels3, empty);
+        // query with offset>=total
+        (, , , TheSpace.Pixel[] memory pixels4) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 1);
+        _assertEqArray(pixels4, empty);
+        (, , , TheSpace.Pixel[] memory pixels5) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 2);
+        _assertEqArray(pixels5, empty);
+    }
 
-    //     // one token, call with offset >= tokens amount.
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 1), empty);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 2), empty);
+    function testGetPixelsPageByOwnerWithPixels() public {
+        uint256 tokenId1 = 100;
+        uint256 tokenId2 = 101;
+        TheSpace.Pixel[] memory empty = new TheSpace.Pixel[](0);
+        TheSpace.Pixel[] memory two = new TheSpace.Pixel[](2);
 
-    //     // multi tokens, call with limit >= tokens amount.
-    //     _bidThis(tokenId2);
-    //     uint256[] memory all = new uint256[](2);
-    //     all[0] = tokenId1;
-    //     all[1] = tokenId2;
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 2, 0), all);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 10, 0), all);
+        _bidThis(tokenId1, PIXEL_PRICE);
+        _bidThis(tokenId2, PIXEL_PRICE);
+        two[0] = thespace.getPixel(tokenId1);
+        two[1] = thespace.getPixel(tokenId2);
 
-    //     // multi tokens, call with limit < tokens amount.
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 0), one);
+        // query with limit>=total
+        assertEq(thespace.balanceOf(PIXEL_OWNER), 2);
+        (uint256 total0, uint256 limit0, uint256 offset0, TheSpace.Pixel[] memory pixels0) = thespace.getPixelsByOwner(
+            PIXEL_OWNER,
+            2,
+            0
+        );
+        assertEq(total0, 2);
+        assertEq(limit0, 2);
+        assertEq(offset0, 0);
+        _assertEqArray(pixels0, two);
+        (, , , TheSpace.Pixel[] memory pixels1) = thespace.getPixelsByOwner(PIXEL_OWNER, 10, 0);
+        _assertEqArray(pixels1, two);
 
-    //     // multi tokens, call with offset >= tokens amount.
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 2, 2), empty);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 2, 10), empty);
-
-    //     // multi tokens, call with offset < tokens amount.
-    //     uint256[] memory offset = new uint256[](1);
-    //     offset[0] = tokenId2;
-    //     thespace.getTokensByOwner(PIXEL_OWNER, 2, 1);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 2, 1), offset);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 1, 1), offset);
-    //     _assertEqArray(thespace.getTokensByOwner(PIXEL_OWNER, 10, 1), offset);
-    // }
+        // query with 0<limit<total
+        TheSpace.Pixel[] memory pixelsPage1 = new TheSpace.Pixel[](1);
+        TheSpace.Pixel[] memory pixelsPage2 = new TheSpace.Pixel[](1);
+        pixelsPage1[0] = thespace.getPixel(tokenId1);
+        pixelsPage2[0] = thespace.getPixel(tokenId2);
+        (uint256 total2, , , TheSpace.Pixel[] memory pixels2) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 0);
+        assertEq(total2, 2);
+        _assertEqArray(pixels2, pixelsPage1);
+        (, , , TheSpace.Pixel[] memory pixels3) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 1);
+        _assertEqArray(pixels3, pixelsPage2);
+        // query with offset>=total
+        (, , , TheSpace.Pixel[] memory pixels4) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 2);
+        _assertEqArray(pixels4, empty);
+        (, , , TheSpace.Pixel[] memory pixels5) = thespace.getPixelsByOwner(PIXEL_OWNER, 1, 10);
+        _assertEqArray(pixels5, empty);
+    }
 }
