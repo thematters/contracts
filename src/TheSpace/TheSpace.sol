@@ -58,7 +58,7 @@ contract TheSpace is HarbergerMarket {
         uint256 color_
     ) external {
         bid(tokenId_, bidPrice_);
-        registry.setPrice(tokenId_, newPrice_);
+        setPrice(tokenId_, newPrice_);
         _setColor(tokenId_, color_, msg.sender);
     }
 

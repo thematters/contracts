@@ -3,6 +3,8 @@ pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+import "./IHarbergerRegistry.sol";
+
 /**
  * @notice ERC721-compatible contract that allows token to be traded under Harberger tax.
  * @dev Market attaches one ERC20 contract as currency.
@@ -16,7 +18,6 @@ interface IHarbergerMarket {
      * @dev Price too low to bid the given token.
      */
     error PriceTooLow();
-
     /**
      * @dev Price too high to set.
      */
@@ -26,71 +27,10 @@ interface IHarbergerMarket {
      * @dev Sender is not authorized for given operation.
      */
     error Unauthorized();
-
     /**
      * @dev The give token does not exist and needs to be minted first via bidding.
      */
     error TokenNotExists();
-
-    /**
-     * @dev Token id is out of range.
-     * @param min Lower range of possible token id.
-     * @param max Higher range of possible token id.
-     */
-    error InvalidTokenId(uint256 min, uint256 max);
-
-    //////////////////////////////
-    /// Enum
-    //////////////////////////////
-    enum ConfigOptions {
-        taxRate,
-        treasuryShare,
-        mintTax
-    }
-
-    //////////////////////////////
-    /// Event types
-    //////////////////////////////
-
-    /**
-     * @notice A token updated price.
-     * @param tokenId Id of token that updated price.
-     * @param price New price after update.
-     * @param owner Token owner during price update.
-     */
-    event Price(uint256 indexed tokenId, uint256 price, address indexed owner);
-
-    /**
-     * @notice Global configuration is updated.
-     * @param option Field of config been updated.
-     * @param value New value after update.
-     */
-    event Config(ConfigOptions indexed option, uint256 value);
-
-    /**
-     * @notice Tax is collected for a token.
-     * @param tokenId Id of token that has been taxed.
-     * @param taxpayer user address who has paid the tax.
-     * @param amount Amount of tax been collected.
-     */
-    event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
-
-    /**
-     * @notice UBI (universal basic income) is withdrawn for a token.
-     * @param tokenId Id of token that UBI has been withdrawn for.
-     * @param recipient user address who got this withdrawn UBI.
-     * @param amount Amount of UBI withdrawn.
-     */
-    event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
-
-    /**
-     * @notice A token has been succefully bid.
-     * @param tokenId Id of token that has been bid.
-     * @param from Original owner before bid.
-     * @param to New owner after bid.
-     * @param amount Amount of currency used for bidding.
-     */
-    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
 
     //////////////////////////////
     /// Configuration / Admin
@@ -102,7 +42,7 @@ interface IHarbergerMarket {
      * @param option_ Field of config been updated.
      * @param value_ New value after update.
      */
-    function setTaxConfig(ConfigOptions option_, uint256 value_) external;
+    function setTaxConfig(IHarbergerRegistry.ConfigOptions option_, uint256 value_) external;
 
     /**
      * @notice Withdraw all available treasury.

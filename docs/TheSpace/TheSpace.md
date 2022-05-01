@@ -12,7 +12,7 @@ Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMa
 
 ## Functions
 
-### `constructor(address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
+### `constructor(uint256 totalSupply_, address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
 ### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
 

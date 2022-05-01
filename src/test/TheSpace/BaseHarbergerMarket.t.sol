@@ -6,7 +6,8 @@ import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
 import {TheSpace} from "../../TheSpace/TheSpace.sol";
-import {Registry} from "../../TheSpace/Registry.sol";
+import {HarbergerRegistry} from "../../TheSpace/HarbergerRegistry.sol";
+import {IHarbergerRegistry} from "../../TheSpace/IHarbergerRegistry.sol";
 import {SpaceToken} from "../../TheSpace/SpaceToken.sol";
 import {IACLManager} from "../../TheSpace/IACLManager.sol";
 import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
@@ -14,7 +15,7 @@ import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
 contract BaseHarbergerMarket is Test {
     TheSpace internal thespace;
     SpaceToken internal currency;
-    Registry internal registry;
+    HarbergerRegistry internal registry;
 
     address constant ACL_MANAGER = address(100);
     address constant MARKET_ADMIN = address(101);
@@ -42,9 +43,9 @@ contract BaseHarbergerMarket is Test {
     IACLManager.Role constant ROLE_MARKET_ADMIN = IACLManager.Role.marketAdmin;
     IACLManager.Role constant ROLE_TREASURY_ADMIN = IACLManager.Role.treasuryAdmin;
 
-    IHarbergerMarket.ConfigOptions constant CONFIG_TAX_RATE = IHarbergerMarket.ConfigOptions.taxRate;
-    IHarbergerMarket.ConfigOptions constant CONFIG_TREASURY_SHARE = IHarbergerMarket.ConfigOptions.treasuryShare;
-    IHarbergerMarket.ConfigOptions constant CONFIG_MINT_TAX = IHarbergerMarket.ConfigOptions.mintTax;
+    IHarbergerRegistry.ConfigOptions constant CONFIG_TAX_RATE = IHarbergerRegistry.ConfigOptions.taxRate;
+    IHarbergerRegistry.ConfigOptions constant CONFIG_TREASURY_SHARE = IHarbergerRegistry.ConfigOptions.treasuryShare;
+    IHarbergerRegistry.ConfigOptions constant CONFIG_MINT_TAX = IHarbergerRegistry.ConfigOptions.mintTax;
 
     function setUp() public {
         vm.startPrank(DEPLOYER);

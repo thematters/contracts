@@ -1,42 +1,29 @@
 ## `HarbergerMarket`
 
-Market place with Harberger tax. Market attaches one ERC20 contract as currency.
+Market place with Harberger tax. This contract holds the logic of market place, while read from and write into {HarbergerRegistry}, which is the storage contact.
+This contract owns a {HarbergerRegistry} contract for storage, and can be updated by transfering ownership to a new Harberger Market contract.
 
 ## Functions
 
-### `constructor(string propertyName_, string propertySymbol_, address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
+### `constructor(string propertyName_, string propertySymbol_, uint256 totalSupply_, address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
 Create Property contract, setup attached currency contract, setup tax rate
 
-### `supportsInterface(bytes4 interfaceId_) → bool` (public)
+### `supportsInterface(bytes4 interfaceId_) → bool` (external)
 
 See {IERC165-supportsInterface}.
 
-### `transferFrom(address from_, address to_, uint256 tokenId_)` (public)
+### `upgradeContract(address newContract)` (external)
 
-See {IERC721-transferFrom}.
+switch logic contract to another one.
 
-Override to collect tax before transfer.
-
-### `safeTransferFrom(address from_, address to_, uint256 tokenId_, bytes data_)` (public)
-
-See {IERC721-safeTransferFrom}.
-
-Override to collect tax before transfer.
-
-### `totalSupply() → uint256` (public)
-
-See {IERC20-totalSupply}.
-
-Always return total possible amount of supply, instead of current token in circulation.
-
-### `setTaxConfig(enum IHarbergerMarket.ConfigOptions option_, uint256 value_)` (external)
+### `setTaxConfig(enum IHarbergerRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update current tax configuration.
 
 ADMIN_ROLE only.
 
-### `withdrawTreasury(address to)` (external)
+### `withdrawTreasury(address to_)` (external)
 
 Withdraw all available treasury.
 
@@ -46,7 +33,7 @@ TREASURY_ROLE only.
 
 Returns the current price of a token by id.
 
-### `_getPrice(uint256 tokenId_) → uint256 price` (internal)
+### `_getPrice(uint256 tokenId_) → uint256` (internal)
 
 ### `setPrice(uint256 tokenId_, uint256 price_)` (public)
 
@@ -89,31 +76,3 @@ Amount of UBI available for withdraw on given token.
 ### `withdrawUbi(uint256 tokenId_)` (external)
 
 Withdraw UBI on given token.
-
-### `_setPrice(uint256 tokenId_, uint256 price_)` (internal)
-
-Internel function to set price for a token.
-
-### `_setPrice(uint256 tokenId_, uint256 price_, address owner)` (internal)
-
-### `TokenRecord`
-
-uint256
-price
-
-uint256
-lastTaxCollection
-
-uint256
-ubiWithdrawn
-
-### `TreasuryRecord`
-
-uint256
-accumulatedUBI
-
-uint256
-accumulatedTreasury
-
-uint256
-treasuryWithdrawn

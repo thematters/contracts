@@ -6,7 +6,7 @@ Market attaches one ERC20 contract as currency.
 
 ## Functions
 
-### `setTaxConfig(enum IHarbergerMarket.ConfigOptions option_, uint256 value_)` (external)
+### `setTaxConfig(enum IHarbergerRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update current tax configuration.
 
@@ -61,27 +61,3 @@ Amount of UBI available for withdraw on given token.
 ### `withdrawUbi(uint256 tokenId_)` (external)
 
 Withdraw all UBI on given token.
-
-## Events
-
-### `Price(uint256 tokenId, uint256 price, address owner)`
-
-A token updated price.
-
-### `Config(enum IHarbergerMarket.ConfigOptions option, uint256 value)`
-
-Global configuration is updated.
-
-### `Tax(uint256 tokenId, address taxpayer, uint256 amount)`
-
-Tax is collected for a token.
-
-### `UBI(uint256 tokenId, address recipient, uint256 amount)`
-
-UBI (universal basic income) is withdrawn for a token.
-
-### `Bid(uint256 tokenId, address from, address to, uint256 amount)`
-
-A token has been succefully bid.
-
-### `ConfigOptions`
