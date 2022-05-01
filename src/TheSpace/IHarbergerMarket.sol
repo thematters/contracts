@@ -37,6 +37,12 @@ interface IHarbergerMarket {
     //////////////////////////////
 
     /**
+     * @notice Switch logic contract to another one.
+     * @param newContract address of new logic contract.
+     */
+    function upgradeContract(address newContract) external;
+
+    /**
      * @notice Update current tax configuration.
      * @dev ADMIN_ROLE only.
      * @param option_ Field of config been updated.

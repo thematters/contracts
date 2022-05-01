@@ -22,6 +22,10 @@ Bid pixel, then set price and color.
 
 Get pixel info.
 
+### `_getPixel(uint256 tokenId_) → struct TheSpace.Pixel pixel` (internal)
+
+Get pixel info.
+
 ### `setColor(uint256 tokenId_, uint256 color_)` (public)
 
 Set color for a pixel.
@@ -34,9 +38,9 @@ Emits {Color} event.
 
 Get color for a pixel.
 
-### `getTokensByOwner(address owner_, uint256 limit_, uint256 offset_) → uint256[]` (external)
+### `getPixelsByOwner(address owner_, uint256 limit_, uint256 offset_) → uint256 total, uint256 limit, uint256 offset, struct TheSpace.Pixel[] pixels` (external)
 
-Get owned tokens for a user.
+Get owned pixels for a user using pagination.
 
 offset based pagination
 

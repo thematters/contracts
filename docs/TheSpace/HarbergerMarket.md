@@ -15,7 +15,7 @@ See {IERC165-supportsInterface}.
 
 ### `upgradeContract(address newContract)` (external)
 
-switch logic contract to another one.
+Switch logic contract to another one.
 
 ### `setTaxConfig(enum IHarbergerRegistry.ConfigOptions option_, uint256 value_)` (external)
 

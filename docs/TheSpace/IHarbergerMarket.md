@@ -6,6 +6,10 @@ Market attaches one ERC20 contract as currency.
 
 ## Functions
 
+### `upgradeContract(address newContract)` (external)
+
+Switch logic contract to another one.
+
 ### `setTaxConfig(enum IHarbergerRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update current tax configuration.

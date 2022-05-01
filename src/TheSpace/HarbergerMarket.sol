@@ -45,10 +45,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
         return interfaceId_ == type(IHarbergerMarket).interfaceId;
     }
 
-    /**
-     * @notice switch logic contract to another one.
-     * @param newContract address of new logic contract.
-     */
+    /// @inheritdoc IHarbergerMarket
     function upgradeContract(address newContract) external onlyRole(Role.aclManager) {
         registry.transferOwnership(newContract);
     }

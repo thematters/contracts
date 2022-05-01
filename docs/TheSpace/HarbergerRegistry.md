@@ -67,17 +67,17 @@ If an ERC721 token has been minted.
 
 If an address is allowed to transfer an ERC721 token.
 
-### `transferFrom(address, address, uint256)` (public)
+### `transferFrom(address from_, address to_, uint256 tokenId_)` (public)
 
 See {IERC721-transferFrom}.
 
-Override to collect tax before transfer.
+Override to collect tax and set price before transfer.
 
-### `safeTransferFrom(address, address, uint256, bytes)` (public)
+### `safeTransferFrom(address from_, address to_, uint256 tokenId_, bytes data_)` (public)
 
 See {IERC721-safeTransferFrom}.
 
-Override to collect tax before transfer.
+Override to collect tax and set price before transfer.
 
 ### `transferCurrency(address to_, uint256 amount_)` (external)
 
