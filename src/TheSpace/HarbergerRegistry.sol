@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./IHarbergerRegistry.sol";
+import "./IHarbergerMarket.sol";
 
 /**
  * @dev Storage contract for Harberger Market. It stores all states related to the market, and is owned by the market contract.
@@ -182,27 +183,39 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
 
     /**
      * @notice See {IERC721-transferFrom}.
-     * @dev Override to collect tax before transfer.
+     * @dev Override to collect tax and set price before transfer.
      */
     function transferFrom(
-        address,
-        address,
-        uint256
-    ) public view override(ERC721, IERC721) {
-        revert CannotTransfer(owner());
+        address from_,
+        address to_,
+        uint256 tokenId_
+    ) public override(ERC721, IERC721) {
+        safeTransferFrom(from_, to_, tokenId_, "");
     }
 
     /**
      * @notice See {IERC721-safeTransferFrom}.
-     * @dev Override to collect tax before transfer.
+     * @dev Override to collect tax and set price before transfer.
      */
     function safeTransferFrom(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public view override(ERC721, IERC721) {
-        revert CannotTransfer(owner());
+        address from_,
+        address to_,
+        uint256 tokenId_,
+        bytes memory data_
+    ) public override(ERC721, IERC721) {
+        // get market contract
+        IHarbergerMarket market = IHarbergerMarket(owner());
+
+        // clear tax or default
+        market.settleTax(tokenId_);
+
+        // proceed with transfer if tax settled
+        if (_exists(tokenId_)) {
+            // transfer is regarded as setting price to 0, then bid for free
+            // this is to prevent transfering huge tax obligation as a form of attack
+            market.setPrice(tokenId_, 0);
+            _safeTransfer(from_, to_, tokenId_, data_);
+        }
     }
 
     //////////////////////////////

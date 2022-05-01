@@ -96,7 +96,9 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
 
     /// @inheritdoc IHarbergerMarket
     function setPrice(uint256 tokenId_, uint256 price_) public {
-        if (!registry.isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
+        // approved operator or registry (which needs to set price before transfer token)
+        if (!(registry.isApprovedOrOwner(msg.sender, tokenId_) || msg.sender == address(registry)))
+            revert Unauthorized();
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);

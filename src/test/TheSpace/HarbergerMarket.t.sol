@@ -420,7 +420,32 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     /**
      * @dev Trasfer
      */
-    function testCannotTransferFrom() public {}
+    function testCannotTransferFromIfDefault() public {
+        // bid and set price
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
 
-    function testCannotSafeTransferFrom() public {}
+        _rollBlock();
+
+        vm.startPrank(PIXEL_OWNER);
+        currency.approve(address(registry), 0);
+
+        registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
+
+        assertEq(thespace.getOwner(PIXEL_ID), address(0));
+        vm.stopPrank();
+    }
+
+    function testCanTransferFromIfSettleTax() public {
+        // bid and set price
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        _rollBlock();
+
+        vm.startPrank(PIXEL_OWNER);
+
+        registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
+
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
+        vm.stopPrank();
+    }
 }
