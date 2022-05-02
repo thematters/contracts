@@ -5,14 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./IHarbergerRegistry.sol";
-import "./IHarbergerMarket.sol";
+import "./ITheSpace.sol";
+import "./ITheSpaceRegistry.sol";
 
-/**
- * @dev Storage contract for Harberger Market. It stores all states related to the market, and is owned by the market contract.
- * The market contract can be upgraded by changing the owner of this contract to the new market contract.
- */
-contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
+contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     /**
      * @dev Total possible number of ERC721 token
      */
@@ -24,16 +20,24 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
     ERC20 public immutable currency;
 
     /**
-     * @notice Record for all tokens (tokenId => TokenRecord).
+     * @dev Record for all tokens (tokenId => TokenRecord).
      */
     mapping(uint256 => TokenRecord) public tokenRecord;
 
-    TreasuryRecord public treasuryRecord;
+    /**
+     * @dev Color of each token.
+     */
+    mapping(uint256 => uint256) public pixelColor;
 
     /**
      * @dev Tax configuration of market.
      */
     mapping(ConfigOptions => uint256) public taxConfig;
+
+    /**
+     * @dev Global state of tax and treasury.
+     */
+    TreasuryRecord public treasuryRecord;
 
     /**
      * @dev Create Property contract, setup attached currency contract, setup tax rate.
@@ -49,6 +53,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
     ) ERC721(propertyName_, propertySymbol_) {
         // initialize total supply
         _totalSupply = totalSupply_;
+
         // initialize currency contract
         currency = ERC20(currencyAddress_);
 
@@ -57,6 +62,10 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         taxConfig[ConfigOptions.treasuryShare] = treasuryShare_;
         taxConfig[ConfigOptions.mintTax] = mintTax_;
     }
+
+    //////////////////////////////
+    /// Getters & Setters
+    //////////////////////////////
 
     /**
      * @notice See {IERC20-totalSupply}.
@@ -70,19 +79,19 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
     /// Setters for global variables
     //////////////////////////////
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function setTotalSupply(uint256 totalSupply_) external onlyOwner {
         _totalSupply = totalSupply_;
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function setTaxConfig(ConfigOptions option_, uint256 value_) external onlyOwner {
         taxConfig[option_] = value_;
 
         emit Config(option_, value_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function setTreasuryRecord(
         uint256 accumulatedUBI_,
         uint256 accumulatedTreasury_,
@@ -91,7 +100,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         treasuryRecord = TreasuryRecord(accumulatedUBI_, accumulatedTreasury_, treasuryWithdrawn_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function setTokenRecord(
         uint256 tokenId_,
         uint256 price_,
@@ -101,11 +110,16 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         tokenRecord[tokenId_] = TokenRecord(price_, lastTaxCollection_, ubiWithdrawn_);
     }
 
+    /// @inheritdoc ITheSpaceRegistry
+    function setColor(uint256 tokenId_, uint256 color_) external onlyOwner {
+        pixelColor[tokenId_] = color_;
+    }
+
     //////////////////////////////
     /// Event emission
     //////////////////////////////
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function emitTax(
         uint256 tokenId_,
         address taxpayer_,
@@ -114,7 +128,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         emit Tax(tokenId_, taxpayer_, amount_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function emitPrice(
         uint256 tokenId_,
         uint256 price_,
@@ -123,7 +137,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         emit Price(tokenId_, price_, operator_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function emitUBI(
         uint256 tokenId_,
         address recipient_,
@@ -132,7 +146,7 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         emit UBI(tokenId_, recipient_, amount_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function emitBid(
         uint256 tokenId_,
         address from_,
@@ -142,22 +156,31 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         emit Bid(tokenId_, from_, to_, amount_);
     }
 
+    /// @inheritdoc ITheSpaceRegistry
+    function emitColor(
+        uint256 tokenId_,
+        uint256 color_,
+        address owner_
+    ) external onlyOwner {
+        emit Color(tokenId_, color_, owner_);
+    }
+
     //////////////////////////////
-    /// ERC721 related
+    /// ERC721 property related
     //////////////////////////////
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function mint(address to_, uint256 tokenId_) external onlyOwner {
         if (tokenId_ > _totalSupply || tokenId_ < 1) revert InvalidTokenId(1, _totalSupply);
         _safeMint(to_, tokenId_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function burn(uint256 tokenId_) external onlyOwner {
         _burn(tokenId_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function safeTransferByMarket(
         address from_,
         address to_,
@@ -166,12 +189,12 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         _safeTransfer(from_, to_, tokenId_, "");
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function exists(uint256 tokenId_) external view returns (bool) {
         return _exists(tokenId_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool) {
         return _isApprovedOrOwner(spender_, tokenId_);
     }
@@ -190,7 +213,6 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
 
     /**
      * @notice See {IERC721-safeTransferFrom}.
-     * @dev Override to collect tax and set price before transfer.
      */
     function safeTransferFrom(
         address from_,
@@ -198,31 +220,25 @@ contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
         uint256 tokenId_,
         bytes memory data_
     ) public override(ERC721, IERC721) {
-        // get market contract
-        IHarbergerMarket market = IHarbergerMarket(owner());
+        ITheSpace market = ITheSpace(owner());
 
-        // clear tax or default
-        market.settleTax(tokenId_);
+        bool success = market.beforeTransferByRegistry(tokenId_);
 
-        // proceed with transfer if tax settled
-        if (_exists(tokenId_)) {
-            // transfer is regarded as setting price to 0, then bid for free
-            // this is to prevent transfering huge tax obligation as a form of attack
-            market.setPrice(tokenId_, 0);
+        if (success) {
             _safeTransfer(from_, to_, tokenId_, data_);
         }
     }
 
     //////////////////////////////
-    /// ERC20 related
+    /// ERC20 currency related
     //////////////////////////////
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function transferCurrency(address to_, uint256 amount_) external onlyOwner {
         currency.transfer(to_, amount_);
     }
 
-    /// @inheritdoc IHarbergerRegistry
+    /// @inheritdoc ITheSpaceRegistry
     function transferCurrencyFrom(
         address from_,
         address to_,

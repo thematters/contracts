@@ -2,7 +2,10 @@
 pragma solidity ^0.8.11;
 
 /**
- * @notice Access Control List Manager for HarbergerMarket contract.
+ * @title The interface for `ACLManager` contract to manage _The Space_ market.
+ * @notice Access Control List Manager is a role-based access control mechanism.
+ * @dev Each role can be granted to an address.
+ * @dev All available roles are defined in `Role` enum.
  */
 interface IACLManager {
     //////////////////////////////
@@ -37,7 +40,7 @@ interface IACLManager {
     event RoleTransferred(Role indexed role, address indexed prevAccount, address indexed newAccount);
 
     /**
-     * @dev All roles.
+     * @notice Available roles.
      * @param aclManager: responsible for assigning and revoking roles of other addresses
      * @param marketAdmin: responsible for updating configuration, e.g. tax rate or treasury rate.
      * @param treasuryAdmin: responsible for withdrawing treasury from contract.
@@ -55,21 +58,26 @@ interface IACLManager {
 
     /**
      * @notice Grant role to a account (`newAccount`).
-     * @dev Can only be called by ACL Manager (`Role.aclManager`).
      * @dev Cannot grant `Role.aclManager`.
+     *
+     * @dev Access: only `Role.aclManager`.
+     * @dev Throws: `RoleRequired`, `Forbidden` or `ZeroAddress` error.
      */
     function grantRole(Role role, address newAccount) external;
 
     /**
      * @notice Transfers role to a new account (`newAccount`).
-     * @dev Can only be called by the current role address.
+     * @dev Acces: only current role address.
+     * @dev Throws: `RoleRequired`, or `ZeroAddress` error.
      */
     function transferRole(Role role, address newAccount) external;
 
     /**
      * @notice Revokes role from the role address.
-     * @dev Can only be called by the current role address.
      * @dev `Role.aclManager` can not be revoked.
+     *
+     * @dev Access: only current role address.
+     * @dev Throws: `RoleRequired` or `Forbidden` error.
      */
     function renounceRole(Role role) external;
 }

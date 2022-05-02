@@ -18,21 +18,26 @@ Returns `true` if `account` has been granted `role`.
 
 Grant role to a account (`newAccount`).
 
-Can only be called by ACL Manager (`Role.aclManager`).
 Cannot grant `Role.aclManager`.
+
+Access: only `Role.aclManager`.
+Throws: `RoleRequired`, `Forbidden` or `ZeroAddress` error.
 
 ### `transferRole(enum IACLManager.Role role, address newAccount)` (public)
 
 Transfers role to a new account (`newAccount`).
 
-Can only be called by the current role address.
+Acces: only current role address.
+Throws: `RoleRequired`, or `ZeroAddress` error.
 
 ### `renounceRole(enum IACLManager.Role role)` (public)
 
 Revokes role from the role address.
 
-Can only be called by the current role address.
 `Role.aclManager` can not be revoked.
+
+Access: only current role address.
+Throws: `RoleRequired` or `Forbidden` error.
 
 ### `_transferRole(enum IACLManager.Role role, address newAccount)` (internal)
 

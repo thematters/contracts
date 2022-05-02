@@ -1,7 +1,4 @@
-## `HarbergerRegistry`
-
-Storage contract for Harberger Market. It stores all states related to the market, and is owned by the market contract.
-The market contract can be upgraded by changing the owner of this contract to the new market contract.
+## `TheSpaceRegistry`
 
 ## Functions
 
@@ -19,17 +16,21 @@ Always return total possible amount of supply, instead of current token in circu
 
 Update total supply of ERC721 token.
 
-### `setTaxConfig(enum IHarbergerRegistry.ConfigOptions option_, uint256 value_)` (external)
+### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update global tax settings.
 
 ### `setTreasuryRecord(uint256 accumulatedUBI_, uint256 accumulatedTreasury_, uint256 treasuryWithdrawn_)` (external)
 
-Update global tax settings.
+Update UBI and treasury.
 
 ### `setTokenRecord(uint256 tokenId_, uint256 price_, uint256 lastTaxCollection_, uint256 ubiWithdrawn_)` (external)
 
 Set record for a given token.
+
+### `setColor(uint256 tokenId_, uint256 color_)` (external)
+
+Set color for a given token.
 
 ### `emitTax(uint256 tokenId_, address taxpayer_, uint256 amount_)` (external)
 
@@ -46,6 +47,10 @@ Emit {UBI} event
 ### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
 Emit {Bid} event
+
+### `emitColor(uint256 tokenId_, uint256 color_, address owner_)` (external)
+
+Emit {Color} event
 
 ### `mint(address to_, uint256 tokenId_)` (external)
 
@@ -76,8 +81,6 @@ Override to collect tax and set price before transfer.
 ### `safeTransferFrom(address from_, address to_, uint256 tokenId_, bytes data_)` (public)
 
 See {IERC721-safeTransferFrom}.
-
-Override to collect tax and set price before transfer.
 
 ### `transferCurrency(address to_, uint256 amount_)` (external)
 

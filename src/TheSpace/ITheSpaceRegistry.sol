@@ -4,18 +4,19 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-// import "./IHarbergerMarket.sol";
-
 /**
- * @dev Storage contract for Harberger Market.
+ * @title The interface for `TheSpaceRegistry` contract.
+ * @notice Storage contract for `TheSpace` contract.
+ * @dev It stores all states related to the market, and is owned by the TheSpace contract.
+ * @dev The market contract can be upgraded by changing the owner of this contract to the new implementation contract.
  */
-interface IHarbergerRegistry is IERC721Enumerable {
+interface ITheSpaceRegistry is IERC721Enumerable {
     //////////////////////////////
     /// Error types
     //////////////////////////////
 
     /**
-     * @dev Token id is out of range.
+     * @notice Token id is out of range.
      * @param min Lower range of possible token id.
      * @param max Higher range of possible token id.
      */
@@ -65,12 +66,20 @@ interface IHarbergerRegistry is IERC721Enumerable {
      */
     event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
 
+    /**
+     * @notice Emitted when the color of a pixel is updated.
+     * @param tokenId Id of token that has been bid.
+     * @param color Color index defined by client.
+     * @param owner Token owner.
+     */
+    event Color(uint256 indexed tokenId, uint256 indexed color, address indexed owner);
+
     //////////////////////////////
     /// Data structure
     //////////////////////////////
 
     /**
-     * @dev Options for global tax configuration.
+     * @notice Options for global tax configuration.
      * @param taxRate: Tax rate in bps every 1000 blocks
      * @param treasuryShare: Share to treasury in bps.
      * @param mintTax: Tax to mint a token. It should be non-zero to prevent attacker constantly mint, default and mint token again.
@@ -82,11 +91,10 @@ interface IHarbergerRegistry is IERC721Enumerable {
     }
 
     /**
-     * @dev Record of each token.
+     * @notice Record of each token.
      * @param price Current price.
      * @param lastTaxCollection Block number of last tax collection.
      * @param ubiWithdrawn Amount of UBI been withdrawn.
-     *
      */
     struct TokenRecord {
         uint256 price;
@@ -95,11 +103,10 @@ interface IHarbergerRegistry is IERC721Enumerable {
     }
 
     /**
-     * @dev Global state of tax and treasury.
+     * @notice Global state of tax and treasury.
      * @param accumulatedUBI Total amount of currency allocated for UBI.
      * @param accumulatedTreasury Total amount of currency allocated for treasury.
      * @param treasuryWithdrawn Total amount of treasury been withdrawn.
-     *
      */
     struct TreasuryRecord {
         uint256 accumulatedUBI;
@@ -107,31 +114,40 @@ interface IHarbergerRegistry is IERC721Enumerable {
         uint256 treasuryWithdrawn;
     }
 
+    /**
+     * @dev Packed pixel info.
+     */
+    struct Pixel {
+        uint256 tokenId;
+        uint256 price;
+        uint256 lastTaxCollection;
+        uint256 ubi;
+        address owner;
+        uint256 color;
+    }
+
     //////////////////////////////
-    /// Setters for variables
+    /// Getters & Setters
     //////////////////////////////
 
     /**
-     * @dev Update total supply of ERC721 token.
+     * @notice Update total supply of ERC721 token.
      * @param totalSupply_ New amount of total supply.
-     *
      */
     function setTotalSupply(uint256 totalSupply_) external;
 
     /**
-     * @dev Update global tax settings.
+     * @notice Update global tax settings.
      * @param option_ Tax config options, see {ConfigOptions} for detail.
      * @param value_ New value for tax setting.
-     *
      */
     function setTaxConfig(ConfigOptions option_, uint256 value_) external;
 
     /**
-     * @dev Update global tax settings.
+     * @notice Update UBI and treasury.
      * @param accumulatedUBI_ Total amount of currency allocated for UBI.
      * @param accumulatedTreasury_ Total amount of currency allocated for treasury.
      * @param treasuryWithdrawn_ Total amount of treasury been withdrawn.
-     *
      */
     function setTreasuryRecord(
         uint256 accumulatedUBI_,
@@ -140,12 +156,11 @@ interface IHarbergerRegistry is IERC721Enumerable {
     ) external;
 
     /**
-     * @dev Set record for a given token.
-     * @param tokenId_ Id of token to be set/
+     * @notice Set record for a given token.
+     * @param tokenId_ Id of token to be set.
      * @param price_ Current price.
      * @param lastTaxCollection_ Block number of last tax collection.
      * @param ubiWithdrawn_ Amount of UBI been withdrawn.
-     *
      */
     function setTokenRecord(
         uint256 tokenId_,
@@ -154,13 +169,19 @@ interface IHarbergerRegistry is IERC721Enumerable {
         uint256 ubiWithdrawn_
     ) external;
 
+    /**
+     * @notice Set color for a given token.
+     * @param tokenId_ Token id to be set.
+     * @param color_ Color Id.
+     */
+    function setColor(uint256 tokenId_, uint256 color_) external;
+
     //////////////////////////////
     /// Event emission
     //////////////////////////////
 
     /**
      * @dev Emit {Tax} event
-     *
      */
     function emitTax(
         uint256 tokenId_,
@@ -170,7 +191,6 @@ interface IHarbergerRegistry is IERC721Enumerable {
 
     /**
      * @dev Emit {Price} event
-     *
      */
     function emitPrice(
         uint256 tokenId_,
@@ -180,7 +200,6 @@ interface IHarbergerRegistry is IERC721Enumerable {
 
     /**
      * @dev Emit {UBI} event
-     *
      */
     function emitUBI(
         uint256 tokenId_,
@@ -190,7 +209,6 @@ interface IHarbergerRegistry is IERC721Enumerable {
 
     /**
      * @dev Emit {Bid} event
-     *
      */
     function emitBid(
         uint256 tokenId_,
@@ -199,25 +217,31 @@ interface IHarbergerRegistry is IERC721Enumerable {
         uint256 amount_
     ) external;
 
+    /**
+     * @dev Emit {Color} event
+     */
+    function emitColor(
+        uint256 tokenId_,
+        uint256 color,
+        address owner
+    ) external;
+
     //////////////////////////////
-    /// ERC721 related
+    /// ERC721 property related
     //////////////////////////////
 
     /**
      * @dev Mint an ERC721 token.
-     *
      */
     function mint(address to_, uint256 tokenId_) external;
 
     /**
      * @dev Burn an ERC721 token.
-     *
      */
     function burn(uint256 tokenId_) external;
 
     /**
      * @dev Perform ERC721 token transfer by market contract.
-     *
      */
     function safeTransferByMarket(
         address from_,
@@ -227,29 +251,25 @@ interface IHarbergerRegistry is IERC721Enumerable {
 
     /**
      * @dev If an ERC721 token has been minted.
-     *
      */
     function exists(uint256 tokenId_) external view returns (bool);
 
     /**
      * @dev If an address is allowed to transfer an ERC721 token.
-     *
      */
     function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool);
 
     //////////////////////////////
-    /// ERC20 related
+    /// ERC20 currency related
     //////////////////////////////
 
     /**
      * @dev Perform ERC20 token transfer by market contract.
-     *
      */
     function transferCurrency(address to_, uint256 amount_) external;
 
     /**
      * @dev Perform ERC20 token transferFrom by market contract.
-     *
      */
     function transferCurrencyFrom(
         address from_,
