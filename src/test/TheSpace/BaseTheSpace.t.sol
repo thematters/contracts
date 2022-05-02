@@ -6,16 +6,16 @@ import "forge-std/Vm.sol";
 import "forge-std/console2.sol";
 
 import {TheSpace} from "../../TheSpace/TheSpace.sol";
-import {HarbergerRegistry} from "../../TheSpace/HarbergerRegistry.sol";
-import {IHarbergerRegistry} from "../../TheSpace/IHarbergerRegistry.sol";
+import {TheSpaceRegistry} from "../../TheSpace/TheSpaceRegistry.sol";
 import {SpaceToken} from "../../TheSpace/SpaceToken.sol";
 import {IACLManager} from "../../TheSpace/IACLManager.sol";
-import {IHarbergerMarket} from "../../TheSpace/IHarbergerMarket.sol";
+import {ITheSpace} from "../../TheSpace/ITheSpace.sol";
+import {ITheSpaceRegistry} from "../../TheSpace/ITheSpaceRegistry.sol";
 
-contract BaseHarbergerMarket is Test {
+contract BaseTheSpaceTest is Test {
     TheSpace internal thespace;
     SpaceToken internal currency;
-    HarbergerRegistry internal registry;
+    TheSpaceRegistry internal registry;
 
     address constant ACL_MANAGER = address(100);
     address constant MARKET_ADMIN = address(101);
@@ -43,9 +43,9 @@ contract BaseHarbergerMarket is Test {
     IACLManager.Role constant ROLE_MARKET_ADMIN = IACLManager.Role.marketAdmin;
     IACLManager.Role constant ROLE_TREASURY_ADMIN = IACLManager.Role.treasuryAdmin;
 
-    IHarbergerRegistry.ConfigOptions constant CONFIG_TAX_RATE = IHarbergerRegistry.ConfigOptions.taxRate;
-    IHarbergerRegistry.ConfigOptions constant CONFIG_TREASURY_SHARE = IHarbergerRegistry.ConfigOptions.treasuryShare;
-    IHarbergerRegistry.ConfigOptions constant CONFIG_MINT_TAX = IHarbergerRegistry.ConfigOptions.mintTax;
+    ITheSpaceRegistry.ConfigOptions constant CONFIG_TAX_RATE = ITheSpaceRegistry.ConfigOptions.taxRate;
+    ITheSpaceRegistry.ConfigOptions constant CONFIG_TREASURY_SHARE = ITheSpaceRegistry.ConfigOptions.treasuryShare;
+    ITheSpaceRegistry.ConfigOptions constant CONFIG_MINT_TAX = ITheSpaceRegistry.ConfigOptions.mintTax;
 
     function setUp() public {
         vm.startPrank(DEPLOYER);
@@ -55,7 +55,7 @@ contract BaseHarbergerMarket is Test {
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
-        thespace = new TheSpace(1000000, address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
         // transfer to tester

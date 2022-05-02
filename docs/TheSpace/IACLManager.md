@@ -1,6 +1,9 @@
 ## `IACLManager`
 
-Access Control List Manager for HarbergerMarket contract.
+Access Control List Manager is a role-based access control mechanism.
+
+Each role can be granted to an address.
+All available roles are defined in `Role` enum.
 
 ## Functions
 
