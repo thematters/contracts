@@ -149,7 +149,7 @@ contract HarbergerMarket is IHarbergerMarket, Multicall, ACLManager {
             // settle ERC721 token
             registry.safeTransferByMarket(owner, msg.sender, tokenId_);
         } else {
-            // int tax is collected and recorded
+            // mint tax is collected and recorded
             bidPrice = mintTax;
             payee = address(registry);
             _recordTax(tokenId_, msg.sender, mintTax);

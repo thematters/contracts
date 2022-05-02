@@ -14,11 +14,6 @@ import "./IHarbergerMarket.sol";
  */
 contract HarbergerRegistry is IHarbergerRegistry, ERC721Enumerable, Ownable {
     /**
-     * @dev Cannot transfer directly, use market to bid
-     */
-    error CannotTransfer(address market);
-
-    /**
      * @dev Total possible number of ERC721 token
      */
     uint256 private _totalSupply;
