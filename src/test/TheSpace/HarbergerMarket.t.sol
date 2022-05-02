@@ -8,7 +8,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
      * Total Supply
      */
     function testTotalSupply() public {
-        assertGt(thespace.totalSupply(), 0);
+        assertGt(registry.totalSupply(), 0);
     }
 
     function testSetTotalSupply() public {}
@@ -19,9 +19,9 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
      * @dev Config
      */
     function testGetConfig() public {
-        assertGe(thespace.taxConfig(CONFIG_TAX_RATE), 0);
-        assertGe(thespace.taxConfig(CONFIG_TREASURY_SHARE), 0);
-        assertGe(thespace.taxConfig(CONFIG_MINT_TAX), 0);
+        assertGe(registry.taxConfig(CONFIG_TAX_RATE), 0);
+        assertGe(registry.taxConfig(CONFIG_TREASURY_SHARE), 0);
+        assertGe(registry.taxConfig(CONFIG_MINT_TAX), 0);
     }
 
     function testCannotSetConfigByAttacker() public {
@@ -43,7 +43,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
         // roll block.number and check tax
         uint256 blockRollsTo = block.number + TAX_WINDOW;
-        (, uint256 lastTaxCollection, ) = thespace.tokenRecord(PIXEL_ID);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(PIXEL_ID);
         uint256 tax = (PIXEL_PRICE * taxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
         vm.roll(blockRollsTo);
         assertEq(thespace.getTax(PIXEL_ID), tax);
@@ -75,12 +75,12 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
         // check treasury share
         uint256 tax = thespace.getTax(PIXEL_ID);
-        (, uint256 prevTreasury, ) = thespace.treasuryRecord();
+        (, uint256 prevTreasury, ) = registry.treasuryRecord();
         uint256 expectTreasury = prevTreasury + ((tax * share) / 10000);
 
         thespace.settleTax(PIXEL_ID);
 
-        (, uint256 newTreasury, ) = thespace.treasuryRecord();
+        (, uint256 newTreasury, ) = registry.treasuryRecord();
         assertEq(newTreasury, expectTreasury);
         assertGt(newTreasury, 0);
     }
@@ -106,8 +106,8 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         thespace.settleTax(PIXEL_ID);
 
         uint256 prevTreasuryBalance = currency.balanceOf(TREASURY);
-        uint256 prevContractBalance = currency.balanceOf(address(thespace));
-        (, uint256 accumulatedTreasury, uint256 treasuryWithdrawn) = thespace.treasuryRecord();
+        uint256 prevContractBalance = currency.balanceOf(address(registry));
+        (, uint256 accumulatedTreasury, uint256 treasuryWithdrawn) = registry.treasuryRecord();
         uint256 amount = accumulatedTreasury - treasuryWithdrawn;
 
         // withdraw treasury
@@ -116,11 +116,11 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
         // check treasury balance
         assertEq(currency.balanceOf(TREASURY), prevTreasuryBalance + amount);
-        (, , uint256 newTreasuryWithdrawn) = thespace.treasuryRecord();
+        (, , uint256 newTreasuryWithdrawn) = registry.treasuryRecord();
         assertEq(newTreasuryWithdrawn, accumulatedTreasury);
 
         // check contract balance
-        assertEq(currency.balanceOf(address(thespace)), prevContractBalance - amount);
+        assertEq(currency.balanceOf(address(registry)), prevContractBalance - amount);
     }
 
     /**
@@ -132,12 +132,12 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testGetNonExistingPixelPrice() public {
-        uint256 mintTax = thespace.taxConfig(CONFIG_MINT_TAX);
+        uint256 mintTax = registry.taxConfig(CONFIG_MINT_TAX);
         assertEq(thespace.getPrice(PIXEL_ID + 1), mintTax);
     }
 
     function testSetPixelPrice(uint256 price) public {
-        vm.assume(price <= thespace.maxPrice());
+        vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
         _bid(PIXEL_PRICE, price);
@@ -145,14 +145,14 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     }
 
     function testSetPixelPriceByOperator(uint256 price) public {
-        vm.assume(price <= thespace.maxPrice());
+        vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
         _bid();
 
         // approve pixel to operator
         vm.prank(PIXEL_OWNER);
-        thespace.approve(OPERATOR, PIXEL_ID);
+        registry.approve(OPERATOR, PIXEL_ID);
 
         // set price
         vm.prank(OPERATOR);
@@ -173,7 +173,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     function testSetPriceTooHigh() public {
         _bid();
 
-        uint256 newPrice = thespace.maxPrice() + 1;
+        uint256 newPrice = registry.currency().totalSupply() + 1;
 
         vm.expectRevert(abi.encodeWithSignature("PriceTooHigh()"));
         vm.prank(PIXEL_OWNER);
@@ -198,7 +198,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     function testBidNewToken() public {
         _bid();
 
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 1);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 1);
 
         // check price: bid a new pixel will set the price
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
@@ -213,11 +213,11 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         _bidAs(PIXEL_OWNER_1, newBidPrice);
 
         // check balance
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
-        assertEq(thespace.balanceOf(PIXEL_OWNER_1), 1);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 0);
+        assertEq(registry.balanceOf(PIXEL_OWNER_1), 1);
 
-        // check price: bid a existing pixel won't change the price
-        assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
+        // check price: bid a existing pixel with higher bid price should update the price
+        assertEq(thespace.getPrice(PIXEL_ID), newBidPrice);
     }
 
     function testBatchBid() public {
@@ -240,16 +240,16 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
     function testBidDefaultedToken() public {
         // bid a token and set a high price
-        _bid(PIXEL_PRICE, thespace.maxPrice());
+        _bid(PIXEL_PRICE, registry.currency().totalSupply());
 
         // check tax is greater than balance
         _rollBlock();
         uint256 tax = thespace.getTax(PIXEL_ID);
-        assertGt(tax, thespace.balanceOf(PIXEL_OWNER_1));
+        assertGt(tax, registry.balanceOf(PIXEL_OWNER_1));
     }
 
     function testCannotBidOutBoundTokens() public {
-        uint256 totalSupply = thespace.totalSupply();
+        uint256 totalSupply = registry.totalSupply();
 
         // oversupply id
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenId(uint256,uint256)", 1, totalSupply));
@@ -285,7 +285,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
 
         // revoke currency approval
         vm.prank(PIXEL_OWNER);
-        currency.approve(address(thespace), 0);
+        currency.approve(address(registry), 0);
 
         // bid a pixel
         vm.expectRevert("ERC20: transfer amount exceeds allowance");
@@ -304,7 +304,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         uint256 tax = thespace.getTax(PIXEL_ID);
 
         // check if token should be defaulted
-        currency.approve(address(thespace), tax - 1);
+        currency.approve(address(registry), tax - 1);
         (, bool shouldDefault) = thespace.evaluateOwnership(PIXEL_ID);
         assertTrue(shouldDefault);
 
@@ -325,7 +325,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         assertFalse(shouldDefault);
 
         // tax can't be fully collected
-        currency.approve(address(thespace), tax - 1);
+        currency.approve(address(registry), tax - 1);
         (uint256 collectableTax2, bool shouldDefault2) = thespace.evaluateOwnership(PIXEL_ID);
         assertLt(collectableTax2, tax);
         assertTrue(shouldDefault2);
@@ -340,24 +340,23 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         _rollBlock();
 
         vm.startPrank(PIXEL_OWNER);
-        currency.approve(address(thespace), 0);
+        currency.approve(address(registry), 0);
         thespace.settleTax(PIXEL_ID);
-        assertEq(thespace.balanceOf(PIXEL_OWNER), 0);
+        assertEq(registry.balanceOf(PIXEL_OWNER), 0);
         vm.stopPrank();
     }
 
-    function testGetTax(uint40 taxWindow) public {
-        uint256 blockRollsTo = block.number + taxWindow;
-        uint256 taxRate = thespace.taxConfig(CONFIG_TAX_RATE);
+    function testGetTax() public {
+        uint256 blockRollsTo = block.number + TAX_WINDOW;
+        uint256 taxRate = registry.taxConfig(CONFIG_TAX_RATE);
 
         // bid and set price
         _bid(PIXEL_PRICE, PIXEL_PRICE);
         vm.roll(blockRollsTo);
 
-        (, uint256 lastTaxCollection, ) = thespace.tokenRecord(PIXEL_ID);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(PIXEL_ID);
         uint256 tax = (PIXEL_PRICE * taxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
         assertEq(thespace.getTax(PIXEL_ID), tax);
-
         // zero price
         _bidAs(PIXEL_OWNER_1, PIXEL_PRICE, 0);
         vm.roll(block.number + TAX_WINDOW);
@@ -376,7 +375,7 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         vm.roll(blockRollsTo);
 
-        (uint256 prevUBI, uint256 prevTreasury, ) = thespace.treasuryRecord();
+        (uint256 prevUBI, uint256 prevTreasury, ) = registry.treasuryRecord();
         uint256 tax = thespace.getTax(PIXEL_ID);
 
         vm.expectEmit(true, true, true, false);
@@ -385,11 +384,11 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
         thespace.settleTax(PIXEL_ID);
 
         // check tax
-        (uint256 newUBI, uint256 newTreasury, ) = thespace.treasuryRecord();
+        (uint256 newUBI, uint256 newTreasury, ) = registry.treasuryRecord();
         assertEq(newUBI + newTreasury, tax + prevUBI + prevTreasury);
 
         // check lastTaxCollection
-        (, uint256 lastTaxCollection, ) = thespace.tokenRecord(PIXEL_ID);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(PIXEL_ID);
         assertEq(lastTaxCollection, blockRollsTo);
     }
 
@@ -421,7 +420,32 @@ contract HarbergerMarketTest is BaseHarbergerMarket {
     /**
      * @dev Trasfer
      */
-    function testCannotTransferFrom() public {}
+    function testCannotTransferFromIfDefault() public {
+        // bid and set price
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
 
-    function testCannotSafeTransferFrom() public {}
+        _rollBlock();
+
+        vm.startPrank(PIXEL_OWNER);
+        currency.approve(address(registry), 0);
+
+        registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
+
+        assertEq(thespace.getOwner(PIXEL_ID), address(0));
+        vm.stopPrank();
+    }
+
+    function testCanTransferFromIfSettleTax() public {
+        // bid and set price
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        _rollBlock();
+
+        vm.startPrank(PIXEL_OWNER);
+
+        registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
+
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
+        vm.stopPrank();
+    }
 }

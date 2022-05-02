@@ -12,13 +12,17 @@ Trading logic of Harberger tax is defined in [`IHarbergerMarket`](./IHarbergerMa
 
 ## Functions
 
-### `constructor(address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
+### `constructor(uint256 totalSupply_, address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
 ### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
 
 Bid pixel, then set price and color.
 
 ### `getPixel(uint256 tokenId_) → struct TheSpace.Pixel pixel` (external)
+
+Get pixel info.
+
+### `_getPixel(uint256 tokenId_) → struct TheSpace.Pixel pixel` (internal)
 
 Get pixel info.
 
@@ -34,9 +38,9 @@ Emits {Color} event.
 
 Get color for a pixel.
 
-### `getTokensByOwner(address owner_, uint256 limit_, uint256 offset_) → uint256[]` (external)
+### `getPixelsByOwner(address owner_, uint256 limit_, uint256 offset_) → uint256 total, uint256 limit, uint256 offset, struct TheSpace.Pixel[] pixels` (external)
 
-Get owned tokens for a user.
+Get owned pixels for a user using pagination.
 
 offset based pagination
 
