@@ -51,6 +51,7 @@ interface ITheSpace {
 
     /**
      * @notice Switch logic contract to another one.
+     * @dev Only `Role.aclManager`.
      * @param newImplementation address of new logic contract.
      */
     function upgradeTo(address newImplementation) external;
