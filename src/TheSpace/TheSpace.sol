@@ -45,18 +45,6 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
-    function setPixel(
-        uint256 tokenId_,
-        uint256 bidPrice_,
-        uint256 newPrice_,
-        uint256 color_
-    ) external {
-        bid(tokenId_, bidPrice_);
-        setPrice(tokenId_, newPrice_);
-        _setColor(tokenId_, color_, msg.sender);
-    }
-
-    /// @inheritdoc ITheSpace
     function getPixel(uint256 tokenId_) external view returns (ITheSpaceRegistry.Pixel memory pixel) {
         return _getPixel(tokenId_);
     }
@@ -72,6 +60,18 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
             getOwner(tokenId_),
             registry.pixelColor(tokenId_)
         );
+    }
+
+    /// @inheritdoc ITheSpace
+    function setPixel(
+        uint256 tokenId_,
+        uint256 bidPrice_,
+        uint256 newPrice_,
+        uint256 color_
+    ) external {
+        bid(tokenId_, bidPrice_);
+        setPrice(tokenId_, newPrice_);
+        _setColor(tokenId_, color_, msg.sender);
     }
 
     /// @inheritdoc ITheSpace

@@ -16,7 +16,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     //////////////////////////////
 
     /**
-     * @dev Token id is out of range.
+     * @notice Token id is out of range.
      * @param min Lower range of possible token id.
      * @param max Higher range of possible token id.
      */
@@ -79,7 +79,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     //////////////////////////////
 
     /**
-     * @dev Options for global tax configuration.
+     * @notice Options for global tax configuration.
      * @param taxRate: Tax rate in bps every 1000 blocks
      * @param treasuryShare: Share to treasury in bps.
      * @param mintTax: Tax to mint a token. It should be non-zero to prevent attacker constantly mint, default and mint token again.
@@ -91,7 +91,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     }
 
     /**
-     * @dev Record of each token.
+     * @notice Record of each token.
      * @param price Current price.
      * @param lastTaxCollection Block number of last tax collection.
      * @param ubiWithdrawn Amount of UBI been withdrawn.
@@ -103,7 +103,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     }
 
     /**
-     * @dev Global state of tax and treasury.
+     * @notice Global state of tax and treasury.
      * @param accumulatedUBI Total amount of currency allocated for UBI.
      * @param accumulatedTreasury Total amount of currency allocated for treasury.
      * @param treasuryWithdrawn Total amount of treasury been withdrawn.
@@ -131,20 +131,20 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     //////////////////////////////
 
     /**
-     * @dev Update total supply of ERC721 token.
+     * @notice Update total supply of ERC721 token.
      * @param totalSupply_ New amount of total supply.
      */
     function setTotalSupply(uint256 totalSupply_) external;
 
     /**
-     * @dev Update global tax settings.
+     * @notice Update global tax settings.
      * @param option_ Tax config options, see {ConfigOptions} for detail.
      * @param value_ New value for tax setting.
      */
     function setTaxConfig(ConfigOptions option_, uint256 value_) external;
 
     /**
-     * @dev Update UBI and treasury.
+     * @notice Update UBI and treasury.
      * @param accumulatedUBI_ Total amount of currency allocated for UBI.
      * @param accumulatedTreasury_ Total amount of currency allocated for treasury.
      * @param treasuryWithdrawn_ Total amount of treasury been withdrawn.
@@ -156,7 +156,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     ) external;
 
     /**
-     * @dev Set record for a given token.
+     * @notice Set record for a given token.
      * @param tokenId_ Id of token to be set.
      * @param price_ Current price.
      * @param lastTaxCollection_ Block number of last tax collection.
@@ -170,7 +170,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     ) external;
 
     /**
-     * @dev Set color for a given token.
+     * @notice Set color for a given token.
      * @param tokenId_ Token id to be set.
      * @param color_ Color Id.
      */

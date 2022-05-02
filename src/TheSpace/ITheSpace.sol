@@ -51,7 +51,10 @@ interface ITheSpace {
 
     /**
      * @notice Switch logic contract to another one.
-     * @dev Only `Role.aclManager`.
+     *
+     * @dev Access: only `Role.aclManager`.
+     * @dev Throws: `RoleRequired` error.
+     *
      * @param newImplementation address of new logic contract.
      */
     function upgradeTo(address newImplementation) external;
@@ -62,15 +65,23 @@ interface ITheSpace {
 
     /**
      * @notice Update current tax configuration.
-     * @dev Only `Role.marketAdmin`.
+     *
+     * @dev Access: only `Role.marketAdmin`.
+     * @dev Emits: `Config` event.
+     * @dev Throws: `RoleRequired` error.
+     *
      * @param option_ Field of config been updated.
      * @param value_ New value after update.
      */
     function setTaxConfig(ITheSpaceRegistry.ConfigOptions option_, uint256 value_) external;
 
     /**
-     * @notice Withdraw all available treasury to a given address (DAO treasury).
-     * @dev Only `Role.treasuryAdmin`.
+     * @notice Withdraw all available treasury.
+     *
+     * @dev Access: only `Role.treasuryAdmin`.
+     * @dev Throws: `RoleRequired` error.
+     *
+     * @param to address of DAO treasury.
      */
     function withdrawTreasury(address to) external;
 
@@ -79,7 +90,17 @@ interface ITheSpace {
     //////////////////////////////
 
     /**
+     * @notice Get pixel info.
+     * @param tokenId_ Token id to be queried.
+     * @return pixel Packed pixel info.
+     */
+    function getPixel(uint256 tokenId_) external view returns (ITheSpaceRegistry.Pixel memory pixel);
+
+    /**
      * @notice Bid pixel, then set price and color.
+     *
+     * @dev Throws: inherits from `bid` and `setPrice`.
+     *
      * @param tokenId_ Token id to be bid and set.
      * @param bidPrice_ Bid price.
      * @param newPrice_ New price to be set.
@@ -93,14 +114,12 @@ interface ITheSpace {
     ) external;
 
     /**
-     * @notice Get pixel info.
-     * @param tokenId_ Token id to be queried.
-     * @return pixel Packed pixel info.
-     */
-    function getPixel(uint256 tokenId_) external view returns (ITheSpaceRegistry.Pixel memory pixel);
-
-    /**
      * @notice Set color for a pixel.
+     *
+     * @dev Access: only token owner or approved operator.
+     * @dev Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
+     * @dev Emits: `Color` event.
+     *
      * @param tokenId_ Token id to be set.
      * @param color_ Color to be set.
      */
@@ -151,9 +170,11 @@ interface ITheSpace {
 
     /**
      * @notice Set the current price of a token with id. Triggers tax settle first, price is succefully updated after tax is successfully collected.
-     * @dev Only token owner or approved operator.
-     * @dev Throw `Unauthorized` or `ERC721: operator query for nonexistent token` error.
-     * @dev Emits a {Price} event if update is successful.
+     *
+     * @dev Access: only token owner or approved operator.
+     * @dev Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
+     * @dev Emits: `Price` event.
+     *
      * @param tokenId_ Id of token been updated.
      * @param price_ New price to be updated.
      */
@@ -168,8 +189,13 @@ interface ITheSpace {
     function getOwner(uint256 tokenId_) external view returns (address owner);
 
     /**
-     * @notice Purchase property with bid higher than current price. If bid price is higher than ask price, only ask price will be deducted.
+     * @notice Purchase property with bid higher than current price.
+     * If bid price is higher than ask price, only ask price will be deducted.
      * @dev Clear tax for owner before transfer.
+     *
+     * @dev Throws: `PriceTooLow` or `InvalidTokenId` error.
+     * @dev Emits: `Bid`, `Tax` events.
+     *
      * @param tokenId_ Id of token been bid.
      * @param price_ Bid price.
      */
@@ -197,6 +223,10 @@ interface ITheSpace {
     /**
      * @notice Collect outstanding tax of a token and default it if needed.
      * @dev Anyone can trigger this function. It could be desirable for the developer team to trigger it once a while to make sure all tokens meet their tax obligation.
+     *
+     * @dev Throws: `PriceTooLow` or `InvalidTokenId` error.
+     * @dev Emits: `Bid`, `Tax` events.
+     *
      * @param tokenId_ Id of token been settled.
      * @return success Whether tax is fully collected without token been defaulted.
      */
@@ -211,6 +241,9 @@ interface ITheSpace {
 
     /**
      * @notice Withdraw all UBI on given token.
+     *
+     * @dev Emits: `UBI` event.
+     *
      * @param tokenId_ Id of token been withdrawn.
      */
     function withdrawUbi(uint256 tokenId_) external;
@@ -218,6 +251,10 @@ interface ITheSpace {
     /**
      * @notice Perform before `safeTransfer` and `safeTransferFrom` by registry contract.
      * @dev Collect tax and set price.
+     *
+     * @dev Access: only registry.
+     * @dev Throws: `Unauthorized` error.
+     *
      * @param tokenId_ Token id to be transferred.
      * @return success Whether tax is fully collected without token been defaulted.
      */

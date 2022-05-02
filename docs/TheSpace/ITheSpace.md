@@ -19,29 +19,41 @@ This contract owns a {TheSpaceRegistry} contract for storage, and can be updated
 
 Switch logic contract to another one.
 
+Access: only `Role.aclManager`.
+Throws: `RoleRequired` error.
+
 ### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update current tax configuration.
 
-Only `Role.marketAdmin`.
+Access: only `Role.marketAdmin`.
+Emits: `Config` event.
+Throws: `RoleRequired` error.
 
 ### `withdrawTreasury(address to)` (external)
 
-Withdraw all available treasury to a given address (DAO treasury).
+Withdraw all available treasury.
 
-Only `Role.treasuryAdmin`.
-
-### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
-
-Bid pixel, then set price and color.
+Access: only `Role.treasuryAdmin`.
+Throws: `RoleRequired` error.
 
 ### `getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (external)
 
 Get pixel info.
 
+### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
+
+Bid pixel, then set price and color.
+
+Throws: inherits from `bid` and `setPrice`.
+
 ### `setColor(uint256 tokenId_, uint256 color_)` (external)
 
 Set color for a pixel.
+
+Access: only token owner or approved operator.
+Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
+Emits: `Color` event.
 
 ### `getColor(uint256 tokenId_) → uint256 color` (external)
 
@@ -61,9 +73,9 @@ Returns the current price of a token by id.
 
 Set the current price of a token with id. Triggers tax settle first, price is succefully updated after tax is successfully collected.
 
-Only token owner or approved operator.
-Throw `Unauthorized` or `ERC721: operator query for nonexistent token` error.
-Emits a {Price} event if update is successful.
+Access: only token owner or approved operator.
+Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
+Emits: `Price` event.
 
 ### `getOwner(uint256 tokenId_) → address owner` (external)
 
@@ -73,9 +85,13 @@ If token does not exisit, return zero address and user can bid the token as usua
 
 ### `bid(uint256 tokenId_, uint256 price_)` (external)
 
-Purchase property with bid higher than current price. If bid price is higher than ask price, only ask price will be deducted.
+Purchase property with bid higher than current price.
+If bid price is higher than ask price, only ask price will be deducted.
 
 Clear tax for owner before transfer.
+
+Throws: `PriceTooLow` or `InvalidTokenId` error.
+Emits: `Bid`, `Tax` events.
 
 ### `getTax(uint256 tokenId_) → uint256 amount` (external)
 
@@ -91,6 +107,9 @@ Collect outstanding tax of a token and default it if needed.
 
 Anyone can trigger this function. It could be desirable for the developer team to trigger it once a while to make sure all tokens meet their tax obligation.
 
+Throws: `PriceTooLow` or `InvalidTokenId` error.
+Emits: `Bid`, `Tax` events.
+
 ### `ubiAvailable(uint256 tokenId_) → uint256 amount` (external)
 
 Amount of UBI available for withdraw on given token.
@@ -99,8 +118,13 @@ Amount of UBI available for withdraw on given token.
 
 Withdraw all UBI on given token.
 
+Emits: `UBI` event.
+
 ### `beforeTransferByRegistry(uint256 tokenId_) → bool success` (external)
 
 Perform before `safeTransfer` and `safeTransferFrom` by registry contract.
 
 Collect tax and set price.
+
+Access: only registry.
+Throws: `Unauthorized` error.
