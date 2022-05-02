@@ -11,9 +11,41 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertGt(registry.totalSupply(), 0);
     }
 
-    function testSetTotalSupply() public {}
+    function testSetTotalSupply(uint256 newTotalSupply) public {
+        vm.assume(newTotalSupply > 0);
 
-    function testCannotSetTotalSupplyByAttacker() public {}
+        // bid a token
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        // collect tax
+        _rollBlock();
+        assertGt(thespace.getTax(PIXEL_ID), 0);
+        thespace.settleTax(PIXEL_ID);
+
+        // check prev UBI
+        uint256 prevTotalSupply = registry.totalSupply();
+        uint256 prevUBI = thespace.ubiAvailable(PIXEL_ID);
+        assertGt(prevUBI, 0);
+
+        // change total supply
+        vm.prank(MARKET_ADMIN);
+        thespace.setTotalSupply(newTotalSupply);
+
+        // check new UBI
+        uint256 newUBI = thespace.ubiAvailable(PIXEL_ID);
+        if (newTotalSupply >= prevTotalSupply) {
+            assertLe(newUBI, prevUBI);
+        } else {
+            assertGt(newUBI, prevUBI);
+        }
+    }
+
+    function testCannotSetTotalSupplyByAttacker() public {
+        vm.expectRevert(abi.encodeWithSignature("RoleRequired(uint8)", ROLE_MARKET_ADMIN));
+
+        vm.prank(ATTACKER);
+        thespace.setTotalSupply(1000);
+    }
 
     /**
      * @dev Config
@@ -27,7 +59,6 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testCannotSetConfigByAttacker() public {
         vm.expectRevert(abi.encodeWithSignature("RoleRequired(uint8)", ROLE_MARKET_ADMIN));
 
-        vm.stopPrank();
         vm.prank(ATTACKER);
         thespace.setTaxConfig(CONFIG_TAX_RATE, 1000);
     }
@@ -47,6 +78,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         uint256 tax = (PIXEL_PRICE * taxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
         vm.roll(blockRollsTo);
         assertEq(thespace.getTax(PIXEL_ID), tax);
+        assertGt(thespace.getTax(PIXEL_ID), 0);
 
         // change tax rate and recheck
         uint256 newTaxRate = 10;
@@ -55,6 +87,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         uint256 newTax = (PIXEL_PRICE * newTaxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
         vm.roll(blockRollsTo);
         assertEq(thespace.getTax(PIXEL_ID), newTax);
+        assertGt(thespace.getTax(PIXEL_ID), 0);
 
         // zero tax
         vm.prank(MARKET_ADMIN);
@@ -88,8 +121,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testSetMintTax() public {
         // set mint tax
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
-        vm.prank(MARKET_ADMIN);
-        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+        _setMintTax(mintTax);
 
         // bid a token with mint tax as amount
         uint256 prevBalance = currency.balanceOf(PIXEL_OWNER);
@@ -198,8 +230,6 @@ contract TheSpaceTest is BaseTheSpaceTest {
     /**
      * @dev Color
      */
-    function testGetColor() public {}
-
     function testSetColor() public {
         _bid();
 
@@ -328,17 +358,17 @@ contract TheSpaceTest is BaseTheSpaceTest {
     /**
      * @dev Price
      */
-    function testGetPixelPrice() public {
+    function testGetPrice() public {
         _bid();
         assertEq(thespace.getPrice(PIXEL_ID), PIXEL_PRICE);
     }
 
-    function testGetNonExistingPixelPrice() public {
+    function testGetNonExistingPrice() public {
         uint256 mintTax = registry.taxConfig(CONFIG_MINT_TAX);
         assertEq(thespace.getPrice(PIXEL_ID + 1), mintTax);
     }
 
-    function testSetPixelPrice(uint256 price) public {
+    function testSetPrice(uint256 price) public {
         vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
@@ -346,7 +376,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getPrice(PIXEL_ID), price);
     }
 
-    function testSetPixelPriceByOperator(uint256 price) public {
+    function testSetPriceByOperator(uint256 price) public {
         vm.assume(price <= registry.currency().totalSupply());
 
         // bid a token and set price
@@ -375,9 +405,10 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testSetPriceTooHigh() public {
         _bid();
 
-        uint256 newPrice = registry.currency().totalSupply() + 1;
+        uint256 maxPrice = registry.currency().totalSupply();
+        uint256 newPrice = maxPrice + 1;
 
-        vm.expectRevert(abi.encodeWithSignature("PriceTooHigh()"));
+        vm.expectRevert(abi.encodeWithSignature("PriceTooHigh(uint256)", maxPrice));
         vm.prank(PIXEL_OWNER);
         thespace.setPrice(PIXEL_ID, newPrice);
     }
@@ -388,6 +419,9 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testGetOwner() public {
         _bid();
         assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER);
+
+        _bidAs(PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
     }
 
     function testGetOwnerOfNonExistingToken() public {
@@ -418,6 +452,9 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(registry.balanceOf(PIXEL_OWNER), 0);
         assertEq(registry.balanceOf(PIXEL_OWNER_1), 1);
 
+        // check ownership
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
+
         // check price: bid a existing pixel with higher bid price should update the price
         assertEq(thespace.getPrice(PIXEL_ID), newBidPrice);
     }
@@ -442,12 +479,36 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
     function testBidDefaultedToken() public {
         // bid a token and set a high price
-        _bid(PIXEL_PRICE, registry.currency().totalSupply());
+        uint256 price = registry.currency().totalSupply();
+        _bid(PIXEL_PRICE, price);
 
         // check tax is greater than balance
         _rollBlock();
         uint256 tax = thespace.getTax(PIXEL_ID);
-        assertGt(tax, registry.balanceOf(PIXEL_OWNER_1));
+        assertLt(currency.balanceOf(PIXEL_OWNER_1), tax);
+
+        // set mint tax
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        _setMintTax(mintTax);
+
+        // bid and token will be defaulted
+        uint256 prevBalance = currency.balanceOf(PIXEL_OWNER_1);
+        _bidAs(PIXEL_OWNER_1, PIXEL_PRICE);
+
+        // bidder only pays the mint tax
+        assertEq(currency.balanceOf(PIXEL_OWNER_1), prevBalance - mintTax);
+
+        // tax paid by the old owner
+        assertEq(currency.balanceOf(PIXEL_OWNER), 0);
+
+        // tax was clear
+        assertEq(thespace.getTax(PIXEL_ID), 0);
+
+        // ownership was transferred
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
+
+        // price didn't change since bid price is lower than the old price
+        assertEq(thespace.getPrice(PIXEL_ID), price);
     }
 
     function testCannotBidOutBoundTokens() public {
@@ -472,8 +533,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         // price too low to bid a non-existing token
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
-        vm.prank(MARKET_ADMIN);
-        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+        _setMintTax(mintTax);
 
         vm.expectRevert(abi.encodeWithSignature("PriceTooLow()"));
         _bidAs(PIXEL_OWNER_1, mintTax - 1);
@@ -482,8 +542,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testCannotBidExceedAllowance() public {
         // set mint tax
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
-        vm.prank(MARKET_ADMIN);
-        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+        _setMintTax(mintTax);
 
         // revoke currency approval
         vm.prank(PIXEL_OWNER);
@@ -541,11 +600,22 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         _rollBlock();
 
-        vm.startPrank(PIXEL_OWNER);
+        vm.prank(PIXEL_OWNER);
         currency.approve(address(registry), 0);
         thespace.settleTax(PIXEL_ID);
+
+        // token was burned
         assertEq(registry.balanceOf(PIXEL_OWNER), 0);
-        vm.stopPrank();
+
+        // price was reset
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        _setMintTax(mintTax);
+        assertEq(thespace.getPrice(PIXEL_ID), mintTax);
+
+        // bid with mint tax
+        uint256 prevBalance = currency.balanceOf(PIXEL_OWNER_1);
+        _bidAs(PIXEL_OWNER_1, mintTax);
+        assertEq(currency.balanceOf(PIXEL_OWNER_1), prevBalance - mintTax);
     }
 
     function testGetTax() public {
@@ -630,11 +700,20 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         vm.startPrank(PIXEL_OWNER);
         currency.approve(address(registry), 0);
-
         registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
-
-        assertEq(thespace.getOwner(PIXEL_ID), address(0));
         vm.stopPrank();
+
+        // ownership was transferred to zero address
+        assertEq(thespace.getOwner(PIXEL_ID), address(0));
+
+        // price was reset to mint tax since it was burned
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        _setMintTax(mintTax);
+        assertEq(thespace.getPrice(PIXEL_ID), mintTax);
+
+        // tax was clear
+        _bidAs(PIXEL_OWNER_1, mintTax);
+        assertEq(thespace.getTax(PIXEL_ID), 0);
     }
 
     function testCanTransferFromIfSettleTax() public {
@@ -644,10 +723,17 @@ contract TheSpaceTest is BaseTheSpaceTest {
         _rollBlock();
 
         vm.startPrank(PIXEL_OWNER);
-
         registry.transferFrom(PIXEL_OWNER, PIXEL_OWNER_1, PIXEL_ID);
+        vm.stopPrank();
 
         assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);
-        vm.stopPrank();
+
+        // tax was clear
+        assertEq(thespace.getTax(PIXEL_ID), 0);
+
+        // price was reset to zero
+        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        _setMintTax(mintTax);
+        assertEq(thespace.getPrice(PIXEL_ID), 0);
     }
 }

@@ -63,6 +63,10 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
         taxConfig[ConfigOptions.mintTax] = mintTax_;
     }
 
+    //////////////////////////////
+    /// Getters & Setters
+    //////////////////////////////
+
     /**
      * @notice See {IERC20-totalSupply}.
      * @dev Always return total possible amount of supply, instead of current token in circulation.

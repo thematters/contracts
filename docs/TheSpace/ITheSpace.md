@@ -22,6 +22,13 @@ Switch logic contract to another one.
 Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.
 
+### `setTotalSupply(uint256 totalSupply_)` (external)
+
+Update total supply of ERC721 token.
+
+Access: only `Role.marketAdmin`.
+Throws: `RoleRequired` error.
+
 ### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
 
 Update current tax configuration.

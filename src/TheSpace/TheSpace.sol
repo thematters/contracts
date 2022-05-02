@@ -35,9 +35,38 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         return interfaceId_ == type(ITheSpace).interfaceId;
     }
 
+    //////////////////////////////
+    /// Upgradability
+    //////////////////////////////
+
     /// @inheritdoc ITheSpace
     function upgradeTo(address newImplementation) external onlyRole(Role.aclManager) {
         registry.transferOwnership(newImplementation);
+    }
+
+    //////////////////////////////
+    /// Configuration / Admin
+    //////////////////////////////
+
+    function setTotalSupply(uint256 totalSupply_) external onlyRole(Role.marketAdmin) {
+        registry.setTotalSupply(totalSupply_);
+    }
+
+    /// @inheritdoc ITheSpace
+    function setTaxConfig(ITheSpaceRegistry.ConfigOptions option_, uint256 value_) external onlyRole(Role.marketAdmin) {
+        registry.setTaxConfig(option_, value_);
+    }
+
+    /// @inheritdoc ITheSpace
+    function withdrawTreasury(address to_) external onlyRole(Role.treasuryAdmin) {
+        (uint256 accumulatedUBI, uint256 accumulatedTreasury, uint256 treasuryWithdrawn) = registry.treasuryRecord();
+
+        // calculate available amount and transfer
+        uint256 amount = accumulatedTreasury - treasuryWithdrawn;
+        registry.transferCurrency(to_, amount);
+
+        // set `treasuryWithdrawn` to `accumulatedTreasury`
+        registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
     }
 
     //////////////////////////////
@@ -132,28 +161,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     }
 
     //////////////////////////////
-    /// Role only
-    //////////////////////////////
-
-    /// @inheritdoc ITheSpace
-    function setTaxConfig(ITheSpaceRegistry.ConfigOptions option_, uint256 value_) external onlyRole(Role.marketAdmin) {
-        registry.setTaxConfig(option_, value_);
-    }
-
-    /// @inheritdoc ITheSpace
-    function withdrawTreasury(address to_) external onlyRole(Role.treasuryAdmin) {
-        (uint256 accumulatedUBI, uint256 accumulatedTreasury, uint256 treasuryWithdrawn) = registry.treasuryRecord();
-
-        // calculate available amount and transfer
-        uint256 amount = accumulatedTreasury - treasuryWithdrawn;
-        registry.transferCurrency(to_, amount);
-
-        // set `treasuryWithdrawn` to `accumulatedTreasury`
-        registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
-    }
-
-    //////////////////////////////
-    /// Read and write of token state
+    /// Trading
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
@@ -182,7 +190,9 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
      * @dev Internal function to set price without checking
      */
     function _setPrice(uint256 tokenId_, uint256 price_) private {
-        if (price_ > registry.currency().totalSupply()) revert PriceTooHigh();
+        // max price to prevent overflow of `_getTax`
+        uint256 maxPrice = registry.currency().totalSupply();
+        if (price_ > maxPrice) revert PriceTooHigh(maxPrice);
 
         (, uint256 lastTaxCollection, uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
 
@@ -368,6 +378,10 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
             registry.emitUBI(tokenId_, recipient, amount);
         }
     }
+
+    //////////////////////////////
+    /// Registry backcall
+    //////////////////////////////
 
     /// @inheritdoc ITheSpace
     function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {

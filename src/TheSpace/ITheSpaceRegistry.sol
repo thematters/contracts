@@ -127,7 +127,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     }
 
     //////////////////////////////
-    /// Setters for variables
+    /// Getters & Setters
     //////////////////////////////
 
     /**

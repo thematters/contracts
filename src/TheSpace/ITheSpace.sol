@@ -33,7 +33,7 @@ interface ITheSpace {
     /**
      * @dev Price too high to set.
      */
-    error PriceTooHigh();
+    error PriceTooHigh(uint256 maxPrice);
 
     /**
      * @dev Sender is not authorized for given operation.
@@ -62,6 +62,16 @@ interface ITheSpace {
     //////////////////////////////
     /// Configuration / Admin
     //////////////////////////////
+
+    /**
+     * @notice Update total supply of ERC721 token.
+     *
+     * @dev Access: only `Role.marketAdmin`.
+     * @dev Throws: `RoleRequired` error.
+     *
+     * @param totalSupply_ New amount of total supply.
+     */
+    function setTotalSupply(uint256 totalSupply_) external;
 
     /**
      * @notice Update current tax configuration.
@@ -247,6 +257,10 @@ interface ITheSpace {
      * @param tokenId_ Id of token been withdrawn.
      */
     function withdrawUbi(uint256 tokenId_) external;
+
+    //////////////////////////////
+    /// Registry backcall
+    //////////////////////////////
 
     /**
      * @notice Perform before `safeTransfer` and `safeTransferFrom` by registry contract.

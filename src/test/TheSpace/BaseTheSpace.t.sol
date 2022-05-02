@@ -114,4 +114,9 @@ contract BaseTheSpaceTest is Test {
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         vm.roll(blockRollsTo);
     }
+
+    function _setMintTax(uint256 mintTax) internal {
+        vm.prank(MARKET_ADMIN);
+        thespace.setTaxConfig(CONFIG_MINT_TAX, mintTax);
+    }
 }

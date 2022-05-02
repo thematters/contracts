@@ -15,6 +15,25 @@ Switch logic contract to another one.
 Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.
 
+### `setTotalSupply(uint256 totalSupply_)` (external)
+
+Configuration / Admin
+
+### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
+
+Update current tax configuration.
+
+Access: only `Role.marketAdmin`.
+Emits: `Config` event.
+Throws: `RoleRequired` error.
+
+### `withdrawTreasury(address to_)` (external)
+
+Withdraw all available treasury.
+
+Access: only `Role.treasuryAdmin`.
+Throws: `RoleRequired` error.
+
 ### `getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (external)
 
 Get pixel info.
@@ -46,21 +65,6 @@ Get color for a pixel.
 Get pixels owned by a given address.
 
 offset-based pagination
-
-### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
-
-Update current tax configuration.
-
-Access: only `Role.marketAdmin`.
-Emits: `Config` event.
-Throws: `RoleRequired` error.
-
-### `withdrawTreasury(address to_)` (external)
-
-Withdraw all available treasury.
-
-Access: only `Role.treasuryAdmin`.
-Throws: `RoleRequired` error.
 
 ### `getPrice(uint256 tokenId_) → uint256 price` (public)
 
