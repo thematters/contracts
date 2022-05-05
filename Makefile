@@ -28,6 +28,10 @@ deploy-the-space-currency: clean
 deploy-the-space: clean
 	@forge create TheSpace --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY}  --constructor-args ${THESPACE_CURRENCY_ADDRESS} --constructor-args ${THESPACE_ACL_MANAGER_ADDRESS} --constructor-args ${THESPACE_MARKET_ADMIN_ADDRESS} --constructor-args ${THESPACE_TREASURY_ADMIN_ADDRESS} --legacy
 
+## snapper
+deploy-snapper: clean
+	@forge create Snapper --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${SNAPPER_THESPACE_CREATION_BLOCKNUM} --constructor-args ${SNAPPER_THESPACE_INITIAL_SNAPSHOT_CID} --legacy
+
 # Verifications
 check-verification:
 	@forge verify-check --chain-id ${CHAIN_ID} ${GUID} ${ETHERSCAN_API_KEY}
@@ -37,3 +41,6 @@ verify-logbook:
 
 verify-the-space:
 	@forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimizations 200 --constructor-args ${THESPACE_ABI_ENCODE_CONSTRUCTOR_ARGS} --compiler-version v0.8.13+commit.abaa5c0e ${THESPACE_CONTRACT_ADDRESS} src/TheSpace/TheSpace.sol:TheSpace ${ETHERSCAN_API_KEY}
+
+verify-snapper:
+	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args `cast abi-encode "constructor(uint256,string)" ${SNAPPER_THESPACE_CREATION_BLOCKNUM} "${SNAPPER_THESPACE_INITIAL_SNAPSHOT_CID}" ` --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${SNAPPER_CONTRACT_ADDRESS} src/Snapper/Snapper.sol:Snapper ${ETHERSCAN_API_KEY}
