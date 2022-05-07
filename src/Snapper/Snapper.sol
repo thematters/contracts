@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract Snapper is Ownable {
     /**
-     * @notice Initialize a intialized region.
+     * @notice Initialize intialized regions.
      * @param regionId The id of region which have its own snapshot.
      */
     error CannotBeReInitialized(uint256 regionId);
@@ -32,7 +32,7 @@ contract Snapper is Ownable {
      * @param target The wrong `targetSnapshotBlock_` value.
      * @param latest The value `targetSnapshotBlock_` should greater than.
      */
-    error InvalidSnapshotBlock(uint256 regionId, uint256 target, uint256 latest);
+    error InvalidTargetSnapshotBlock(uint256 regionId, uint256 target, uint256 latest);
 
     /**
      * @notice New snapshot is taken.
@@ -72,7 +72,6 @@ contract Snapper is Ownable {
 
     /**
      * @notice Intialize the region before taking further snapshots.
-:w
      * @dev Emits {Snapshot} event which used by Clients to draw initial picture.
      * @param regionId The region to intialize.
      * @param initBlock_ The Contract Creation block number of The Space contract.
@@ -106,11 +105,11 @@ contract Snapper is Ownable {
         string calldata deltaCid_
     ) external onlyOwner {
         uint256 _latestSnapshotBlock = _latestSnapshots[regionId].block;
-        if (lastSnapshotBlock_ != _latestSnapshotBlock)
+        if (lastSnapshotBlock_ != _latestSnapshotBlock || lastSnapshotBlock_ == 0)
             revert InvalidLastSnapshotBlock(regionId, lastSnapshotBlock_, _latestSnapshotBlock);
 
         if (targetSnapshotBlock_ <= _latestSnapshotBlock)
-            revert InvalidSnapshotBlock(regionId, targetSnapshotBlock_, _latestSnapshotBlock);
+            revert InvalidTargetSnapshotBlock(regionId, targetSnapshotBlock_, _latestSnapshotBlock);
 
         _latestSnapshots[regionId].block = targetSnapshotBlock_;
         _latestSnapshots[regionId].cid = snapshotCid_;

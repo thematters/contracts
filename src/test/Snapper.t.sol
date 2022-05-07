@@ -28,16 +28,35 @@ contract SnapperTest is Test {
         snapper.initRegion(0, 1, CID0);
     }
 
-    function testCannotReInitRegion() public {}
-
     function testCannotInitRegionByNotOwner() public {
         vm.expectRevert("Ownable: caller is not the owner");
         snapper.initRegion(1, 1, CID0);
     }
 
-    function testInitRegion() public {
-        // emit
-        // update _latestSnapshots
+    function testCannotReInitRegion() public {
+        vm.prank(DEPLOYER);
+        vm.expectRevert(abi.encodeWithSignature("CannotBeReInitialized(uint256)", 0));
+        snapper.initRegion(0, 1, CID0);
+    }
+
+    function testInitRegion(uint256 regionId) public {
+        vm.assume(regionId > 0);
+
+        Snapper.SnapshotInfo memory ss1 = snapper.latestSnapshotInfo(regionId);
+        assertEq(ss1.block, 0);
+        assertEq(ss1.cid, "");
+
+        // expect emit `Snapshot` Event
+        vm.expectEmit(true, true, false, true);
+        emit Snapshot(regionId, 1, CID0);
+
+        vm.prank(DEPLOYER);
+        snapper.initRegion(regionId, 1, CID0);
+
+        // expect update _latestSnapshots
+        Snapper.SnapshotInfo memory ss2 = snapper.latestSnapshotInfo(regionId);
+        assertEq(ss2.block, 1);
+        assertEq(ss2.cid, CID0);
     }
 
     function testCannotTakeSnapshotByNotOwner() public {
@@ -46,7 +65,12 @@ contract SnapperTest is Test {
         snapper.takeSnapshot(0, 1, 2, CID1, CID2);
     }
 
-    function testCannotTakeSnapshotBeforeInit() public {}
+    function testCannotTakeSnapshotBeforeInit() public {
+        vm.roll(5);
+        vm.prank(DEPLOYER);
+        vm.expectRevert(abi.encodeWithSignature("InvalidLastSnapshotBlock(uint256,uint256,uint256)", 1, 0, 0));
+        snapper.takeSnapshot(1, 0, 2, CID1, CID2);
+    }
 
     function testCannotTakeSnapshotWrongLastBlock() public {
         vm.roll(5);
@@ -67,11 +91,11 @@ contract SnapperTest is Test {
         vm.roll(5);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert(abi.encodeWithSignature("InvalidSnapshotBlock(uint256,uint256,uint256)", 0, 1, 1));
+        vm.expectRevert(abi.encodeWithSignature("InvalidTargetSnapshotBlock(uint256,uint256,uint256)", 0, 1, 1));
         snapper.takeSnapshot(0, 1, 1, CID1, CID2);
 
         vm.prank(DEPLOYER);
-        vm.expectRevert(abi.encodeWithSignature("InvalidSnapshotBlock(uint256,uint256,uint256)", 0, 0, 1));
+        vm.expectRevert(abi.encodeWithSignature("InvalidTargetSnapshotBlock(uint256,uint256,uint256)", 0, 0, 1));
         snapper.takeSnapshot(0, 1, 0, CID1, CID2);
     }
 
@@ -84,7 +108,7 @@ contract SnapperTest is Test {
         assertEq(ss1.block, 1);
         assertEq(ss1.cid, CID0);
 
-        // takeSnapshot will emit Snapshot and Delta events.
+        // expect emit `Snapshot` and `Delta` events.
         vm.expectEmit(true, true, false, true);
         emit Snapshot(0, snapshotBlock, CID1);
         vm.expectEmit(true, true, false, true);
@@ -93,7 +117,7 @@ contract SnapperTest is Test {
         vm.prank(DEPLOYER);
         snapper.takeSnapshot(0, 1, snapshotBlock, CID1, CID2);
 
-        // takeSnapshot will update latestSnapshotInfo
+        // expect update _latestSnapshots
         Snapper.SnapshotInfo memory ss2 = snapper.latestSnapshotInfo();
         assertEq(ss2.block, snapshotBlock);
         assertEq(ss2.cid, CID1);
