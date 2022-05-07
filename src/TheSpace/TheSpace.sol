@@ -79,11 +79,11 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     }
 
     function _getPixel(uint256 tokenId_) internal view returns (ITheSpaceRegistry.Pixel memory pixel) {
-        (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
         pixel = ITheSpaceRegistry.Pixel(
             tokenId_,
-            price,
+            getPrice(tokenId_),
             lastTaxCollection,
             ubiAvailable(tokenId_),
             getOwner(tokenId_),
