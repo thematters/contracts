@@ -270,7 +270,8 @@ interface ITheSpace {
      * @dev Throws: `Unauthorized` error.
      *
      * @param tokenId_ Token id to be transferred.
+     * @param operator_ Address that initiate transfer
      * @return success Whether tax is fully collected without token been defaulted.
      */
-    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success);
+    function beforeTransferByRegistry(uint256 tokenId_, address operator_) external returns (bool success);
 }
