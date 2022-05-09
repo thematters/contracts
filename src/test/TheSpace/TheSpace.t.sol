@@ -67,6 +67,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // set tax rate
         uint256 taxRate = 1000;
         vm.prank(MARKET_ADMIN);
+        vm.expectEmit(true, true, false, false);
+        emit Config(CONFIG_TAX_RATE, taxRate);
         thespace.setTaxConfig(CONFIG_TAX_RATE, taxRate);
 
         // bid a token
@@ -83,6 +85,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // change tax rate and recheck
         uint256 newTaxRate = 10;
         vm.prank(MARKET_ADMIN);
+        vm.expectEmit(true, true, false, false);
+        emit Config(CONFIG_TAX_RATE, newTaxRate);
         thespace.setTaxConfig(CONFIG_TAX_RATE, newTaxRate);
         uint256 newTax = (PIXEL_PRICE * newTaxRate * (blockRollsTo - lastTaxCollection)) / (1000 * 10000);
         vm.roll(blockRollsTo);
@@ -91,6 +95,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         // zero tax
         vm.prank(MARKET_ADMIN);
+        vm.expectEmit(true, true, false, false);
+        emit Config(CONFIG_TAX_RATE, 0);
         thespace.setTaxConfig(CONFIG_TAX_RATE, 0);
         vm.roll(blockRollsTo);
         assertEq(thespace.getTax(PIXEL_ID), 0);
@@ -100,6 +106,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // set treasury share
         uint256 share = 1000;
         vm.prank(MARKET_ADMIN);
+        vm.expectEmit(true, true, false, false);
+        emit Config(CONFIG_TREASURY_SHARE, share);
         thespace.setTaxConfig(CONFIG_TREASURY_SHARE, share);
 
         // bid a token
@@ -121,6 +129,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
     function testSetMintTax() public {
         // set mint tax
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        vm.expectEmit(true, true, false, false);
+        emit Config(CONFIG_MINT_TAX, mintTax);
         _setMintTax(mintTax);
 
         // bid a token with mint tax as amount
@@ -240,6 +250,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         uint256 color = 5;
         vm.prank(PIXEL_OWNER);
+        vm.expectEmit(true, true, true, false);
+        emit Color(PIXEL_ID, color, PIXEL_OWNER);
         thespace.setColor(PIXEL_ID, color);
 
         assertEq(thespace.getColor(PIXEL_ID), color);
@@ -626,6 +638,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getPrice(PIXEL_ID), mintTax);
 
         // bid with mint tax
+        vm.expectEmit(true, true, true, false);
+        emit Tax(PIXEL_ID, PIXEL_OWNER_1, mintTax);
         uint256 prevBalance = currency.balanceOf(PIXEL_OWNER_1);
         _bidAs(PIXEL_OWNER_1, mintTax);
         assertEq(currency.balanceOf(PIXEL_OWNER_1), prevBalance - mintTax);
@@ -665,7 +679,6 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         vm.expectEmit(true, true, true, false);
         emit Tax(PIXEL_ID, PIXEL_OWNER, tax);
-
         thespace.settleTax(PIXEL_ID);
 
         // check tax
@@ -695,6 +708,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         //  withdraw UBI
         uint256 prevBalance = currency.balanceOf(PIXEL_OWNER_1);
         vm.prank(PIXEL_OWNER_1);
+        vm.expectEmit(true, true, true, false);
+        emit UBI(PIXEL_ID, PIXEL_OWNER_1, ubi);
         thespace.withdrawUbi(PIXEL_ID);
         assertEq(currency.balanceOf(PIXEL_OWNER_1), prevBalance + ubi);
 

@@ -59,11 +59,11 @@ contract BaseTheSpaceTest is Test {
 
         // deploy the space
         vm.expectEmit(true, false, false, false);
-        emit Config(ITheSpaceRegistry.ConfigOptions.taxRate, 0);
+        emit Config(CONFIG_TAX_RATE, 0);
         vm.expectEmit(true, false, false, false);
-        emit Config(ITheSpaceRegistry.ConfigOptions.treasuryShare, 0);
+        emit Config(CONFIG_TREASURY_SHARE, 0);
         vm.expectEmit(true, false, false, false);
-        emit Config(ITheSpaceRegistry.ConfigOptions.mintTax, 0);
+        emit Config(CONFIG_MINT_TAX, 0);
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
