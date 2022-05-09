@@ -444,6 +444,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // PIXEL_OWNER bids a pixel
         _bid();
 
+        uint256 bidderCurrencyOldBlanace = currency.balanceOf(PIXEL_OWNER_1);
+        uint256 sellerCurrencyOldBlanace = currency.balanceOf(PIXEL_OWNER);
         // PIXEL_OWNER_1 bids a pixel from PIXEL_OWNER
         uint256 newBidPrice = PIXEL_PRICE + 1000;
         _bidAs(PIXEL_OWNER_1, newBidPrice);
@@ -451,6 +453,10 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // check balance
         assertEq(registry.balanceOf(PIXEL_OWNER), 0);
         assertEq(registry.balanceOf(PIXEL_OWNER_1), 1);
+
+        // check currency balance
+        assertEq(currency.balanceOf(PIXEL_OWNER_1), bidderCurrencyOldBlanace - PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER), sellerCurrencyOldBlanace + PIXEL_PRICE);
 
         // check ownership
         assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_1);

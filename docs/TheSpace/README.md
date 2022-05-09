@@ -3,6 +3,8 @@
 - An explainer of the idea can be found [here](https://medium.com/coinmonks/radical-markets-can-work-on-blockchain-our-web3-experiment-the-space-shows-how-1b5d49b91d27)
 - Resources on Harberger Tax, also referred to as [Partial Common Ownership](https://www.radicalxchange.org/concepts/partial-common-ownership/)
 
+# Design
+
 ## Basic rules
 
 - Any user can purchase any pixel with the ask price.
@@ -82,6 +84,41 @@ For any pixel, an user can query the following information to help decide whethe
 
 ## Contracts
 
-- [TheSpace](./TheSpace.md): main entrance and interface. Implements pixel-specific logical such as setting and reading colors, and logic for trading ERC721 tokens under Harberger Tax and issuing UBI according to the number of token owned.
+- [TheSpace](./TheSpace.md): main entrance and interface. Implements pixel-specific logical such as setting and reading colors, and logic for trading ERC721 tokens under Harberger Tax and issuing UBI according to the number of token owned. Can be upgraded by calling `upgradeTo`.
+- [TheSpaceRegistry](./TheSpaceRegistry.md): storage contract for The Space. All state is stored in this contract, upgraded `TheSpace.sol` still owns this contract.
 - [ACLManager](./ACLManager.md): special roles that can update settings or withdraw treasury on `TheSpace`.
 - [SpaceToken](./SpaceToken.md): standard ERC20 token that can be used as currency in `TheSpace`.
+
+# Deployment
+
+Make file is at project root.
+
+## Preprare environment
+
+cp .env.local.example .env.local
+cp .env.polygon-mainnet.example .env.polygon-mainnet
+cp .env.polygon-mumbai.example .env.polygon-mumbai
+
+## Deploy to mainnet
+
+### Deploy $SPACE currency
+
+```
+make deploy-the-space-currency NETWORK=polygon-mainnet
+```
+
+### Deploy TheSpace
+
+Add the contract address deployed above into env file variable `THESPACE_CURRENCY_ADDRESS`, then deploy TheSpace:
+
+```
+make deploy-the-space NETWORK=polygon-mainnet
+```
+
+### Deploy the snapper contract
+
+Preprare `SNAPPER_THESPACE_CREATION_BLOCKNUM` and `SNAPPER_THESPACE_INITIAL_SNAPSHOT_CID` (a png file IPFS CID) env variable first, then:
+
+```
+make deploy-snapper NETWORK=polygon-mainnet
+```

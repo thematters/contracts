@@ -79,11 +79,11 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     }
 
     function _getPixel(uint256 tokenId_) internal view returns (ITheSpaceRegistry.Pixel memory pixel) {
-        (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
         pixel = ITheSpaceRegistry.Pixel(
             tokenId_,
-            price,
+            getPrice(tokenId_),
             lastTaxCollection,
             ubiAvailable(tokenId_),
             getOwner(tokenId_),
@@ -183,13 +183,17 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
-        if (success) _setPrice(tokenId_, price_);
+        if (success) _setPrice(tokenId_, price_, msg.sender);
     }
 
     /**
      * @dev Internal function to set price without checking
      */
-    function _setPrice(uint256 tokenId_, uint256 price_) private {
+    function _setPrice(
+        uint256 tokenId_,
+        uint256 price_,
+        address operator_
+    ) private {
         // max price to prevent overflow of `_getTax`
         uint256 maxPrice = registry.currency().totalSupply();
         if (price_ > maxPrice) revert PriceTooHigh(maxPrice);
@@ -197,6 +201,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         (, uint256 lastTaxCollection, uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
 
         registry.setTokenRecord(tokenId_, price_, lastTaxCollection, ubiWithdrawn);
+        registry.emitPrice(tokenId_, price_, operator_);
     }
 
     /// @inheritdoc ITheSpace
@@ -254,7 +259,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         registry.emitBid(tokenId_, owner, msg.sender, bidPrice);
 
         // update price to ask price if difference
-        if (price_ > askPrice) _setPrice(tokenId_, price_);
+        if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
     }
 
     //////////////////////////////
@@ -384,7 +389,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
-    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
+    function beforeTransferByRegistry(uint256 tokenId_, address operator_) external returns (bool success) {
         if (msg.sender != address(registry)) revert Unauthorized();
 
         // clear tax or default
@@ -394,7 +399,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         if (registry.exists(tokenId_)) {
             // transfer is regarded as setting price to 0, then bid for free
             // this is to prevent transferring huge tax obligation as a form of attack
-            _setPrice(tokenId_, 0);
+            _setPrice(tokenId_, 0, operator_);
 
             success = true;
         } else {

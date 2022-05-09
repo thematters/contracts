@@ -220,9 +220,14 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
         uint256 tokenId_,
         bytes memory data_
     ) public override(ERC721, IERC721) {
+        address operator = _msgSender();
+
+        //solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(operator, tokenId_), "ERC721: transfer caller is not owner nor approved");
+
         ITheSpace market = ITheSpace(owner());
 
-        bool success = market.beforeTransferByRegistry(tokenId_);
+        bool success = market.beforeTransferByRegistry(tokenId_, operator);
 
         if (success) {
             _safeTransfer(from_, to_, tokenId_, data_);
