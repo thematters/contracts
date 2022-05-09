@@ -215,7 +215,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     ) external;
 
     /**
-     * @dev Emit {UBI} event
+     * @dev Emit {Treasury} event
      */
     function emitTreasury(address recipient_, uint256 amount_) external;
 
