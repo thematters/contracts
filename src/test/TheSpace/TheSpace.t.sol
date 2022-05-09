@@ -144,6 +144,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         // withdraw treasury
         vm.prank(TREASURY_ADMIN);
+        vm.expectEmit(true, true, false, false);
+        emit Treasury(TREASURY, amount);
         thespace.withdrawTreasury(TREASURY);
 
         // check treasury balance
@@ -159,9 +161,12 @@ contract TheSpaceTest is BaseTheSpaceTest {
      * @dev Pixel
      */
     function testGetNonExistingPixel() public {
+        uint256 mintTax = 10 * (10**uint256(currency.decimals()));
+        _setMintTax(mintTax);
+
         ITheSpaceRegistry.Pixel memory pixel = thespace.getPixel(PIXEL_ID);
 
-        assertEq(pixel.price, 0);
+        assertEq(pixel.price, mintTax);
         assertEq(pixel.color, 0);
         assertEq(pixel.owner, address(0));
     }
@@ -387,6 +392,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         registry.approve(OPERATOR, PIXEL_ID);
 
         // set price
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, price, PIXEL_OWNER);
         vm.prank(OPERATOR);
         thespace.setPrice(PIXEL_ID, price);
         assertEq(thespace.getPrice(PIXEL_ID), price);
