@@ -59,8 +59,11 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
 
         // initialize tax config
         taxConfig[ConfigOptions.taxRate] = taxRate_;
+        emit Config(ConfigOptions.taxRate, taxRate_);
         taxConfig[ConfigOptions.treasuryShare] = treasuryShare_;
+        emit Config(ConfigOptions.treasuryShare, treasuryShare_);
         taxConfig[ConfigOptions.mintTax] = mintTax_;
+        emit Config(ConfigOptions.mintTax, mintTax_);
     }
 
     //////////////////////////////
@@ -147,6 +150,11 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
+    function emitTreasury(address recipient_, uint256 amount_) external onlyOwner {
+        emit Treasury(recipient_, amount_);
+    }
+
+    /// @inheritdoc ITheSpaceRegistry
     function emitBid(
         uint256 tokenId_,
         address from_,
@@ -220,14 +228,12 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
         uint256 tokenId_,
         bytes memory data_
     ) public override(ERC721, IERC721) {
-        address operator = _msgSender();
-
-        //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(operator, tokenId_), "ERC721: transfer caller is not owner nor approved");
+        // solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(msg.sender, tokenId_), "ERC721: transfer caller is not owner nor approved");
 
         ITheSpace market = ITheSpace(owner());
 
-        bool success = market.beforeTransferByRegistry(tokenId_, operator);
+        bool success = market.beforeTransferByRegistry(tokenId_);
 
         if (success) {
             _safeTransfer(from_, to_, tokenId_, data_);

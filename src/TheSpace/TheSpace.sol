@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
@@ -23,7 +24,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
             1000000, // total supply
             75, // taxRate
             500, // treasuryShare
-            0, // mintTax
+            1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
             currencyAddress_
         );
     }
@@ -64,6 +65,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         // calculate available amount and transfer
         uint256 amount = accumulatedTreasury - treasuryWithdrawn;
         registry.transferCurrency(to_, amount);
+        registry.emitTreasury(to_, amount);
 
         // set `treasuryWithdrawn` to `accumulatedTreasury`
         registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
@@ -183,12 +185,16 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
-        if (success) _setPrice(tokenId_, price_, msg.sender);
+        if (success) _setPrice(tokenId_, price_);
     }
 
     /**
      * @dev Internal function to set price without checking
      */
+    function _setPrice(uint256 tokenId_, uint256 price_) private {
+        _setPrice(tokenId_, price_, registry.ownerOf(tokenId_));
+    }
+
     function _setPrice(
         uint256 tokenId_,
         uint256 price_,
@@ -389,7 +395,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
-    function beforeTransferByRegistry(uint256 tokenId_, address operator_) external returns (bool success) {
+    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
         if (msg.sender != address(registry)) revert Unauthorized();
 
         // clear tax or default
@@ -399,7 +405,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         if (registry.exists(tokenId_)) {
             // transfer is regarded as setting price to 0, then bid for free
             // this is to prevent transferring huge tax obligation as a form of attack
-            _setPrice(tokenId_, 0, operator_);
+            _setPrice(tokenId_, 0);
 
             success = true;
         } else {

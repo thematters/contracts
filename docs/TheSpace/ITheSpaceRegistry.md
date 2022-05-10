@@ -39,6 +39,10 @@ Emit {Price} event
 
 Emit {UBI} event
 
+### `emitTreasury(address recipient_, uint256 amount_)` (external)
+
+Emit {Treasury} event
+
 ### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
 Emit {Bid} event
@@ -92,6 +96,10 @@ Tax is collected for a token.
 ### `UBI(uint256 tokenId, address recipient, uint256 amount)`
 
 UBI (universal basic income) is withdrawn for a token.
+
+### `Treasury(address recipient, uint256 amount)`
+
+Treasury is withdrawn.
 
 ### `Bid(uint256 tokenId, address from, address to, uint256 amount)`
 

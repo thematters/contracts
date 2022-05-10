@@ -44,6 +44,10 @@ Emit {Price} event
 
 Emit {UBI} event
 
+### `emitTreasury(address recipient_, uint256 amount_)` (external)
+
+Emit {Treasury} event
+
 ### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
 Emit {Bid} event
