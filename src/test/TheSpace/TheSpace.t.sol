@@ -202,6 +202,75 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
     }
 
+    function testSetPixelWithNoAllowance() public {
+        uint256 BASE_UNIT = 1000000000000000000;
+        address PLAYER1 = address(299);
+        address PLAYER2 = address(300);
+        uint256 mintTax = registry.taxConfig(ITheSpaceRegistry.ConfigOptions.mintTax);
+        assertEq(mintTax, 0);
+        // transfer to players
+        vm.prank(DEPLOYER);
+        currency.transfer(PLAYER1, 100 * BASE_UNIT);
+        assertEq(currency.balanceOf(PLAYER1), 100 * BASE_UNIT);
+        vm.prank(DEPLOYER);
+        currency.transfer(PLAYER2, 100 * BASE_UNIT);
+        assertEq(currency.balanceOf(PLAYER2), 100 * BASE_UNIT);
+
+        //// players approve
+        //vm.prank(PLAYER1);
+        //currency.approve(address(registry), type(uint256).max);
+        //vm.prank(PLAYER2);
+        //currency.approve(address(registry), type(uint256).max);
+        //vm.prank(PLAYER1);
+        //currency.approve(address(thespace), type(uint256).max);
+        //vm.prank(PLAYER2);
+        //currency.approve(address(thespace), type(uint256).max);
+
+        // bid new pixel
+        vm.prank(PLAYER1);
+        thespace.setPixel(PIXEL_ID, 1 * BASE_UNIT, 1 * BASE_UNIT, PIXEL_COLOR);
+
+        // currency balance before transfer
+        assertEq(currency.balanceOf(PLAYER1), 100 * BASE_UNIT);
+        assertEq(currency.balanceOf(PLAYER2), 100 * BASE_UNIT);
+
+        // transfer pixel
+        vm.roll(1);
+        vm.prank(PLAYER2);
+        thespace.setPixel(PIXEL_ID, 1 * BASE_UNIT, 1 * BASE_UNIT, PIXEL_COLOR);
+
+        // currency balance after transfer
+        assertEq(currency.balanceOf(PLAYER1), 100 * BASE_UNIT);
+        assertEq(currency.balanceOf(PLAYER2), 100 * BASE_UNIT);
+    }
+
+    function testDefaultDoNotResetPrice() public {
+        uint256 BASE_UNIT = 1000000000000000000;
+        address PLAYER1 = address(299);
+
+        vm.prank(DEPLOYER);
+        currency.transfer(PLAYER1, 100 * BASE_UNIT);
+        assertEq(currency.balanceOf(PLAYER1), 100 * BASE_UNIT);
+
+        // bid new pixel
+        vm.prank(PLAYER1);
+        thespace.setPixel(PIXEL_ID, 1 * BASE_UNIT, 1 * BASE_UNIT, PIXEL_COLOR);
+        assertEq(thespace.getOwner(PIXEL_ID), PLAYER1);
+
+        // set new price to default pixel
+        uint256 newPrice = 10 * BASE_UNIT;
+        vm.roll(1);
+        vm.prank(PLAYER1);
+        thespace.setPixel(PIXEL_ID, 1 * BASE_UNIT, newPrice, PIXEL_COLOR);
+        assertEq(thespace.getOwner(PIXEL_ID), address(0));
+
+        // price should reset to mintTax value
+        ITheSpaceRegistry.Pixel memory pixel = thespace.getPixel(PIXEL_ID);
+        assertEq(pixel.price, 1000000000000000000);
+
+        assertEq(thespace.getPrice(PIXEL_ID), 0);
+    }
+
     function testBatchSetPixels(uint16 price, uint8 color) public {
         uint256 finalPrice = uint256(price) + 1;
         uint256 finalColor = 5;
