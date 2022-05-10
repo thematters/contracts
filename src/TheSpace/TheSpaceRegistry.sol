@@ -114,8 +114,13 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function setColor(uint256 tokenId_, uint256 color_) external onlyOwner {
+    function setColor(
+        uint256 tokenId_,
+        uint256 color_,
+        address owner_
+    ) external onlyOwner {
         pixelColor[tokenId_] = color_;
+        emit Color(tokenId_, color_, owner_);
     }
 
     //////////////////////////////
@@ -162,15 +167,6 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
         uint256 amount_
     ) external onlyOwner {
         emit Bid(tokenId_, from_, to_, amount_);
-    }
-
-    /// @inheritdoc ITheSpaceRegistry
-    function emitColor(
-        uint256 tokenId_,
-        uint256 color_,
-        address owner_
-    ) external onlyOwner {
-        emit Color(tokenId_, color_, owner_);
     }
 
     //////////////////////////////
