@@ -190,16 +190,46 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(pixel.owner, PIXEL_OWNER);
     }
 
-    function testSetPixel(uint256 newPrice) public {
-        vm.assume(newPrice <= registry.currency().totalSupply());
+    function testSetPixel(uint256 bidPrice) public {
+        vm.assume(bidPrice > PIXEL_PRICE && bidPrice <= registry.currency().totalSupply());
 
+        uint256 newPrice = bidPrice + 1;
+
+        // bid with PIXEL_OWNER
         _bid();
 
-        vm.prank(PIXEL_OWNER);
-        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
+        // bid with PIXEL_OWNER_1
+        vm.expectEmit(true, true, true, true);
+        emit Bid(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
+
+        // set to bid price from `bid()`
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, bidPrice, PIXEL_OWNER_1);
+
+        // set to new price from `setPrice()`
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, newPrice, PIXEL_OWNER_1);
+
+        vm.expectEmit(true, true, true, false);
+        emit Color(PIXEL_ID, PIXEL_COLOR, PIXEL_OWNER_1);
+
+        vm.prank(PIXEL_OWNER_1);
+        thespace.setPixel(PIXEL_ID, bidPrice, newPrice, PIXEL_COLOR);
 
         assertEq(thespace.getPrice(PIXEL_ID), newPrice);
         assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
+    }
+
+    function testCannotSetPixel(uint256 bidPrice) public {
+        vm.assume(bidPrice < PIXEL_PRICE);
+
+        // bid with PIXEL_OWNER
+        _bid();
+
+        // PIXEL_OWNER_1 bids with lower price
+        vm.prank(PIXEL_OWNER_1);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("PriceTooLow()"))));
+        thespace.setPixel(PIXEL_ID, bidPrice, bidPrice, PIXEL_COLOR);
     }
 
     function testBatchSetPixels(uint16 price, uint8 color) public {
