@@ -180,8 +180,13 @@ interface ITheSpaceRegistry is IERC721Enumerable {
      * @notice Set color for a given token.
      * @param tokenId_ Token id to be set.
      * @param color_ Color Id.
+     * @param owner_ Token owner.
      */
-    function setColor(uint256 tokenId_, uint256 color_) external;
+    function setColor(
+        uint256 tokenId_,
+        uint256 color_,
+        address owner_
+    ) external;
 
     //////////////////////////////
     /// Event emission
@@ -227,15 +232,6 @@ interface ITheSpaceRegistry is IERC721Enumerable {
         address from_,
         address to_,
         uint256 amount_
-    ) external;
-
-    /**
-     * @dev Emit {Color} event
-     */
-    function emitColor(
-        uint256 tokenId_,
-        uint256 color,
-        address owner
     ) external;
 
     //////////////////////////////

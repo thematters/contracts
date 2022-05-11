@@ -54,7 +54,7 @@ Access: only token owner or approved operator.
 Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
 Emits: `Color` event.
 
-### `_setColor(uint256 tokenId_, uint256 color_, address owner_)` (public)
+### `_setColor(uint256 tokenId_, uint256 color_, address owner_)` (internal)
 
 ### `getColor(uint256 tokenId) → uint256 color` (public)
 
