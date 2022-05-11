@@ -33,10 +33,13 @@ contract BaseTheSpaceTest is Test {
     uint256 constant PIXEL_COLOR = 11;
     uint256 public PIXEL_PRICE;
 
-    event Price(uint256 indexed tokenId, uint256 price, address owner);
-    event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
+    event Price(uint256 indexed tokenId, uint256 price, address indexed owner);
+    event Config(ITheSpaceRegistry.ConfigOptions indexed option, uint256 value);
     event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
     event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
+    event Treasury(address indexed recipient, uint256 amount);
+    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
+    event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
     // enums
     IACLManager.Role constant ROLE_ACL_MANAGER = IACLManager.Role.aclManager;
@@ -55,6 +58,12 @@ contract BaseTheSpaceTest is Test {
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
+        vm.expectEmit(true, false, false, false);
+        emit Config(CONFIG_TAX_RATE, 0);
+        vm.expectEmit(true, false, false, false);
+        emit Config(CONFIG_TREASURY_SHARE, 0);
+        vm.expectEmit(true, false, false, false);
+        emit Config(CONFIG_MINT_TAX, 0);
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
@@ -78,11 +87,17 @@ contract BaseTheSpaceTest is Test {
     }
 
     function _bid(uint256 bidPrice) internal {
+        vm.expectEmit(true, true, true, false);
+        emit Bid(PIXEL_ID, address(0), PIXEL_OWNER, 0);
+
         vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, bidPrice);
     }
 
     function _bid(uint256 bidPrice, uint256 newPrice) internal {
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, newPrice, PIXEL_OWNER);
+
         vm.startPrank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, bidPrice);
         thespace.setPrice(PIXEL_ID, newPrice);
@@ -99,6 +114,9 @@ contract BaseTheSpaceTest is Test {
         uint256 bidPrice,
         uint256 newPrice
     ) internal {
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, newPrice, bidder);
+
         vm.startPrank(bidder);
         thespace.bid(PIXEL_ID, bidPrice);
         thespace.setPrice(PIXEL_ID, newPrice);

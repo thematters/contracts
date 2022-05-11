@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
@@ -23,7 +24,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
             1000000, // total supply
             75, // taxRate
             500, // treasuryShare
-            0, // mintTax
+            1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
             currencyAddress_
         );
     }
@@ -64,6 +65,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         // calculate available amount and transfer
         uint256 amount = accumulatedTreasury - treasuryWithdrawn;
         registry.transferCurrency(to_, amount);
+        registry.emitTreasury(to_, amount);
 
         // set `treasuryWithdrawn` to `accumulatedTreasury`
         registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
@@ -79,11 +81,11 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     }
 
     function _getPixel(uint256 tokenId_) internal view returns (ITheSpaceRegistry.Pixel memory pixel) {
-        (uint256 price, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(tokenId_);
 
         pixel = ITheSpaceRegistry.Pixel(
             tokenId_,
-            price,
+            getPrice(tokenId_),
             lastTaxCollection,
             ubiAvailable(tokenId_),
             getOwner(tokenId_),
@@ -114,9 +116,8 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         uint256 tokenId_,
         uint256 color_,
         address owner_
-    ) public {
-        registry.setColor(tokenId_, color_);
-        registry.emitColor(tokenId_, color_, owner_);
+    ) internal {
+        registry.setColor(tokenId_, color_, owner_);
     }
 
     /// @inheritdoc ITheSpace
@@ -190,6 +191,14 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
      * @dev Internal function to set price without checking
      */
     function _setPrice(uint256 tokenId_, uint256 price_) private {
+        _setPrice(tokenId_, price_, registry.ownerOf(tokenId_));
+    }
+
+    function _setPrice(
+        uint256 tokenId_,
+        uint256 price_,
+        address operator_
+    ) private {
         // max price to prevent overflow of `_getTax`
         uint256 maxPrice = registry.currency().totalSupply();
         if (price_ > maxPrice) revert PriceTooHigh(maxPrice);
@@ -197,6 +206,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         (, uint256 lastTaxCollection, uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
 
         registry.setTokenRecord(tokenId_, price_, lastTaxCollection, ubiWithdrawn);
+        registry.emitPrice(tokenId_, price_, operator_);
     }
 
     /// @inheritdoc ITheSpace
@@ -254,7 +264,7 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         registry.emitBid(tokenId_, owner, msg.sender, bidPrice);
 
         // update price to ask price if difference
-        if (price_ > askPrice) _setPrice(tokenId_, price_);
+        if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
     }
 
     //////////////////////////////

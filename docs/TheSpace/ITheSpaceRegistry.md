@@ -23,7 +23,7 @@ Update UBI and treasury.
 
 Set record for a given token.
 
-### `setColor(uint256 tokenId_, uint256 color_)` (external)
+### `setColor(uint256 tokenId_, uint256 color_, address owner_)` (external)
 
 Set color for a given token.
 
@@ -39,13 +39,13 @@ Emit {Price} event
 
 Emit {UBI} event
 
+### `emitTreasury(address recipient_, uint256 amount_)` (external)
+
+Emit {Treasury} event
+
 ### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
 Emit {Bid} event
-
-### `emitColor(uint256 tokenId_, uint256 color, address owner)` (external)
-
-Emit {Color} event
 
 ### `mint(address to_, uint256 tokenId_)` (external)
 
@@ -92,6 +92,10 @@ Tax is collected for a token.
 ### `UBI(uint256 tokenId, address recipient, uint256 amount)`
 
 UBI (universal basic income) is withdrawn for a token.
+
+### `Treasury(address recipient, uint256 amount)`
+
+Treasury is withdrawn.
 
 ### `Bid(uint256 tokenId, address from, address to, uint256 amount)`
 

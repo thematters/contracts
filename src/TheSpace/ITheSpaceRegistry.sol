@@ -58,6 +58,13 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
 
     /**
+     * @notice Treasury is withdrawn.
+     * @param recipient address who got this withdrawn treasury.
+     * @param amount Amount of withdrawn.
+     */
+    event Treasury(address indexed recipient, uint256 amount);
+
+    /**
      * @notice A token has been succefully bid.
      * @param tokenId Id of token that has been bid.
      * @param from Original owner before bid.
@@ -173,8 +180,13 @@ interface ITheSpaceRegistry is IERC721Enumerable {
      * @notice Set color for a given token.
      * @param tokenId_ Token id to be set.
      * @param color_ Color Id.
+     * @param owner_ Token owner.
      */
-    function setColor(uint256 tokenId_, uint256 color_) external;
+    function setColor(
+        uint256 tokenId_,
+        uint256 color_,
+        address owner_
+    ) external;
 
     //////////////////////////////
     /// Event emission
@@ -208,6 +220,11 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     ) external;
 
     /**
+     * @dev Emit {Treasury} event
+     */
+    function emitTreasury(address recipient_, uint256 amount_) external;
+
+    /**
      * @dev Emit {Bid} event
      */
     function emitBid(
@@ -215,15 +232,6 @@ interface ITheSpaceRegistry is IERC721Enumerable {
         address from_,
         address to_,
         uint256 amount_
-    ) external;
-
-    /**
-     * @dev Emit {Color} event
-     */
-    function emitColor(
-        uint256 tokenId_,
-        uint256 color,
-        address owner
     ) external;
 
     //////////////////////////////
