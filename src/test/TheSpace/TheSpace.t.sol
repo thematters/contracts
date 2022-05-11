@@ -190,82 +190,92 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(pixel.owner, PIXEL_OWNER);
     }
 
-    function testSetPixel(uint256 newPrice) public {
-        vm.assume(newPrice <= registry.currency().totalSupply());
+    function testSetPixel(uint256 bidPrice) public {
+        vm.assume(bidPrice > PIXEL_PRICE && bidPrice <= registry.currency().totalSupply());
 
+        uint256 newPrice = bidPrice + 1;
+
+        // bid with PIXEL_OWNER
         _bid();
 
-        vm.prank(PIXEL_OWNER);
-        thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
+        // bid with PIXEL_OWNER_1
+        vm.expectEmit(true, true, true, true);
+        emit Bid(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
+
+        // set to bid price from `bid()`
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, bidPrice, PIXEL_OWNER_1);
+
+        // set to new price from `setPrice()`
+        vm.expectEmit(true, true, true, false);
+        emit Price(PIXEL_ID, newPrice, PIXEL_OWNER_1);
+
+        vm.expectEmit(true, true, true, false);
+        emit Color(PIXEL_ID, PIXEL_COLOR, PIXEL_OWNER_1);
+
+        vm.prank(PIXEL_OWNER_1);
+        thespace.setPixel(PIXEL_ID, bidPrice, newPrice, PIXEL_COLOR);
 
         assertEq(thespace.getPrice(PIXEL_ID), newPrice);
         assertEq(thespace.getColor(PIXEL_ID), PIXEL_COLOR);
     }
 
     function testSetPixelWithNoAllowanceAndZeroMintTax() public {
-        address PLAYER1 = address(299);
-        address PLAYER2 = address(300);
+        address PIXEL_OWNER_2 = address(299);
+        address PIXEL_OWNER_3 = address(300);
         // set mintTax to 0
         _setMintTax(0);
         assertEq(registry.taxConfig(ITheSpaceRegistry.ConfigOptions.mintTax), 0);
         // transfer to players
         vm.prank(DEPLOYER);
-        currency.transfer(PLAYER1, 10 * PIXEL_PRICE);
-        assertEq(currency.balanceOf(PLAYER1), 10 * PIXEL_PRICE);
+        currency.transfer(PIXEL_OWNER_2, 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_2), 10 * PIXEL_PRICE);
         vm.prank(DEPLOYER);
-        currency.transfer(PLAYER2, 10 * PIXEL_PRICE);
-        assertEq(currency.balanceOf(PLAYER2), 10 * PIXEL_PRICE);
+        currency.transfer(PIXEL_OWNER_3, 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_3), 10 * PIXEL_PRICE);
 
-        //// players approve
-        //vm.prank(PLAYER1);
-        //currency.approve(address(registry), type(uint256).max);
-        //vm.prank(PLAYER2);
-        //currency.approve(address(registry), type(uint256).max);
-        //vm.prank(PLAYER1);
-        //currency.approve(address(thespace), type(uint256).max);
-        //vm.prank(PLAYER2);
-        //currency.approve(address(thespace), type(uint256).max);
+        //// players do not approve
 
         // bid new pixel
-        vm.prank(PLAYER1);
+        vm.prank(PIXEL_OWNER_2);
         thespace.setPixel(PIXEL_ID, PIXEL_PRICE, PIXEL_PRICE, PIXEL_COLOR);
-        assertEq(thespace.getOwner(PIXEL_ID), PLAYER1);
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_2);
 
         // currency balance before transfer
-        assertEq(currency.balanceOf(PLAYER1), 10 * PIXEL_PRICE);
-        assertEq(currency.balanceOf(PLAYER2), 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_2), 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_3), 10 * PIXEL_PRICE);
 
         // transfer pixel
         vm.roll(1);
-        vm.prank(PLAYER2);
+        vm.prank(PIXEL_OWNER_3);
         thespace.setPixel(PIXEL_ID, PIXEL_PRICE, PIXEL_PRICE, PIXEL_COLOR);
-        assertEq(thespace.getOwner(PIXEL_ID), PLAYER2);
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_3);
 
         // currency balance after transfer
-        assertEq(currency.balanceOf(PLAYER1), 10 * PIXEL_PRICE);
-        assertEq(currency.balanceOf(PLAYER2), 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_2), 10 * PIXEL_PRICE);
+        assertEq(currency.balanceOf(PIXEL_OWNER_3), 10 * PIXEL_PRICE);
     }
 
-    function testDefaultResetPrice() public {
-        address PLAYER = address(299);
+    function testSetPixelDefaultAndResetPrice() public {
+        address PIXEL_OWNER_2 = address(299);
         uint256 mintTax = registry.taxConfig(ITheSpaceRegistry.ConfigOptions.mintTax);
 
         vm.prank(DEPLOYER);
-        currency.transfer(PLAYER, mintTax);
-        assertEq(currency.balanceOf(PLAYER), mintTax);
-        vm.prank(PLAYER);
+        currency.transfer(PIXEL_OWNER_2, mintTax);
+        assertEq(currency.balanceOf(PIXEL_OWNER_2), mintTax);
+        vm.prank(PIXEL_OWNER_2);
         currency.approve(address(registry), type(uint256).max);
 
         // bid new pixel
         uint256 oldPrice = 5 * PIXEL_PRICE;
-        vm.prank(PLAYER);
+        vm.prank(PIXEL_OWNER_2);
         thespace.setPixel(PIXEL_ID, PIXEL_PRICE, oldPrice, PIXEL_COLOR);
-        assertEq(thespace.getOwner(PIXEL_ID), PLAYER);
+        assertEq(thespace.getOwner(PIXEL_ID), PIXEL_OWNER_2);
 
         // set new price to default pixel
         uint256 newPrice = 10 * PIXEL_PRICE;
         vm.roll(1);
-        vm.prank(PLAYER);
+        vm.prank(PIXEL_OWNER_2);
         thespace.setPixel(PIXEL_ID, PIXEL_PRICE, newPrice, PIXEL_COLOR);
         assertEq(thespace.getOwner(PIXEL_ID), address(0));
 
@@ -274,6 +284,18 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(pixel.price, mintTax);
 
         assertEq(thespace.getPrice(PIXEL_ID), mintTax);
+    }
+
+    function testCannotSetPixel(uint256 bidPrice) public {
+        vm.assume(bidPrice < PIXEL_PRICE);
+
+        // bid with PIXEL_OWNER
+        _bid();
+
+        // PIXEL_OWNER_1 bids with lower price
+        vm.prank(PIXEL_OWNER_1);
+        vm.expectRevert(abi.encodePacked(bytes4(keccak256("PriceTooLow()"))));
+        thespace.setPixel(PIXEL_ID, bidPrice, bidPrice, PIXEL_COLOR);
     }
 
     function testBatchSetPixels(uint16 price, uint8 color) public {
@@ -407,7 +429,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         _assertEqArray(pixels5, empty);
     }
 
-    function testGetPixelsPageByOwnerWithPixels() public {
+    function testGetPixelsByOwnerWithPixels() public {
         uint256 tokenId1 = 100;
         uint256 tokenId2 = 101;
         ITheSpaceRegistry.Pixel[] memory empty = new ITheSpaceRegistry.Pixel[](0);

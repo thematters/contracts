@@ -23,7 +23,7 @@ Update UBI and treasury.
 
 Set record for a given token.
 
-### `setColor(uint256 tokenId_, uint256 color_)` (external)
+### `setColor(uint256 tokenId_, uint256 color_, address owner_)` (external)
 
 Set color for a given token.
 
@@ -46,10 +46,6 @@ Emit {Treasury} event
 ### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
 Emit {Bid} event
-
-### `emitColor(uint256 tokenId_, uint256 color, address owner)` (external)
-
-Emit {Color} event
 
 ### `mint(address to_, uint256 tokenId_)` (external)
 

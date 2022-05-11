@@ -116,9 +116,8 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
         uint256 tokenId_,
         uint256 color_,
         address owner_
-    ) public {
-        registry.setColor(tokenId_, color_);
-        registry.emitColor(tokenId_, color_, owner_);
+    ) internal {
+        registry.setColor(tokenId_, color_, owner_);
     }
 
     /// @inheritdoc ITheSpace
