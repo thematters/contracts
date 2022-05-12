@@ -85,6 +85,10 @@ A token updated price.
 
 Global configuration is updated.
 
+### `TotalSupply(uint256 previousSupply, uint256 newSupply)`
+
+Total is updated.
+
 ### `Tax(uint256 tokenId, address taxpayer, uint256 amount)`
 
 Tax is collected for a token.

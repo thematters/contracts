@@ -84,6 +84,8 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
 
     /// @inheritdoc ITheSpaceRegistry
     function setTotalSupply(uint256 totalSupply_) external onlyOwner {
+        emit TotalSupply(_totalSupply, totalSupply_);
+
         _totalSupply = totalSupply_;
     }
 
