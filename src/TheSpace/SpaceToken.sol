@@ -8,7 +8,16 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev Total supply capped at 100M, minted to deployer.
  */
 contract SpaceToken is ERC20 {
-    constructor() ERC20("The Space", "SPACE") {
-        _mint(msg.sender, 10 * 10**8 * (10**uint256(decimals())));
+    constructor(
+        address treasury,
+        uint256 treasuryTokens,
+        address team,
+        uint256 teamTokens
+    ) ERC20("The Space", "SPACE") {
+        // treasury
+        _mint(treasury, treasuryTokens * (10**uint256(decimals())));
+
+        // team
+        _mint(team, teamTokens * (10**uint256(decimals())));
     }
 }
