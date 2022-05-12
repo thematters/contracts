@@ -42,6 +42,13 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     event Config(ConfigOptions indexed option, uint256 value);
 
     /**
+     * @notice Total is updated.
+     * @param previousSupply Total supply amount before update.
+     * @param newSupply New supply amount after update.
+     */
+    event TotalSupply(uint256 previousSupply, uint256 newSupply);
+
+    /**
      * @notice Tax is collected for a token.
      * @param tokenId Id of token that has been taxed.
      * @param taxpayer user address who has paid the tax.
