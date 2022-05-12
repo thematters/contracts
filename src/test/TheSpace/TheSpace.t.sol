@@ -567,6 +567,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     function testCannotBidOutBoundTokens() public {
+        vm.startPrank(PIXEL_OWNER_1);
+
         uint256 totalSupply = registry.totalSupply();
 
         // oversupply id
@@ -576,6 +578,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // zero id
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenId(uint256,uint256)", 1, totalSupply));
         thespace.bid(0, PIXEL_PRICE);
+
+        vm.stopPrank();
     }
 
     function testCannotBidPriceTooLow() public {
