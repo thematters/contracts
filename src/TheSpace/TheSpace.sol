@@ -436,26 +436,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         string
             memory description = "The Space is an everlasting, Draw-to-Earn public space that runs on decentralized Web3 and supported by blockchain where members can tokenize, own, trade, and color pixels on a digital public graffiti wall.";
 
-        string[16] memory colors = [
-            "#000000",
-            "#FFFFFF",
-            "#D4D7D9",
-            "#898D90",
-            "#784102",
-            "#D26500",
-            "#FF8A00",
-            "#FFDE2F",
-            "#8DE763",
-            "#159800",
-            "#58EAF4",
-            "#059DF2",
-            "#034CBA",
-            "#9503C9",
-            "#D90041",
-            "#FF9FAB"
-        ];
-
-        NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({colors: colors, tokenId: tokenId_});
+        NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({tokenId: tokenId_});
         string memory image = Base64.encode(bytes(NFTSVG.generateSVG(svgParams)));
 
         string memory json = Base64.encode(

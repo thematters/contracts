@@ -752,7 +752,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     /**
-     * @dev Trasfer
+     * @dev Transfer
      */
     function testCannotTransferFromIfDefault() public {
         // bid and set price
@@ -797,5 +797,15 @@ contract TheSpaceTest is BaseTheSpaceTest {
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
         _setMintTax(mintTax);
         assertEq(thespace.getPrice(PIXEL_ID), 0);
+    }
+
+    /**
+     * @dev Token URI
+     */
+    function testTokenURI() public {
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        string memory tokenURI = registry.tokenURI(PIXEL_ID);
+        console2.log(tokenURI);
     }
 }
