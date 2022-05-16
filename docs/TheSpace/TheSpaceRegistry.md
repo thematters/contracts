@@ -48,9 +48,9 @@ Emit {UBI} event
 
 Emit {Treasury} event
 
-### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
+### `emitDeal(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
-Emit {Bid} event
+Emit {Deal} event
 
 ### `mint(address to_, uint256 tokenId_)` (external)
 

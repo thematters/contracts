@@ -162,13 +162,13 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function emitBid(
+    function emitDeal(
         uint256 tokenId_,
         address from_,
         address to_,
         uint256 amount_
     ) external onlyOwner {
-        emit Bid(tokenId_, from_, to_, amount_);
+        emit Deal(tokenId_, from_, to_, amount_);
     }
 
     //////////////////////////////

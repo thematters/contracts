@@ -200,7 +200,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         // bid with PIXEL_OWNER_1
         vm.expectEmit(true, true, true, true);
-        emit Bid(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
+        emit Deal(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
 
         // set to bid price from `bid()`
         vm.expectEmit(true, true, true, false);

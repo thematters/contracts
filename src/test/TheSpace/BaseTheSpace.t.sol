@@ -41,7 +41,7 @@ contract BaseTheSpaceTest is Test {
     event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
     event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
     event Treasury(address indexed recipient, uint256 amount);
-    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
+    event Deal(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
     // enums
@@ -97,7 +97,7 @@ contract BaseTheSpaceTest is Test {
 
     function _bid(uint256 bidPrice) internal {
         vm.expectEmit(true, true, true, false);
-        emit Bid(PIXEL_ID, address(0), PIXEL_OWNER, 0);
+        emit Deal(PIXEL_ID, address(0), PIXEL_OWNER, 0);
 
         vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, bidPrice);
