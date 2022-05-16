@@ -42,5 +42,8 @@ verify-logbook:
 verify-the-space:
 	@forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimizations 200 --constructor-args ${THESPACE_ABI_ENCODE_CONSTRUCTOR_ARGS} --compiler-version v0.8.13+commit.abaa5c0e ${THESPACE_CONTRACT_ADDRESS} src/TheSpace/TheSpace.sol:TheSpace ${ETHERSCAN_API_KEY}
 
+verify-the-space-registry:
+	@forge verify-contract --compiler-version v0.8.13+commit.abaa5c0e --chain ${CHAIN_ID} --num-of-optimizations 200 --constructor-args ${THESPACE_REGISTRY_ABI_ENCODE_CONSTRUCTOR_ARGS} ${THESPACE_REGISTRY_CONTRACT_ADDRESS} src/TheSpace/TheSpaceRegistry.sol:TheSpaceRegistry ${ETHERSCAN_API_KEY}
+
 verify-snapper:
-	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args `cast abi-encode "constructor(uint256,string)" ${SNAPPER_THESPACE_CREATION_BLOCKNUM} "${SNAPPER_THESPACE_INITIAL_SNAPSHOT_CID}" ` --num-of-optimizations 200 --compiler-version v0.8.11+commit.d7f03943 ${SNAPPER_CONTRACT_ADDRESS} src/Snapper/Snapper.sol:Snapper ${ETHERSCAN_API_KEY}
+	@forge verify-contract --chain-id ${CHAIN_ID} --constructor-args `cast abi-encode "constructor(uint256,string)" ${SNAPPER_THESPACE_CREATION_BLOCKNUM} "${SNAPPER_THESPACE_INITIAL_SNAPSHOT_CID}" ` --num-of-optimizations 200 --compiler-version v0.8.13+commit.abaa5c0e ${SNAPPER_CONTRACT_ADDRESS} src/Snapper/Snapper.sol:Snapper ${ETHERSCAN_API_KEY}

@@ -272,5 +272,16 @@ interface ITheSpace {
      * @param tokenId_ Token id to be transferred.
      * @return success Whether tax is fully collected without token been defaulted.
      */
-    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success);
+    function _beforeTransferByRegistry(uint256 tokenId_) external returns (bool success);
+
+    /**
+     * @notice Get token URI by registry contract.
+     *
+     * @dev Access: only registry.
+     * @dev Throws: `Unauthorized` or `TokenNotExists` error.
+     *
+     * @param tokenId_ Token id to be transferred.
+     * @return uri Base64 encoded URI.
+     */
+    function _tokenURI(uint256 tokenId_) external view returns (string memory uri);
 }

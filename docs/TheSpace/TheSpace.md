@@ -125,7 +125,7 @@ Withdraw all UBI on given token.
 
 Emits: `UBI` event.
 
-### `beforeTransferByRegistry(uint256 tokenId_) → bool success` (external)
+### `_beforeTransferByRegistry(uint256 tokenId_) → bool success` (external)
 
 Perform before `safeTransfer` and `safeTransferFrom` by registry contract.
 
@@ -133,3 +133,10 @@ Collect tax and set price.
 
 Access: only registry.
 Throws: `Unauthorized` error.
+
+### `_tokenURI(uint256 tokenId_) → string uri` (external)
+
+Get token URI by registry contract.
+
+Access: only registry.
+Throws: `Unauthorized` or `TokenNotExists` error.

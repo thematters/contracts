@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
+import "./NFTSVG.sol";
 import "./ITheSpaceRegistry.sol";
 import "./ITheSpace.sol";
 
@@ -407,7 +408,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
-    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
+    function _beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
         if (msg.sender != address(registry)) revert Unauthorized();
 
         // clear tax or default
@@ -423,5 +424,57 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         } else {
             success = false;
         }
+    }
+
+    /// @inheritdoc ITheSpace
+    function _tokenURI(uint256 tokenId_) external view returns (string memory uri) {
+        if (msg.sender != address(registry)) revert Unauthorized();
+
+        if (!registry.exists(tokenId_)) revert TokenNotExists();
+
+        string memory tokenName = string(abi.encodePacked("Planck #", Strings.toString(tokenId_)));
+        string
+            memory description = "The Space is an everlasting, Draw-to-Earn public space that runs on decentralized Web3 and supported by blockchain where members can tokenize, own, trade, and color pixels on a digital public graffiti wall.";
+
+        string[16] memory colors = [
+            "#000000",
+            "#FFFFFF",
+            "#D4D7D9",
+            "#898D90",
+            "#784102",
+            "#D26500",
+            "#FF8A00",
+            "#FFDE2F",
+            "#8DE763",
+            "#159800",
+            "#58EAF4",
+            "#059DF2",
+            "#034CBA",
+            "#9503C9",
+            "#D90041",
+            "#FF9FAB"
+        ];
+
+        NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({colors: colors, tokenId: tokenId_});
+        string memory image = Base64.encode(bytes(NFTSVG.generateSVG(svgParams)));
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        tokenName,
+                        '", "description": "',
+                        description,
+                        '", "attributes": [',
+                        '], "image": "data:image/svg+xml;base64,',
+                        image,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        uri = string(abi.encodePacked("data:application/json;base64,", json));
     }
 }

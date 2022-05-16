@@ -82,6 +82,10 @@ Override to collect tax and set price before transfer.
 
 See {IERC721-safeTransferFrom}.
 
+### `tokenURI(uint256 tokenId_) → string uri` (public)
+
+See {IERC721-tokenURI}.
+
 ### `transferCurrency(address to_, uint256 amount_)` (external)
 
 Perform ERC20 token transfer by market contract.
