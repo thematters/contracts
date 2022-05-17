@@ -1,27 +1,54 @@
 ## `Snapper`
 
+The data storage part of the whole `Snapper` app.
+
+Logics like generating snapshot image / delta file and calling `takeSnapshot` are handled by the Lambda part.
+`latestSnapshotInfo` is the only method clients should care about.
+
 ## Functions
 
-### `constructor(uint256 theSpaceCreationBlock_, string snapshotCid_)` (public)
+### `constructor()` (public)
 
-create Snapper contract with initial snapshot.
+Create Snapper contract.
 
-Emits {Snapshot} event.
+### `initRegion(uint256 regionId, uint256 initBlock_, string snapshotCid_)` (external)
 
-### `takeSnapshot(uint256 lastSnapshotBlock_, uint256 snapshotBlock_, string snapshotCid_, string deltaCid_)` (external)
+Intialize the region before taking further snapshots.
+
+Emits {Snapshot} event which used by Clients to draw initial picture.
+
+### `takeSnapshot(uint256 regionId, uint256 lastSnapshotBlock_, uint256 targetSnapshotBlock_, string snapshotCid_, string deltaCid_)` (external)
+
+Take a snapshot on the region.
 
 Emits {Snapshot} and {Delta} events.
 
-### `latestSnapshotInfo() → uint256 latestSnapshotBlock, string latestSnapshotCid` (external)
+### `latestSnapshotInfo() → struct Snapper.SnapshotInfo` (external)
 
-get the lastest snapshot info.
+Get region 0 lastest snapshot info.
+
+### `latestSnapshotInfo(uint256 regionId) → struct Snapper.SnapshotInfo` (external)
+
+Get the lastest snapshot info by region.
 
 ## Events
 
-### `Snapshot(uint256 block, string cid)`
+### `Snapshot(uint256 regionId, uint256 block, string cid)`
 
-snapshot info
+New snapshot is taken.
 
-### `Delta(uint256 block, string cid)`
+For more information see https://gist.github.com/zxygentoo/6575a49ff89831cdd71598d49527278b
 
-delta info
+### `Delta(uint256 regionId, uint256 block, string cid)`
+
+New delta is generated.
+
+For more information see https://gist.github.com/zxygentoo/6575a49ff89831cdd71598d49527278b
+
+### `SnapshotInfo`
+
+uint256
+block
+
+string
+cid
