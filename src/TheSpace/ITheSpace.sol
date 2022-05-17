@@ -204,7 +204,7 @@ interface ITheSpace {
      * @dev Clear tax for owner before transfer.
      *
      * @dev Throws: `PriceTooLow` or `InvalidTokenId` error.
-     * @dev Emits: `Bid`, `Tax` events.
+     * @dev Emits: `Deal`, `Tax` events.
      *
      * @param tokenId_ Id of token been bid.
      * @param price_ Bid price.
@@ -235,7 +235,7 @@ interface ITheSpace {
      * @dev Anyone can trigger this function. It could be desirable for the developer team to trigger it once a while to make sure all tokens meet their tax obligation.
      *
      * @dev Throws: `PriceTooLow` or `InvalidTokenId` error.
-     * @dev Emits: `Bid`, `Tax` events.
+     * @dev Emits: `Tax` events.
      *
      * @param tokenId_ Id of token been settled.
      * @return success Whether tax is fully collected without token been defaulted.

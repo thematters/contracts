@@ -43,9 +43,9 @@ Emit {UBI} event
 
 Emit {Treasury} event
 
-### `emitBid(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
+### `emitDeal(uint256 tokenId_, address from_, address to_, uint256 amount_)` (external)
 
-Emit {Bid} event
+Emit {Deal} event
 
 ### `mint(address to_, uint256 tokenId_)` (external)
 
@@ -85,6 +85,10 @@ A token updated price.
 
 Global configuration is updated.
 
+### `TotalSupply(uint256 previousSupply, uint256 newSupply)`
+
+Total is updated.
+
 ### `Tax(uint256 tokenId, address taxpayer, uint256 amount)`
 
 Tax is collected for a token.
@@ -97,7 +101,7 @@ UBI (universal basic income) is withdrawn for a token.
 
 Treasury is withdrawn.
 
-### `Bid(uint256 tokenId, address from, address to, uint256 amount)`
+### `Deal(uint256 tokenId, address from, address to, uint256 amount)`
 
 A token has been succefully bid.
 

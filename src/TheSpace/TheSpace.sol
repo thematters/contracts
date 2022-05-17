@@ -3,13 +3,14 @@ pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
 import "./ITheSpaceRegistry.sol";
 import "./ITheSpace.sol";
 
-contract TheSpace is ITheSpace, Multicall, ACLManager {
+contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     TheSpaceRegistry public registry;
 
     constructor(
@@ -215,14 +216,13 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
     }
 
     /// @inheritdoc ITheSpace
-    function bid(uint256 tokenId_, uint256 price_) public {
+    function bid(uint256 tokenId_, uint256 price_) public nonReentrant {
         address owner = getOwner(tokenId_);
         uint256 askPrice = _getPrice(tokenId_);
         uint256 mintTax = registry.taxConfig(ITheSpaceRegistry.ConfigOptions.mintTax);
 
         // bid price and payee is calculated based on tax and token status
         uint256 bidPrice;
-        address payee;
 
         if (registry.exists(tokenId_)) {
             // skip if already own
@@ -231,37 +231,50 @@ contract TheSpace is ITheSpace, Multicall, ACLManager {
             // clear tax
             bool success = _collectTax(tokenId_);
 
-            // process with transfer
+            // proceed with transfer
             if (success) {
                 // if tax fully paid, owner get paid normally
                 bidPrice = askPrice;
-                payee = owner;
+
+                // revert if price too low
+                if (price_ < bidPrice) revert PriceTooLow();
+
+                // settle ERC20 token
+                registry.transferCurrencyFrom(msg.sender, owner, bidPrice);
+
+                // settle ERC721 token
+                registry.safeTransferByMarket(owner, msg.sender, tokenId_);
+
+                // emit deal event
+                registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
+
+                // update price to ask price if difference
+                if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
+
+                return;
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected and recorded
-                bidPrice = mintTax;
-                payee = address(registry);
-                _recordTax(tokenId_, msg.sender, mintTax);
+                registry.burn(tokenId_);
             }
-
-            // settle ERC721 token
-            registry.safeTransferByMarket(owner, msg.sender, tokenId_);
-        } else {
-            // mint tax is collected and recorded
-            bidPrice = mintTax;
-            payee = address(registry);
-            _recordTax(tokenId_, msg.sender, mintTax);
-
-            // settle ERC721 token
-            registry.mint(msg.sender, tokenId_);
         }
+
+        // mint tax is collected and recorded
+        bidPrice = mintTax;
 
         // revert if price too low
         if (price_ < bidPrice) revert PriceTooLow();
 
         // settle ERC20 token
-        registry.transferCurrencyFrom(msg.sender, payee, bidPrice);
-        // emit bid event
-        registry.emitBid(tokenId_, owner, msg.sender, bidPrice);
+        registry.transferCurrencyFrom(msg.sender, address(registry), bidPrice);
+
+        // record as tax income
+        _recordTax(tokenId_, msg.sender, mintTax);
+
+        // settle ERC721 token
+        registry.mint(msg.sender, tokenId_);
+
+        // emit deal event
+        registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
 
         // update price to ask price if difference
         if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);

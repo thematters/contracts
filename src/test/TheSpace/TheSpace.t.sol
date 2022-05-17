@@ -200,7 +200,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
         // bid with PIXEL_OWNER_1
         vm.expectEmit(true, true, true, true);
-        emit Bid(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
+        emit Deal(PIXEL_ID, PIXEL_OWNER, PIXEL_OWNER_1, thespace.getPrice(PIXEL_ID));
 
         // set to bid price from `bid()`
         vm.expectEmit(true, true, true, false);
@@ -567,6 +567,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     function testCannotBidOutBoundTokens() public {
+        vm.startPrank(PIXEL_OWNER_1);
+
         uint256 totalSupply = registry.totalSupply();
 
         // oversupply id
@@ -576,6 +578,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
         // zero id
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenId(uint256,uint256)", 1, totalSupply));
         thespace.bid(0, PIXEL_PRICE);
+
+        vm.stopPrank();
     }
 
     function testCannotBidPriceTooLow() public {

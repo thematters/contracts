@@ -27,6 +27,9 @@ contract BaseTheSpaceTest is Test {
     address constant OPERATOR = address(203);
     address constant ATTACKER = address(204);
     address constant TREASURY = address(205);
+    address constant TEAM = address(206);
+    uint256 constant TREASURY_TOKENS = 1400000000;
+    uint256 constant TEAM_TOKENS = 8600000000;
 
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
@@ -38,7 +41,7 @@ contract BaseTheSpaceTest is Test {
     event Tax(uint256 indexed tokenId, address indexed taxpayer, uint256 amount);
     event UBI(uint256 indexed tokenId, address indexed recipient, uint256 amount);
     event Treasury(address indexed recipient, uint256 amount);
-    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
+    event Deal(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
     event Color(uint256 indexed pixelId, uint256 indexed color, address indexed owner);
 
     // enums
@@ -54,7 +57,10 @@ contract BaseTheSpaceTest is Test {
         vm.startPrank(DEPLOYER);
 
         // deploy space token
-        currency = new SpaceToken();
+        currency = new SpaceToken(TREASURY, TREASURY_TOKENS, TEAM, TEAM_TOKENS);
+        assertEq(currency.balanceOf(TREASURY), TREASURY_TOKENS * (10**uint256(currency.decimals())));
+        assertEq(currency.balanceOf(TEAM), TEAM_TOKENS * (10**uint256(currency.decimals())));
+
         PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
 
         // deploy the space
@@ -67,11 +73,14 @@ contract BaseTheSpaceTest is Test {
         thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
+        vm.stopPrank();
+
         // transfer to tester
         uint256 amount = 10 * PIXEL_PRICE;
+        vm.prank(TREASURY);
         currency.transfer(PIXEL_OWNER, amount);
+        vm.prank(TREASURY);
         currency.transfer(PIXEL_OWNER_1, amount);
-        vm.stopPrank();
 
         // tester approve the space
         vm.prank(PIXEL_OWNER_1);
@@ -88,7 +97,7 @@ contract BaseTheSpaceTest is Test {
 
     function _bid(uint256 bidPrice) internal {
         vm.expectEmit(true, true, true, false);
-        emit Bid(PIXEL_ID, address(0), PIXEL_OWNER, 0);
+        emit Deal(PIXEL_ID, address(0), PIXEL_OWNER, 0);
 
         vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, bidPrice);
