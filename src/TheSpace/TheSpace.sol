@@ -245,8 +245,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
                 // settle ERC721 token
                 registry.safeTransferByMarket(owner, msg.sender, tokenId_);
 
-                // emit bid event
-                registry.emitBid(tokenId_, owner, msg.sender, bidPrice);
+                // emit deal event
+                registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
 
                 // update price to ask price if difference
                 if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
@@ -273,8 +273,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         // settle ERC721 token
         registry.mint(msg.sender, tokenId_);
 
-        // emit bid event
-        registry.emitBid(tokenId_, owner, msg.sender, bidPrice);
+        // emit deal event
+        registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
 
         // update price to ask price if difference
         if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
