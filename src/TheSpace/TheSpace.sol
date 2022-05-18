@@ -118,6 +118,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         uint256 color_,
         address owner_
     ) internal {
+        if (registry.pixelColor(tokenId_) == color_) return;
+
         registry.setColor(tokenId_, color_, owner_);
     }
 
