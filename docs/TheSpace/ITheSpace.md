@@ -98,7 +98,7 @@ If bid price is higher than ask price, only ask price will be deducted.
 Clear tax for owner before transfer.
 
 Throws: `PriceTooLow` or `InvalidTokenId` error.
-Emits: `Bid`, `Tax` events.
+Emits: `Deal`, `Tax` events.
 
 ### `getTax(uint256 tokenId_) → uint256 amount` (external)
 
@@ -115,7 +115,7 @@ Collect outstanding tax of a token and default it if needed.
 Anyone can trigger this function. It could be desirable for the developer team to trigger it once a while to make sure all tokens meet their tax obligation.
 
 Throws: `PriceTooLow` or `InvalidTokenId` error.
-Emits: `Bid`, `Tax` events.
+Emits: `Tax` events.
 
 ### `ubiAvailable(uint256 tokenId_) → uint256 amount` (external)
 

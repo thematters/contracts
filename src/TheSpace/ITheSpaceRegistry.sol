@@ -78,7 +78,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
      * @param to New owner after bid.
      * @param amount Amount of currency used for bidding.
      */
-    event Bid(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
+    event Deal(uint256 indexed tokenId, address indexed from, address indexed to, uint256 amount);
 
     /**
      * @notice Emitted when the color of a pixel is updated.
@@ -232,9 +232,9 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     function emitTreasury(address recipient_, uint256 amount_) external;
 
     /**
-     * @dev Emit {Bid} event
+     * @dev Emit {Deal} event
      */
-    function emitBid(
+    function emitDeal(
         uint256 tokenId_,
         address from_,
         address to_,

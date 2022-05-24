@@ -9,15 +9,25 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  */
 contract SpaceToken is ERC20 {
     constructor(
+        address incentives,
+        uint256 incentivesTokens,
         address treasury,
         uint256 treasuryTokens,
         address team,
-        uint256 teamTokens
+        uint256 teamTokens,
+        address lp,
+        uint256 lpTokens
     ) ERC20("The Space", "SPACE") {
-        // treasury
+        // Early Incentives
+        _mint(incentives, incentivesTokens * (10**uint256(decimals())));
+
+        // Community Treasury
         _mint(treasury, treasuryTokens * (10**uint256(decimals())));
 
-        // team
+        // Team
         _mint(team, teamTokens * (10**uint256(decimals())));
+
+        // Liquidity Pool
+        _mint(lp, lpTokens * (10**uint256(decimals())));
     }
 }
