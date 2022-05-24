@@ -37,11 +37,18 @@ Access: only `Role.marketAdmin`.
 Emits: `Config` event.
 Throws: `RoleRequired` error.
 
-### `withdrawTreasury(address to)` (external)
+### `withdrawTreasury(address to_)` (external)
 
 Withdraw all available treasury.
 
 Access: only `Role.treasuryAdmin`.
+Throws: `RoleRequired` error.
+
+### `setTokenImageURI(string uri_)` (external)
+
+Withdraw all available treasury.
+
+Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.
 
 ### `getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (external)

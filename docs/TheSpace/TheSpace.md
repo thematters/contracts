@@ -2,7 +2,7 @@
 
 ## Functions
 
-### `constructor(address currencyAddress_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
+### `constructor(address currencyAddress_, string tokenImageURI_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
 ### `supportsInterface(bytes4 interfaceId_) → bool` (external)
 
@@ -32,6 +32,13 @@ Throws: `RoleRequired` error.
 Withdraw all available treasury.
 
 Access: only `Role.treasuryAdmin`.
+Throws: `RoleRequired` error.
+
+### `setTokenImageURI(string uri_)` (external)
+
+Withdraw all available treasury.
+
+Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.
 
 ### `getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (external)

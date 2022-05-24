@@ -91,9 +91,19 @@ interface ITheSpace {
      * @dev Access: only `Role.treasuryAdmin`.
      * @dev Throws: `RoleRequired` error.
      *
-     * @param to address of DAO treasury.
+     * @param to_ address of DAO treasury.
      */
-    function withdrawTreasury(address to) external;
+    function withdrawTreasury(address to_) external;
+
+    /**
+     * @notice Withdraw all available treasury.
+     *
+     * @dev Access: only `Role.aclManager`.
+     * @dev Throws: `RoleRequired` error.
+     *
+     * @param uri_ new URI
+     */
+    function setTokenImageURI(string memory uri_) external;
 
     //////////////////////////////
     /// Pixel

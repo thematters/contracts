@@ -2,20 +2,24 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
-import "./NFTSVG.sol";
 import "./ITheSpaceRegistry.sol";
 import "./ITheSpace.sol";
 
 contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     TheSpaceRegistry public registry;
 
+    // token image shared by all tokens
+    string public tokenImageURI;
+
     constructor(
         address currencyAddress_,
+        string memory tokenImageURI_,
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
@@ -29,6 +33,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
             1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
             currencyAddress_
         );
+
+        tokenImageURI = tokenImageURI_;
     }
 
     /**
@@ -71,6 +77,11 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
         // set `treasuryWithdrawn` to `accumulatedTreasury`
         registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
+    }
+
+    /// @inheritdoc ITheSpace
+    function setTokenImageURI(string memory uri_) external onlyRole(Role.aclManager) {
+        tokenImageURI = uri_;
     }
 
     //////////////////////////////
@@ -436,10 +447,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
         string memory tokenName = string(abi.encodePacked("Planck #", Strings.toString(tokenId_)));
         string
-            memory description = "The Space is an everlasting, Draw-to-Earn public space that runs on decentralized Web3 and supported by blockchain where members can tokenize, own, trade, and color pixels on a digital public graffiti wall.";
-
-        NFTSVG.SVGParams memory svgParams = NFTSVG.SVGParams({tokenId: tokenId_});
-        string memory image = Base64.encode(bytes(NFTSVG.generateSVG(svgParams)));
+            memory description = "The Space: an everlasting co-creation blockchain graffiti wall shared and governed by all participants through radical market principles.";
 
         string memory json = Base64.encode(
             bytes(
@@ -450,8 +458,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
                         '", "description": "',
                         description,
                         '", "attributes": [',
-                        '], "image": "data:image/svg+xml;base64,',
-                        image,
+                        '], "image": "',
+                        tokenImageURI,
                         '"}'
                     )
                 )
