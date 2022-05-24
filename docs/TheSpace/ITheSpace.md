@@ -46,7 +46,7 @@ Throws: `RoleRequired` error.
 
 ### `setTokenImageURI(string uri_)` (external)
 
-Withdraw all available treasury.
+Set token image URI.
 
 Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.

@@ -96,7 +96,7 @@ interface ITheSpace {
     function withdrawTreasury(address to_) external;
 
     /**
-     * @notice Withdraw all available treasury.
+     * @notice Set token image URI.
      *
      * @dev Access: only `Role.aclManager`.
      * @dev Throws: `RoleRequired` error.
