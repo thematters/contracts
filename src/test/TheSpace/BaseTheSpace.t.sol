@@ -28,8 +28,12 @@ contract BaseTheSpaceTest is Test {
     address constant ATTACKER = address(204);
     address constant TREASURY = address(205);
     address constant TEAM = address(206);
-    uint256 constant TREASURY_TOKENS = 1400000000;
-    uint256 constant TEAM_TOKENS = 8600000000;
+    address constant INCENTIVES = address(207);
+    address constant LP = address(208);
+    uint256 constant TREASURY_TOKENS = 662607015;
+    uint256 constant TEAM_TOKENS = 150000000;
+    uint256 constant INCENTIVES_TOKENS = 137392985;
+    uint256 constant LP_TOKENS = 50000000;
 
     uint256 constant PIXEL_ID = 1;
     uint256 constant TAX_WINDOW = 302400; // roughly one week
@@ -57,7 +61,16 @@ contract BaseTheSpaceTest is Test {
         vm.startPrank(DEPLOYER);
 
         // deploy space token
-        currency = new SpaceToken(TREASURY, TREASURY_TOKENS, TEAM, TEAM_TOKENS);
+        currency = new SpaceToken(
+            INCENTIVES,
+            INCENTIVES_TOKENS,
+            TREASURY,
+            TREASURY_TOKENS,
+            TEAM,
+            TEAM_TOKENS,
+            LP,
+            LP_TOKENS
+        );
         assertEq(currency.balanceOf(TREASURY), TREASURY_TOKENS * (10**uint256(currency.decimals())));
         assertEq(currency.balanceOf(TEAM), TEAM_TOKENS * (10**uint256(currency.decimals())));
 
