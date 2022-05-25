@@ -2,6 +2,7 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/utils/Multicall.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -13,8 +14,12 @@ import "./ITheSpace.sol";
 contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     TheSpaceRegistry public registry;
 
+    // token image shared by all tokens
+    string public tokenImageURI;
+
     constructor(
         address currencyAddress_,
+        string memory tokenImageURI_,
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
@@ -28,6 +33,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
             1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
             currencyAddress_
         );
+
+        tokenImageURI = tokenImageURI_;
     }
 
     /**
@@ -70,6 +77,11 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
         // set `treasuryWithdrawn` to `accumulatedTreasury`
         registry.setTreasuryRecord(accumulatedUBI, accumulatedTreasury, accumulatedTreasury);
+    }
+
+    /// @inheritdoc ITheSpace
+    function setTokenImageURI(string memory uri_) external onlyRole(Role.aclManager) {
+        tokenImageURI = uri_;
     }
 
     //////////////////////////////
@@ -409,7 +421,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     //////////////////////////////
 
     /// @inheritdoc ITheSpace
-    function beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
+    function _beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
         if (msg.sender != address(registry)) revert Unauthorized();
 
         // clear tax or default
@@ -425,5 +437,34 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         } else {
             success = false;
         }
+    }
+
+    /// @inheritdoc ITheSpace
+    function _tokenURI(uint256 tokenId_) external view returns (string memory uri) {
+        if (msg.sender != address(registry)) revert Unauthorized();
+
+        if (!registry.exists(tokenId_)) revert TokenNotExists();
+
+        string memory tokenName = string(abi.encodePacked("Planck #", Strings.toString(tokenId_)));
+        string memory description = "A pixel set with price and traded under Harberger Tax.";
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        tokenName,
+                        '", "description": "',
+                        description,
+                        '", "attributes": [',
+                        '], "image": "',
+                        tokenImageURI,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        uri = string(abi.encodePacked("data:application/json;base64,", json));
     }
 }

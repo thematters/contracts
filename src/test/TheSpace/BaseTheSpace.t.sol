@@ -17,6 +17,8 @@ contract BaseTheSpaceTest is Test {
     SpaceToken internal currency;
     TheSpaceRegistry internal registry;
 
+    string constant TOKEN_IMAGE_URI = "ipfs://QmTkFft2XoLE6QFHPce6DtJjYoXasq5UcqYacNfgoWZAoo";
+
     address constant ACL_MANAGER = address(100);
     address constant MARKET_ADMIN = address(101);
     address constant TREASURY_ADMIN = address(102);
@@ -83,7 +85,7 @@ contract BaseTheSpaceTest is Test {
         emit Config(CONFIG_TREASURY_SHARE, 0);
         vm.expectEmit(true, false, false, false);
         emit Config(CONFIG_MINT_TAX, 0);
-        thespace = new TheSpace(address(currency), ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        thespace = new TheSpace(address(currency), TOKEN_IMAGE_URI, ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
         registry = thespace.registry();
 
         vm.stopPrank();

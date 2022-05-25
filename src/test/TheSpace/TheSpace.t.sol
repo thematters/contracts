@@ -752,7 +752,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     /**
-     * @dev Trasfer
+     * @dev Transfer
      */
     function testCannotTransferFromIfDefault() public {
         // bid and set price
@@ -797,5 +797,45 @@ contract TheSpaceTest is BaseTheSpaceTest {
         uint256 mintTax = 50 * (10**uint256(currency.decimals()));
         _setMintTax(mintTax);
         assertEq(thespace.getPrice(PIXEL_ID), 0);
+    }
+
+    /**
+     * @dev Token URI
+     */
+    function testGetTokenImageURI() public {
+        assertEq(thespace.tokenImageURI(), TOKEN_IMAGE_URI);
+    }
+
+    function testSetTokenImageURI() public {
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        string memory prevTokenURI = registry.tokenURI(PIXEL_ID);
+
+        vm.prank(ACL_MANAGER);
+        thespace.setTokenImageURI("ipfs://1235413");
+
+        string memory newTokenURI = registry.tokenURI(PIXEL_ID);
+
+        bool isSameURI = (keccak256(abi.encodePacked((prevTokenURI))) == keccak256(abi.encodePacked((newTokenURI))));
+        assertFalse(isSameURI);
+    }
+
+    function testCannotSetTokenImageURIByNonACLManager() public {
+        vm.expectRevert(abi.encodeWithSignature("RoleRequired(uint8)", ROLE_ACL_MANAGER));
+        thespace.setTokenImageURI("123");
+    }
+
+    function testGetTokenURI() public {
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        string memory tokenURI = registry.tokenURI(PIXEL_ID);
+        console2.log(tokenURI);
+    }
+
+    function testCannotGetTokenURIInLogicContract() public {
+        _bid(PIXEL_PRICE, PIXEL_PRICE);
+
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        thespace._tokenURI(PIXEL_ID);
     }
 }

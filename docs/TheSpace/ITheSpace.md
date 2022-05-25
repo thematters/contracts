@@ -37,11 +37,18 @@ Access: only `Role.marketAdmin`.
 Emits: `Config` event.
 Throws: `RoleRequired` error.
 
-### `withdrawTreasury(address to)` (external)
+### `withdrawTreasury(address to_)` (external)
 
 Withdraw all available treasury.
 
 Access: only `Role.treasuryAdmin`.
+Throws: `RoleRequired` error.
+
+### `setTokenImageURI(string uri_)` (external)
+
+Set token image URI.
+
+Access: only `Role.aclManager`.
 Throws: `RoleRequired` error.
 
 ### `getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (external)
@@ -127,7 +134,7 @@ Withdraw all UBI on given token.
 
 Emits: `UBI` event.
 
-### `beforeTransferByRegistry(uint256 tokenId_) → bool success` (external)
+### `_beforeTransferByRegistry(uint256 tokenId_) → bool success` (external)
 
 Perform before `safeTransfer` and `safeTransferFrom` by registry contract.
 
@@ -135,3 +142,10 @@ Collect tax and set price.
 
 Access: only registry.
 Throws: `Unauthorized` error.
+
+### `_tokenURI(uint256 tokenId_) → string uri` (external)
+
+Get token URI by registry contract.
+
+Access: only registry.
+Throws: `Unauthorized` or `TokenNotExists` error.

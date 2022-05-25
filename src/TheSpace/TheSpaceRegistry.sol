@@ -231,11 +231,20 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
 
         ITheSpace market = ITheSpace(owner());
 
-        bool success = market.beforeTransferByRegistry(tokenId_);
+        bool success = market._beforeTransferByRegistry(tokenId_);
 
         if (success) {
             _safeTransfer(from_, to_, tokenId_, data_);
         }
+    }
+
+    /**
+     * @notice See {IERC721-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId_) public view override returns (string memory uri) {
+        ITheSpace market = ITheSpace(owner());
+
+        uri = market._tokenURI(tokenId_);
     }
 
     //////////////////////////////
