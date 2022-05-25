@@ -446,8 +446,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         if (!registry.exists(tokenId_)) revert TokenNotExists();
 
         string memory tokenName = string(abi.encodePacked("Planck #", Strings.toString(tokenId_)));
-        string
-            memory description = "The Space: an everlasting co-creation blockchain graffiti wall shared and governed by all participants through radical market principles.";
+        string memory description = "A pixel set with price and traded under Harberger Tax.";
 
         string memory json = Base64.encode(
             bytes(
