@@ -15,7 +15,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     TheSpaceRegistry public registry;
 
     // token image shared by all tokens
-    string public tokenImageURI;
+    string public tokenImageURI = "ipfs://";
 
     constructor(
         address currencyAddress_,
@@ -446,7 +446,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         if (!registry.exists(tokenId_)) revert TokenNotExists();
 
         string memory tokenName = string(abi.encodePacked("Planck #", Strings.toString(tokenId_)));
-        string memory description = "A pixel set with price and traded under Harberger Tax.";
+        string memory description = "One of 1 million pixels traded under Harberger Tax and UBI.";
 
         string memory json = Base64.encode(
             bytes(
