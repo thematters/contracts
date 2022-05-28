@@ -1,19 +1,18 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.4;
 
+import "forge-std/Test.sol";
+import "forge-std/Vm.sol";
+import "forge-std/console2.sol";
+
 import "@openzeppelin/contracts/utils/Base64.sol";
-import {DSTest} from "ds-test/test.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import {console} from "./utils/Console.sol";
-import {Hevm} from "./utils/Hevm.sol";
-import {Logbook} from "../Logbook/Logbook.sol";
-import {ILogbook} from "../Logbook/ILogbook.sol";
+import {Logbook} from "../../Logbook/Logbook.sol";
+import {ILogbook} from "../../Logbook/ILogbook.sol";
 
-contract LogbookTest is DSTest {
+contract LogbookTest is Test {
     Logbook private logbook;
-
-    Hevm constant vm = Hevm(HEVM_ADDRESS);
 
     address constant DEPLOYER = address(176);
     address constant TRAVELOGGERS_OWNER = address(177);
@@ -332,6 +331,23 @@ contract LogbookTest is DSTest {
         assertEq(contentHash, returnContentHash);
     }
 
+    function testPublishEn50() public {
+        _claimToTraveloggersOwner();
+        string memory content = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+        bytes32 returnContentHash = _publish(content, true);
+        assertEq(contentHash, returnContentHash);
+    }
+
+    function testPublishEn140() public {
+        _claimToTraveloggersOwner();
+        string
+            memory content = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+        bytes32 returnContentHash = _publish(content, true);
+        assertEq(contentHash, returnContentHash);
+    }
+
     function testPublishEn200() public {
         _claimToTraveloggersOwner();
         string
@@ -341,10 +357,19 @@ contract LogbookTest is DSTest {
         assertEq(contentHash, returnContentHash);
     }
 
+    function testPublishEn300() public {
+        _claimToTraveloggersOwner();
+        string
+            memory content = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
+        bytes32 contentHash = keccak256(abi.encodePacked(content));
+        bytes32 returnContentHash = _publish(content, true);
+        assertEq(contentHash, returnContentHash);
+    }
+
     function testPublishEn500() public {
         _claimToTraveloggersOwner();
         string
-            memory content = 'World leaders were quick to condemn Russia and enact some new sanctions."Putin is the aggressor. Putin chose this war. And now he and his country will bear the consequences," President Joe Biden said in stern remarks from the White House.Putin "decided to carry out the most serious attack on peace, on stability in Europe for decades," said French President Emmanuel Macron, appearing for a national address in front of the flags of Ukraine, France and the European Union.British Prime Minister Boris.';
+            memory content = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
         bytes32 contentHash = keccak256(abi.encodePacked(content));
         bytes32 returnContentHash = _publish(content, true);
         assertEq(contentHash, returnContentHash);
@@ -353,7 +378,7 @@ contract LogbookTest is DSTest {
     function testPublishEn1000() public {
         _claimToTraveloggersOwner();
         string
-            memory content = "A version of this story appeared in CNN's What Matters newsletter. To get it in your inbox, sign up for free here.\n(CNN)Europe woke up to a major war on Thursday after Russian President Vladimir Putin launched a violent, multipronged invasion of Ukraine, the democracy that sits between NATO countries and Russia.\nNow that it is clear Putin will sacrifice lives and Russian wealth to reconstitute parts of the old Soviet Union, European and US troops are scrambling to fortify the wall of NATO countries that borders Ukraine -- and the fear that he could move farther, past Ukraine, is now very real.\nOn a continent that spent decades as the front line of the Cold War in a standoff over ideology between nuclear powers, this new war seems like a return to the sort of conventional warfare that marked Europe before the world wars, when countries did battle and tested their alliances.\nNo one in recent weeks has claimed to know what's in Putin's head. But few guessed he would so boldly try to take over Ukraine.";
+            memory content = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii";
         bytes32 contentHash = keccak256(abi.encodePacked(content));
         bytes32 returnContentHash = _publish(content, true);
         assertEq(contentHash, returnContentHash);

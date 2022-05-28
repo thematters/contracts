@@ -1,12 +1,19 @@
-## `TheSpace`
+## `ITheSpace`
+
+_The Space_ is a pixel space owned by a decentralized autonomous organization (DAO), where members can tokenize, own, trade and color pixels.
+
+Pixels are tokenized as ERC721 tokens and traded under Harberger tax, while members receive dividend based on the share of pixels they own.
+
+#### Trading
+
+- User needs to call `approve` on currency contract before starting. If there is not sufficient allowance for taxing, the corresponding assets are defaulted.
+- User buy pixel: call [`bid` function](./ITheSpace.md).
+- User set pixel price: call [`setPrice` function](./ITheSpace.md).
+
+This contract holds the logic of market place, while read from and write into {TheSpaceRegistry}, which is the storage contact.
+This contract owns a {TheSpaceRegistry} contract for storage, and can be updated by transfering ownership to a new implementation contract.
 
 ## Functions
-
-### `constructor(address currencyAddress_, string tokenImageURI_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
-
-### `supportsInterface(bytes4 interfaceId_) → bool` (external)
-
-See {IERC165-supportsInterface}.
 
 ### `upgradeTo(address newImplementation)` (external)
 
@@ -17,7 +24,10 @@ Throws: `RoleRequired` error.
 
 ### `setTotalSupply(uint256 totalSupply_)` (external)
 
-Configuration / Admin
+Update total supply of ERC721 token.
+
+Access: only `Role.marketAdmin`.
+Throws: `RoleRequired` error.
 
 ### `setTaxConfig(enum ITheSpaceRegistry.ConfigOptions option_, uint256 value_)` (external)
 
@@ -45,15 +55,13 @@ Throws: `RoleRequired` error.
 
 Get pixel info.
 
-### `_getPixel(uint256 tokenId_) → struct ITheSpaceRegistry.Pixel pixel` (internal)
-
 ### `setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_)` (external)
 
 Bid pixel, then set price and color.
 
 Throws: inherits from `bid` and `setPrice`.
 
-### `setColor(uint256 tokenId_, uint256 color_)` (public)
+### `setColor(uint256 tokenId_, uint256 color_)` (external)
 
 Set color for a pixel.
 
@@ -61,9 +69,7 @@ Access: only token owner or approved operator.
 Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
 Emits: `Color` event.
 
-### `_setColor(uint256 tokenId_, uint256 color_, address owner_)` (internal)
-
-### `getColor(uint256 tokenId) → uint256 color` (public)
+### `getColor(uint256 tokenId_) → uint256 color` (external)
 
 Get color for a pixel.
 
@@ -73,13 +79,11 @@ Get pixels owned by a given address.
 
 offset-based pagination
 
-### `getPrice(uint256 tokenId_) → uint256 price` (public)
+### `getPrice(uint256 tokenId_) → uint256 price` (external)
 
 Returns the current price of a token by id.
 
-### `_getPrice(uint256 tokenId_) → uint256` (internal)
-
-### `setPrice(uint256 tokenId_, uint256 price_)` (public)
+### `setPrice(uint256 tokenId_, uint256 price_)` (external)
 
 Set the current price of a token with id. Triggers tax settle first, price is succefully updated after tax is successfully collected.
 
@@ -87,13 +91,13 @@ Access: only token owner or approved operator.
 Throws: `Unauthorized` or `ERC721: operator query for nonexistent token` error.
 Emits: `Price` event.
 
-### `getOwner(uint256 tokenId_) → address owner` (public)
+### `getOwner(uint256 tokenId_) → address owner` (external)
 
 Returns the current owner of an Harberger property with token id.
 
 If token does not exisit, return zero address and user can bid the token as usual.
 
-### `bid(uint256 tokenId_, uint256 price_)` (public)
+### `bid(uint256 tokenId_, uint256 price_)` (external)
 
 Purchase property with bid higher than current price.
 If bid price is higher than ask price, only ask price will be deducted.
@@ -103,17 +107,15 @@ Clear tax for owner before transfer.
 Throws: `PriceTooLow` or `InvalidTokenId` error.
 Emits: `Deal`, `Tax` events.
 
-### `getTax(uint256 tokenId_) → uint256` (public)
+### `getTax(uint256 tokenId_) → uint256 amount` (external)
 
 Calculate outstanding tax for a token.
 
-### `_getTax(uint256 tokenId_) → uint256` (internal)
-
-### `evaluateOwnership(uint256 tokenId_) → uint256 collectable, bool shouldDefault` (public)
+### `evaluateOwnership(uint256 tokenId_) → uint256 collectable, bool shouldDefault` (external)
 
 Calculate amount of tax that can be collected, and determine if token should be defaulted.
 
-### `settleTax(uint256 tokenId_) → bool success` (public)
+### `settleTax(uint256 tokenId_) → bool success` (external)
 
 Collect outstanding tax of a token and default it if needed.
 
@@ -122,7 +124,7 @@ Anyone can trigger this function. It could be desirable for the developer team t
 Throws: `PriceTooLow` or `InvalidTokenId` error.
 Emits: `Tax` events.
 
-### `ubiAvailable(uint256 tokenId_) → uint256` (public)
+### `ubiAvailable(uint256 tokenId_) → uint256 amount` (external)
 
 Amount of UBI available for withdraw on given token.
 
