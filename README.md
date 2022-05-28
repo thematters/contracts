@@ -2,9 +2,14 @@
 
 ## Contracts
 
-| Name    | Network        | Address                                                                                                                         |
-| ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Logbook | Polygon Mumbai | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
+| Name             | Network         | Address                                                                                                                         |
+| ---------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook          | Polygon Mumbai  | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
+| Logbook          | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)        |
+| SpaceToken       | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8) |
+| SpaceToken       | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
+| TheSpace         | Polygon Mainnet |                                                                                                                                 |
+| TheSpaceRegistry | Polygon Mainnet |                                                                                                                                 |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
@@ -104,7 +109,7 @@ make deploy-the-space
 make deploy-snapper
 ```
 
-### Deploy on testnet or mainnet:
+### Deploy & Verify on testnet or mainnet:
 
 ```bash
 # Deploy The Space contract
