@@ -218,9 +218,9 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         uint256 maxPrice = registry.currency().totalSupply();
         if (price_ > maxPrice) revert PriceTooHigh(maxPrice);
 
-        (, uint256 lastTaxCollection, uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
+        (, , uint256 ubiWithdrawn) = registry.tokenRecord(tokenId_);
 
-        registry.setTokenRecord(tokenId_, price_, lastTaxCollection, ubiWithdrawn);
+        registry.setTokenRecord(tokenId_, price_, block.number, ubiWithdrawn);
         registry.emitPrice(tokenId_, price_, operator_);
     }
 
