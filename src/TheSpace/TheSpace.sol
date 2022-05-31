@@ -28,8 +28,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
             "Planck", // property name
             "PLK", // property symbol
             1000000, // total supply
-            75, // taxRate
-            500, // treasuryShare
+            12, // taxRate
+            0, // treasuryShare
             1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
             currencyAddress_
         );
@@ -288,7 +288,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         registry.mint(msg.sender, tokenId_);
 
         // emit deal event
-        registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
+        registry.emitDeal(tokenId_, address(0), msg.sender, bidPrice);
 
         // update price to ask price if difference
         if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
