@@ -679,6 +679,59 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(currency.balanceOf(PIXEL_OWNER_1), prevBalance - mintTax);
     }
 
+    function testTaxCalculation() public {
+        uint256 initialBlockNo = block.number;
+        uint256 blockRollsToFirstWindow = initialBlockNo + TAX_WINDOW;
+        uint256 blockRollsToSecondWindow = blockRollsToFirstWindow + TAX_WINDOW;
+        uint256 blockRollsToThirdWindow = blockRollsToSecondWindow + TAX_WINDOW;
+
+        /**
+         * bid and set a zero price
+         */
+        _bid(PIXEL_PRICE, 0);
+
+        // rolls block to first window
+        vm.roll(blockRollsToFirstWindow);
+
+        // tax is zero
+        assertEq(thespace.getTax(PIXEL_ID), 0);
+
+        // lastTaxCollection is still initialBlockNo
+        (, uint256 lastTaxCollection, ) = registry.tokenRecord(PIXEL_ID);
+        assertEq(lastTaxCollection, initialBlockNo);
+
+        /**
+         * bid with new owern and still zero price
+         */
+        _bidAs(PIXEL_OWNER_1, 0, 0);
+
+        // tax is still zero
+        assertEq(thespace.getTax(PIXEL_ID), 0);
+
+        // but lastTaxCollection is unchanged
+        (, uint256 lastTaxCollection1, ) = registry.tokenRecord(PIXEL_ID);
+        assertEq(lastTaxCollection1, initialBlockNo);
+
+        /**
+         * bid with original owner but with non-zero price
+         */
+        // rolls block to first window
+        vm.roll(blockRollsToSecondWindow);
+
+        _bid(0, 100);
+
+        // lastTaxCollection is changed to blockRollsToSecondWindow
+        (, uint256 lastTaxCollection2, ) = registry.tokenRecord(PIXEL_ID);
+        assertEq(lastTaxCollection2, blockRollsToSecondWindow);
+
+        // and tax is still zero
+        assertEq(thespace.getTax(PIXEL_ID), 0);
+
+        // keep rolling to third window and tax is now non-zero
+        vm.roll(blockRollsToThirdWindow);
+        assertGt(thespace.getTax(PIXEL_ID), 0);
+    }
+
     function testGetTax() public {
         uint256 blockRollsTo = block.number + TAX_WINDOW;
         uint256 taxRate = registry.taxConfig(CONFIG_TAX_RATE);

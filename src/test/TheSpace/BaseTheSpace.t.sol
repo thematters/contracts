@@ -138,8 +138,10 @@ contract BaseTheSpaceTest is Test {
         uint256 bidPrice,
         uint256 newPrice
     ) internal {
-        vm.expectEmit(true, true, true, false);
-        emit Price(PIXEL_ID, newPrice, bidder);
+        if (thespace.getPrice(PIXEL_ID) != newPrice) {
+            vm.expectEmit(true, true, true, false);
+            emit Price(PIXEL_ID, newPrice, bidder);
+        }
 
         vm.startPrank(bidder);
         thespace.bid(PIXEL_ID, bidPrice);
