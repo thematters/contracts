@@ -9,7 +9,7 @@
 | SpaceToken       | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8) |
 | SpaceToken       | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
 | TheSpace         | Polygon Mainnet |                                                                                                                                 |
-| TheSpaceRegistry | Polygon Mainnet |                                                                                                                                 |
+| TheSpaceRegistry | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)        |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
@@ -122,19 +122,7 @@ make deploy-the-space NETWORK=polygon-mainnet
 make deploy-the-space NETWORK=polygon-mumbai
 ```
 
-## Verify Contract
-
-### [Automatically](https://onbjerg.github.io/foundry-book/forge/deploying.html#verifying)
-
-```bash
-# Verify on Polygon Mumbai
-make verify-the-space NETWORK=polygon-mumbai
-
-# Verify on Poygon Mainnet
-make verify-the-space NETWORK=polygon-mainnet
-```
-
-### Manually
+## Verify Contract Manually
 
 ```bash
 # 1. Concat all file into one
