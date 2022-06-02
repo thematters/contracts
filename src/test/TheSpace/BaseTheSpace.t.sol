@@ -85,7 +85,14 @@ contract BaseTheSpaceTest is Test {
         emit Config(CONFIG_TREASURY_SHARE, 0);
         vm.expectEmit(true, false, false, false);
         emit Config(CONFIG_MINT_TAX, 0);
-        thespace = new TheSpace(address(currency), TOKEN_IMAGE_URI, ACL_MANAGER, MARKET_ADMIN, TREASURY_ADMIN);
+        thespace = new TheSpace(
+            address(currency),
+            address(0),
+            TOKEN_IMAGE_URI,
+            ACL_MANAGER,
+            MARKET_ADMIN,
+            TREASURY_ADMIN
+        );
         registry = thespace.registry();
 
         vm.stopPrank();
@@ -105,11 +112,6 @@ contract BaseTheSpaceTest is Test {
         currency.approve(address(registry), type(uint256).max);
     }
 
-    function _bid() internal {
-        vm.prank(PIXEL_OWNER);
-        thespace.bid(PIXEL_ID, PIXEL_PRICE);
-    }
-
     function _bid(uint256 bidPrice) internal {
         vm.expectEmit(true, true, true, false);
         emit Deal(PIXEL_ID, address(0), PIXEL_OWNER, 0);
@@ -119,13 +121,16 @@ contract BaseTheSpaceTest is Test {
     }
 
     function _bid(uint256 bidPrice, uint256 newPrice) internal {
-        vm.expectEmit(true, true, true, false);
-        emit Price(PIXEL_ID, newPrice, PIXEL_OWNER);
-
-        vm.startPrank(PIXEL_OWNER);
+        vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, bidPrice);
+
+        if (thespace.getPrice(PIXEL_ID) != newPrice) {
+            vm.expectEmit(true, true, true, false);
+            emit Price(PIXEL_ID, newPrice, PIXEL_OWNER);
+        }
+
+        vm.prank(PIXEL_OWNER);
         thespace.setPrice(PIXEL_ID, newPrice);
-        vm.stopPrank();
     }
 
     function _bidAs(address bidder, uint256 bidPrice) internal {
@@ -138,15 +143,16 @@ contract BaseTheSpaceTest is Test {
         uint256 bidPrice,
         uint256 newPrice
     ) internal {
+        vm.prank(bidder);
+        thespace.bid(PIXEL_ID, bidPrice);
+
         if (thespace.getPrice(PIXEL_ID) != newPrice) {
             vm.expectEmit(true, true, true, false);
             emit Price(PIXEL_ID, newPrice, bidder);
         }
 
-        vm.startPrank(bidder);
-        thespace.bid(PIXEL_ID, bidPrice);
+        vm.prank(bidder);
         thespace.setPrice(PIXEL_ID, newPrice);
-        vm.stopPrank();
     }
 
     function _bidThis(uint256 tokenId, uint256 bidPrice) internal {
