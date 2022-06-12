@@ -19,20 +19,28 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
     constructor(
         address currencyAddress_,
+        address registryAddress_,
         string memory tokenImageURI_,
         address aclManager_,
         address marketAdmin_,
         address treasuryAdmin_
     ) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
-        registry = new TheSpaceRegistry(
-            "Planck", // property name
-            "PLK", // property symbol
-            1000000, // total supply
-            75, // taxRate
-            500, // treasuryShare
-            1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
-            currencyAddress_
-        );
+        // deploy logic contract only and upgrade later
+        if (registryAddress_ != address(0)) {
+            registry = TheSpaceRegistry(registryAddress_);
+        }
+        // deploy logic and registry contracts
+        else {
+            registry = new TheSpaceRegistry(
+                "Planck", // property name
+                "PLK", // property symbol
+                1000000, // total supply
+                12, // taxRate
+                0, // treasuryShare
+                1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
+                currencyAddress_
+            );
+        }
 
         tokenImageURI = tokenImageURI_;
     }
@@ -262,9 +270,6 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
                 // emit deal event
                 registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
 
-                // update price to ask price if difference
-                if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
-
                 return;
             } else {
                 // if tax not fully paid, token is treated as defaulted and mint tax is collected and recorded
@@ -288,10 +293,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         registry.mint(msg.sender, tokenId_);
 
         // emit deal event
-        registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
-
-        // update price to ask price if difference
-        if (price_ > askPrice) _setPrice(tokenId_, price_, msg.sender);
+        registry.emitDeal(tokenId_, address(0), msg.sender, bidPrice);
     }
 
     //////////////////////////////
