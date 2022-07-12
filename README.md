@@ -102,8 +102,12 @@ make deploy-logbook
 
 # Deploy currency first, then add the contract address to THESPACE_CURRENCY_ADDRESS env variable
 make deploy-the-space-currency
+
 # Deploy the space contract
 make deploy-the-space
+
+# Deploy the space contract
+make deploy-the-space-timelock
 
 # Deploy the snapper contract
 make deploy-snapper
