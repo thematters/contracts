@@ -5,6 +5,7 @@ optimizer = true
 optimizer_runs = 200
 remappings = [
   "@openzeppelin/=lib/openzeppelin-contracts/",
+  "@opengsn/contracts/=lib/gsn/packages/contracts/",
   "forge-std/=lib/forge-std/src/"
 ]
 verbosity = 3

@@ -32,6 +32,7 @@ contract BaseTheSpaceTest is Test {
     address constant TEAM = address(206);
     address constant INCENTIVES = address(207);
     address constant LP = address(208);
+    address constant GASLESS_TRUSTED_FORWARDER = address(209);
     uint256 constant TREASURY_TOKENS = 662607015;
     uint256 constant TEAM_TOKENS = 150000000;
     uint256 constant INCENTIVES_TOKENS = 137392985;
@@ -91,7 +92,8 @@ contract BaseTheSpaceTest is Test {
             TOKEN_IMAGE_URI,
             ACL_MANAGER,
             MARKET_ADMIN,
-            TREASURY_ADMIN
+            TREASURY_ADMIN,
+            GASLESS_TRUSTED_FORWARDER
         );
         registry = thespace.registry();
 

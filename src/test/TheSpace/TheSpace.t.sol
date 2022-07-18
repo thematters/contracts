@@ -15,7 +15,8 @@ contract TheSpaceTest is BaseTheSpaceTest {
             TOKEN_IMAGE_URI,
             ACL_MANAGER,
             MARKET_ADMIN,
-            TREASURY_ADMIN
+            TREASURY_ADMIN,
+            GASLESS_TRUSTED_FORWARDER
         );
         assertEq(address(thespace2.registry()), address(registry));
         assertEq(registry.owner(), address(thespace));

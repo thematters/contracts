@@ -105,6 +105,16 @@ interface ITheSpace {
      */
     function setTokenImageURI(string memory uri_) external;
 
+    /**
+     * @notice Change the trusted forwarder.
+     *
+     * @dev Access: only `Role.aclManager`.
+     * @dev Throws: `RoleRequired` error.
+     *
+     * @param trustedForwarder_ new address
+     */
+    function setTrustedForwarder(address trustedForwarder_) external;
+
     //////////////////////////////
     /// Pixel
     //////////////////////////////

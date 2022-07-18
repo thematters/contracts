@@ -2,11 +2,11 @@
 pragma solidity ^0.8.11;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 import "./IACLManager.sol";
 
-contract ACLManager is IACLManager, Context {
+contract ACLManager is IACLManager {
     mapping(Role => address) private _roles;
 
     constructor(
@@ -25,7 +25,7 @@ contract ACLManager is IACLManager, Context {
      * @dev Throws if called by any address other than the role address.
      */
     modifier onlyRole(Role role) {
-        if (!_hasRole(role, _msgSender())) revert RoleRequired(role);
+        if (!_hasRole(role, msg.sender)) revert RoleRequired(role);
         _;
     }
 

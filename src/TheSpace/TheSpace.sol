@@ -5,13 +5,14 @@ import "@openzeppelin/contracts/utils/Multicall.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@opengsn/contracts/src/ERC2771Recipient.sol";
 
 import "./ACLManager.sol";
 import "./TheSpaceRegistry.sol";
 import "./ITheSpaceRegistry.sol";
 import "./ITheSpace.sol";
 
-contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
+contract TheSpace is ITheSpace, ERC2771Recipient, Multicall, ReentrancyGuard, ACLManager {
     TheSpaceRegistry public registry;
 
     // token image shared by all tokens
@@ -23,7 +24,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         string memory tokenImageURI_,
         address aclManager_,
         address marketAdmin_,
-        address treasuryAdmin_
+        address treasuryAdmin_,
+        address trustedForwarder_
     ) ACLManager(aclManager_, marketAdmin_, treasuryAdmin_) {
         // deploy logic contract only and upgrade later
         if (registryAddress_ != address(0)) {
@@ -43,6 +45,8 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         }
 
         tokenImageURI = tokenImageURI_;
+
+        _setTrustedForwarder(trustedForwarder_);
     }
 
     /**
@@ -92,6 +96,11 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         tokenImageURI = uri_;
     }
 
+    /// @inheritdoc ITheSpace
+    function setTrustedForwarder(address trustedForwarder_) external onlyRole(Role.aclManager) {
+        _setTrustedForwarder(trustedForwarder_);
+    }
+
     //////////////////////////////
     /// Pixel
     //////////////////////////////
@@ -123,12 +132,12 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     ) external {
         bid(tokenId_, bidPrice_);
         setPrice(tokenId_, newPrice_);
-        _setColor(tokenId_, color_, msg.sender);
+        _setColor(tokenId_, color_, _msgSender());
     }
 
     /// @inheritdoc ITheSpace
     function setColor(uint256 tokenId_, uint256 color_) public {
-        if (!registry.isApprovedOrOwner(msg.sender, tokenId_)) revert Unauthorized();
+        if (!registry.isApprovedOrOwner(_msgSender(), tokenId_)) revert Unauthorized();
 
         _setColor(tokenId_, color_, registry.ownerOf(tokenId_));
     }
@@ -203,7 +212,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
     /// @inheritdoc ITheSpace
     function setPrice(uint256 tokenId_, uint256 price_) public {
-        if (!(registry.isApprovedOrOwner(msg.sender, tokenId_))) revert Unauthorized();
+        if (!(registry.isApprovedOrOwner(_msgSender(), tokenId_))) revert Unauthorized();
         if (price_ == _getPrice(tokenId_)) return;
 
         bool success = settleTax(tokenId_);
@@ -248,7 +257,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
         if (registry.exists(tokenId_)) {
             // skip if already own
-            if (owner == msg.sender) return;
+            if (owner == _msgSender()) return;
 
             // clear tax
             bool success = _collectTax(tokenId_);
@@ -262,13 +271,13 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
                 if (price_ < bidPrice) revert PriceTooLow();
 
                 // settle ERC20 token
-                registry.transferCurrencyFrom(msg.sender, owner, bidPrice);
+                registry.transferCurrencyFrom(_msgSender(), owner, bidPrice);
 
                 // settle ERC721 token
-                registry.safeTransferByMarket(owner, msg.sender, tokenId_);
+                registry.safeTransferByMarket(owner, _msgSender(), tokenId_);
 
                 // emit deal event
-                registry.emitDeal(tokenId_, owner, msg.sender, bidPrice);
+                registry.emitDeal(tokenId_, owner, _msgSender(), bidPrice);
 
                 return;
             } else {
@@ -284,16 +293,16 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         if (price_ < bidPrice) revert PriceTooLow();
 
         // settle ERC20 token
-        registry.transferCurrencyFrom(msg.sender, address(registry), bidPrice);
+        registry.transferCurrencyFrom(_msgSender(), address(registry), bidPrice);
 
         // record as tax income
-        _recordTax(tokenId_, msg.sender, mintTax);
+        _recordTax(tokenId_, _msgSender(), mintTax);
 
         // settle ERC721 token
-        registry.mint(msg.sender, tokenId_);
+        registry.mint(_msgSender(), tokenId_);
 
         // emit deal event
-        registry.emitDeal(tokenId_, address(0), msg.sender, bidPrice);
+        registry.emitDeal(tokenId_, address(0), _msgSender(), bidPrice);
     }
 
     //////////////////////////////
@@ -424,7 +433,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
     /// @inheritdoc ITheSpace
     function _beforeTransferByRegistry(uint256 tokenId_) external returns (bool success) {
-        if (msg.sender != address(registry)) revert Unauthorized();
+        if (_msgSender() != address(registry)) revert Unauthorized();
 
         // clear tax or default
         settleTax(tokenId_);
@@ -443,7 +452,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
 
     /// @inheritdoc ITheSpace
     function _tokenURI(uint256 tokenId_) external view returns (string memory uri) {
-        if (msg.sender != address(registry)) revert Unauthorized();
+        if (_msgSender() != address(registry)) revert Unauthorized();
 
         if (!registry.exists(tokenId_)) revert TokenNotExists();
 
