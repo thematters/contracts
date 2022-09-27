@@ -634,7 +634,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         currency.approve(address(registry), 0);
 
         // bid a pixel
-        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        vm.expectRevert("ERC20: insufficient allowance");
         vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, PIXEL_PRICE);
     }

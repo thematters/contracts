@@ -1,4 +1,4 @@
-[default]
+[profile.default]
 ffi = true
 fuzz_runs = 256
 optimizer = true
@@ -10,6 +10,6 @@ remappings = [
 verbosity = 3
 gas_reports = ["*"]
 
-[ci]
+[profile.ci]
 fuzz_runs = 1024
 verbosity = 5

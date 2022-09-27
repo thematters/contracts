@@ -89,9 +89,6 @@ make test
 ### Deploy on Local Node:
 
 ```bash
-# Run local node
-npm run ganache
-
 # Preprare environment
 cp .env.local.example .env.local
 cp .env.polygon-mainnet.example .env.polygon-mainnet
