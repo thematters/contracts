@@ -218,7 +218,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     function testSetPixel(uint256 bidPrice) public {
-        vm.assume(bidPrice > PIXEL_PRICE && bidPrice <= registry.currency().totalSupply());
+        vm.assume(bidPrice > PIXEL_PRICE && bidPrice < registry.currency().totalSupply());
 
         uint256 newPrice = bidPrice + 1;
 
