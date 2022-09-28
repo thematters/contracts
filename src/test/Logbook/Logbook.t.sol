@@ -94,7 +94,7 @@ contract LogbookTest is Test {
         logbook.claim(TRAVELOGGERS_OWNER, CLAIM_TOKEN_END_ID);
 
         // token has not been claimed yet
-        vm.expectRevert("ERC721: owner query for nonexistent token");
+        vm.expectRevert("ERC721: invalid token ID");
         logbook.ownerOf(CLAIM_TOKEN_START_ID);
 
         assertEq(logbook.balanceOf(TRAVELOGGERS_OWNER), 0);
