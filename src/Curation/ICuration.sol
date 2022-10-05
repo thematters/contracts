@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title The interface for `Curation` contract
+ * @title The interface for {Curation} contract
  * @notice Curation is the initial version for on-chain content curation.
  * It's permissionless, any address (curator) can send native or ERC-20 tokens to content creator's address to curate the specific content.
  * @dev This is a stateless contract, it only emits events and no storage access.
@@ -57,8 +57,8 @@ interface ICuration {
     /**
      * @notice Curate content by ERC-20 token donation.
      *
-     * @dev Emits: `Curation` event.
-     * @dev Throws: `ZeroAddress`, `ZeroAmount`, `InvalidURI` or `SelfCuration` error.
+     * @dev Emits: {Curation} event.
+     * @dev Throws: {ZeroAddress}, {ZeroAmount}, {InvalidURI} or {SelfCuration} error.
      *
      * @param to_ Address of content creator.
      * @param token_ ERC20 token address.
@@ -75,8 +75,8 @@ interface ICuration {
     /**
      * @notice Curate content by native token donation.
      *
-     * @dev Emits: `Curation` event.
-     * @dev Throws: `ZeroAddress`, `ZeroAmount`, `InvalidURI` or `SelfCuration` error.
+     * @dev Emits: {Curation} event.
+     * @dev Throws: {ZeroAddress}, {ZeroAmount}, {InvalidURI}, {TransferFailed} or {SelfCuration} error.
      *
      * @param to_ Address of content creator.
      * @param uri_ Content URI.
