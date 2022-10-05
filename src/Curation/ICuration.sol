@@ -37,22 +37,22 @@ interface ICuration {
 
     /**
      * @notice Content curation with ERC-20 token.
-     * @param curator Address of content curator.
-     * @param creator Address of content creator.
+     * @param from Address of content curator.
+     * @param to Address of content creator.
      * @param uri Content URI.
      * @param token ERC20 token address.
      * @param amount Amount of tokens to curate.
      */
-    event Curation(address indexed curator, address indexed creator, string indexed uri, IERC20 token, uint256 amount);
+    event Curation(address indexed from, address indexed to, string indexed uri, IERC20 token, uint256 amount);
 
     /**
      * @notice Content curation with native token.
-     * @param curator Address of content curator.
-     * @param creator Address of content creator.
+     * @param from Address of content curator.
+     * @param to Address of content creator.
      * @param uri Content URI.
      * @param amount Amount of tokens to curate.
      */
-    event Curation(address indexed curator, address indexed creator, string indexed uri, uint256 amount);
+    event Curation(address indexed from, address indexed to, string indexed uri, uint256 amount);
 
     /**
      * @notice Curate content by ERC-20 token donation.
@@ -60,13 +60,13 @@ interface ICuration {
      * @dev Emits: `Curation` event.
      * @dev Throws: `ZeroAddress`, `ZeroAmount`, `InvalidURI` or `SelfCuration` error.
      *
-     * @param creator_ Address of content creator.
+     * @param to_ Address of content creator.
      * @param token_ ERC20 token address.
      * @param amount_ Amount of tokens to curate.
      * @param uri_ Content URI.
      */
     function curate(
-        address creator_,
+        address to_,
         IERC20 token_,
         uint256 amount_,
         string calldata uri_
@@ -78,8 +78,8 @@ interface ICuration {
      * @dev Emits: `Curation` event.
      * @dev Throws: `ZeroAddress`, `ZeroAmount`, `InvalidURI` or `SelfCuration` error.
      *
-     * @param creator_ Address of content creator.
+     * @param to_ Address of content creator.
      * @param uri_ Content URI.
      */
-    function curate(address creator_, string calldata uri_) external payable;
+    function curate(address to_, string calldata uri_) external payable;
 }

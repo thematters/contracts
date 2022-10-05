@@ -17,9 +17,9 @@ contract CurationTest is Test {
     Acceptor internal contractAcceptor;
     Rejector internal contractRejector;
 
-    event Curation(address indexed curator, address indexed creator, string indexed uri, IERC20 token, uint256 amount);
+    event Curation(address indexed from, address indexed to, string indexed uri, IERC20 token, uint256 amount);
 
-    event Curation(address indexed curator, address indexed creator, string indexed uri, uint256 amount);
+    event Curation(address indexed from, address indexed to, string indexed uri, uint256 amount);
 
     address constant DEPLOYER = address(176);
     address constant CREATOR = address(177);
