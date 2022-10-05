@@ -38,7 +38,9 @@ contract Curation is ICuration {
         if (msg.sender == creator_) revert SelfCuration();
 
         (bool success, ) = creator_.call{value: msg.value}("");
-        require(success);
+        if (!success) {
+            revert TransferFailed();
+        }
 
         emit Curation(msg.sender, creator_, uri_, msg.value);
     }

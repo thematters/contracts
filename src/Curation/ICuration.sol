@@ -21,6 +21,11 @@ interface ICuration {
     error ZeroAmount();
 
     /**
+     * @notice Failed to transfer.
+     */
+    error TransferFailed();
+
+    /**
      * @notice Invalid URI.
      */
     error InvalidURI();

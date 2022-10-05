@@ -8,11 +8,14 @@ import "forge-std/console2.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {USDT} from "./USDT.sol";
+import {Acceptor, Rejector} from "./Receivers.sol";
 import {Curation as CurationContract} from "../../Curation/Curation.sol";
 
 contract CurationTest is Test {
     CurationContract internal curation;
     USDT internal usdt;
+    Acceptor internal contractAcceptor;
+    Rejector internal contractRejector;
 
     event Curation(address indexed curator, address indexed creator, string indexed uri, IERC20 token, uint256 amount);
 
@@ -42,6 +45,10 @@ contract CurationTest is Test {
         assertEq(usdt.balanceOf(CREATOR), 0);
         vm.prank(CURATOR);
         usdt.approve(address(curation), type(uint256).max);
+
+        // deploy receiver contracts
+        contractAcceptor = new Acceptor();
+        contractRejector = new Rejector();
 
         // fund curator
         vm.deal(CURATOR, 100 ether);
@@ -134,6 +141,21 @@ contract CurationTest is Test {
         assertEq(CURATOR.balance, curatorBalance - amount);
     }
 
+    function testNativeTokenCurationToContractAcceptor() public {
+        uint256 amount = 1 ether;
+        string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
+        uint256 curatorBalance = CURATOR.balance;
+
+        vm.expectEmit(true, true, true, true);
+        emit Curation(CURATOR, address(contractAcceptor), uri, amount);
+
+        vm.prank(CURATOR);
+        curation.curate{value: amount}(address(contractAcceptor), uri);
+
+        assertEq(address(contractAcceptor).balance, amount);
+        assertEq(CURATOR.balance, curatorBalance - amount);
+    }
+
     function testCannotCurateNativeTokenZeroAddress() public {
         uint256 amount = 1 ether;
         string memory uri = "";
@@ -166,6 +188,15 @@ contract CurationTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("InvalidURI()"));
         vm.prank(CURATOR);
-        curation.curate{value: amount}(CURATOR, uri);
+        curation.curate{value: amount}(CREATOR, uri);
+    }
+
+    function testCannotCurateNativeTokenToContractRejector() public {
+        uint256 amount = 1 ether;
+        string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
+
+        vm.expectRevert(abi.encodeWithSignature("TransferFailed()"));
+        vm.prank(CURATOR);
+        curation.curate{value: amount}(address(contractRejector), uri);
     }
 }
