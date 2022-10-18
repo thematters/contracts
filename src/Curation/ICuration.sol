@@ -43,7 +43,7 @@ interface ICuration {
      * @param token ERC20 token address.
      * @param amount Amount of tokens to curate.
      */
-    event Curation(address indexed from, address indexed to, string indexed uri, IERC20 token, uint256 amount);
+    event Curation(address indexed from, address indexed to, IERC20 indexed token, string uri, uint256 amount);
 
     /**
      * @notice Content curation with native token.
@@ -52,7 +52,7 @@ interface ICuration {
      * @param uri Content URI.
      * @param amount Amount of tokens to curate.
      */
-    event Curation(address indexed from, address indexed to, string indexed uri, uint256 amount);
+    event Curation(address indexed from, address indexed to, string uri, uint256 amount);
 
     /**
      * @notice Curate content by ERC-20 token donation.

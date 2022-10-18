@@ -27,7 +27,7 @@ contract Curation is ICuration {
 
         SafeERC20.safeTransferFrom(token_, msg.sender, to_, amount_);
 
-        emit Curation(msg.sender, to_, uri_, token_, amount_);
+        emit Curation(msg.sender, to_, token_, uri_, amount_);
     }
 
     /// @inheritdoc ICuration

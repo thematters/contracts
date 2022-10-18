@@ -17,9 +17,9 @@ contract CurationTest is Test {
     Acceptor internal contractAcceptor;
     Rejector internal contractRejector;
 
-    event Curation(address indexed from, address indexed to, string indexed uri, IERC20 token, uint256 amount);
+    event Curation(address indexed from, address indexed to, IERC20 indexed token, string uri, uint256 amount);
 
-    event Curation(address indexed from, address indexed to, string indexed uri, uint256 amount);
+    event Curation(address indexed from, address indexed to, string uri, uint256 amount);
 
     address constant DEPLOYER = address(176);
     address constant CREATOR = address(177);
@@ -63,7 +63,7 @@ contract CurationTest is Test {
         uint256 curatorBalance = usdt.balanceOf(CURATOR);
 
         vm.expectEmit(true, true, true, true);
-        emit Curation(CURATOR, CREATOR, uri, usdt, amount);
+        emit Curation(CURATOR, CREATOR, usdt, uri, amount);
 
         vm.prank(CURATOR);
         curation.curate(CREATOR, usdt, amount, uri);
