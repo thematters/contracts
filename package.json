@@ -26,7 +26,6 @@
     "format:list": "prettier --list-different 'src/**/*.sol'",
     "solhint": "solhint --config ./.solhint.json 'src/**/*.sol' --fix",
     "solhint:check": "solhint --config ./.solhint.json 'src/**/*.sol'",
-    "ganache": "ganache",
     "prepare": "husky install"
   },
   "lint-staged": {
@@ -39,7 +38,6 @@
   "devDependencies": {
     "@types/node": "^17.0.21",
     "ethers": "^5.6.1",
-    "ganache": "^7.0.3",
     "husky": "^7.0.4",
     "lint-staged": "^12.3.5",
     "prettier": "^2.5.1",

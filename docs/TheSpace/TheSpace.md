@@ -2,7 +2,7 @@
 
 ## Functions
 
-### `constructor(address currencyAddress_, string tokenImageURI_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
+### `constructor(address currencyAddress_, address registryAddress_, string tokenImageURI_, address aclManager_, address marketAdmin_, address treasuryAdmin_)` (public)
 
 ### `supportsInterface(bytes4 interfaceId_) → bool` (external)
 

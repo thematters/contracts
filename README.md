@@ -8,7 +8,7 @@
 | Logbook          | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)        |
 | SpaceToken       | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8) |
 | SpaceToken       | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
-| TheSpace         | Polygon Mainnet |                                                                                                                                 |
+| TheSpace         | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)        |
 | TheSpaceRegistry | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)        |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
@@ -89,9 +89,6 @@ make test
 ### Deploy on Local Node:
 
 ```bash
-# Run local node
-npm run ganache
-
 # Preprare environment
 cp .env.local.example .env.local
 cp .env.polygon-mainnet.example .env.polygon-mainnet

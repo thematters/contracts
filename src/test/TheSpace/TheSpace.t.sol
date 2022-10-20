@@ -218,7 +218,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
     }
 
     function testSetPixel(uint256 bidPrice) public {
-        vm.assume(bidPrice > PIXEL_PRICE && bidPrice <= registry.currency().totalSupply());
+        vm.assume(bidPrice > PIXEL_PRICE && bidPrice < registry.currency().totalSupply());
 
         uint256 newPrice = bidPrice + 1;
 
@@ -634,7 +634,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         currency.approve(address(registry), 0);
 
         // bid a pixel
-        vm.expectRevert("ERC20: transfer amount exceeds allowance");
+        vm.expectRevert("ERC20: insufficient allowance");
         vm.prank(PIXEL_OWNER);
         thespace.bid(PIXEL_ID, PIXEL_PRICE);
     }
