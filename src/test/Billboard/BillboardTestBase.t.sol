@@ -45,4 +45,13 @@ contract BillboardTestBase is Test {
         operator.upgradeAuction(address(auction));
         operator.upgradeRegistry(address(registry));
     }
+
+    function _mintBoard() public {
+        vm.stopPrank();
+        vm.startPrank(ADMIN);
+
+        // mint
+        operator.mintBoard(ADMIN);
+        assertEq(1, registry.balanceOf(ADMIN));
+    }
 }
