@@ -249,9 +249,33 @@ contract BillboardTest is BillboardTestBase {
         registry.safeTransferFrom(USER_A, ATTACKER, 1);
     }
 
-    function testApprove() public {}
+    function testApprove() public {
+        _mintBoard();
 
-    function testApproveByAttacker() public {}
+        vm.stopPrank();
+        vm.startPrank(ADMIN);
+
+        registry.approve(USER_A, 1);
+        assertEq(USER_A, registry.getApproved(1));
+
+        vm.stopPrank();
+        vm.startPrank(USER_A);
+        registry.transferFrom(ADMIN, USER_A, 1);
+
+        IBillboardRegistry.Board memory board = operator.getBoard(1);
+        assertEq(ADMIN, board.owner);
+        assertEq(USER_A, board.tenant);
+    }
+
+    function testApproveByAttacker() public {
+        _mintBoard();
+
+        vm.stopPrank();
+        vm.startPrank(USER_A);
+
+        vm.expectRevert("ERC721: approve caller is not token owner or approved for all");
+        registry.approve(USER_A, 1);
+    }
 
     //////////////////////////////
     /// Auction
