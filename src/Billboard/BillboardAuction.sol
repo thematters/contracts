@@ -53,7 +53,7 @@ contract BillboardAuction is IBillboardAuction {
             revert InvalidAddress();
         }
         if (value_ != admin) {
-            revert Unauthorzied("admin");
+            revert Unauthorized("admin");
         }
         _;
     }
@@ -66,7 +66,7 @@ contract BillboardAuction is IBillboardAuction {
             revert InvalidAddress();
         }
         if (msg.sender != operator) {
-            revert Unauthorzied("operator");
+            revert Unauthorized("operator");
         }
         _;
     }

@@ -36,7 +36,7 @@ contract Billboard is IBillboard {
         if (value_ == address(0)) {
             revert InvalidAddress();
         }
-        if (value_ == admin) {
+        if (value_ != admin) {
             revert Unauthorized("admin");
         }
         _;
@@ -58,6 +58,13 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function setIsOpened(bool value_) external isAdmin(msg.sender) {
+        if (address(registry) == address(0)) {
+            revert InvalidAddress();
+        }
+        if (address(auction) == address(0)) {
+            revert InvalidAddress();
+        }
+
         registry.setIsOpened(value_, msg.sender);
         auction.setIsOpened(value_, msg.sender);
     }
@@ -147,6 +154,8 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
         auction.clearAuction(tokenId_);
+
+        // TODO update board data
     }
 
     /// @inheritdoc IBillboard

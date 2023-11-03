@@ -14,7 +14,7 @@ interface IBillboardAuction {
 
     error OperatorNotFound();
 
-    error Unauthorzied(string type_);
+    error Unauthorized(string type_);
 
     //////////////////////////////
     /// Struct
