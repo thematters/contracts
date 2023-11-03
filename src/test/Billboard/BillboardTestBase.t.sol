@@ -19,10 +19,14 @@ contract BillboardTestBase is Test {
     uint256 constant TAX_RATE = 1;
 
     address constant ZERO_ADDRESS = address(0);
+    address constant FAKE_CONTRACT = address(1);
+
     /// Deployer and admin could be the same one
     address constant ADMIN = address(100);
+    address constant USER_A = address(101);
+    address constant USER_B = address(102);
+    address constant USER_C = address(103);
     address constant ATTACKER = address(200);
-    address constant FAKE_CONTRACT = address(300);
 
     function setUp() public {
         vm.startPrank(ADMIN);
