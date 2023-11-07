@@ -47,9 +47,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _;
     }
 
-    modifier isBoardOwner(uint256 tokenId_, address value_) {
-        if (value_ != boards[tokenId_].owner) {
-            revert Unauthorized("board owner");
+    modifier isBoardCreator(uint256 tokenId_, address value_) {
+        if (value_ != boards[tokenId_].creator) {
+            revert Unauthorized("board creator");
         }
         _;
     }
@@ -104,7 +104,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _safeMint(to_, newBoardId);
 
         Board memory newBoard = Board({
-            owner: to_,
+            creator: to_,
             tenant: to_,
             lastHighestBidPrice: 0,
             name: "",
@@ -130,7 +130,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory name_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardOwner(tokenId_, sender_) {
+    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].name = name_;
     }
 
@@ -139,7 +139,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory description_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardOwner(tokenId_, sender_) {
+    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].description = description_;
     }
 
@@ -148,7 +148,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory location_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardOwner(tokenId_, sender_) {
+    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].location = location_;
     }
 

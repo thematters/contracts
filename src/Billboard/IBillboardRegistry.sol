@@ -33,7 +33,7 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
 
     struct Board {
-        address owner;
+        address creator;
         address tenant;
         uint256 lastHighestBidPrice;
         string name;

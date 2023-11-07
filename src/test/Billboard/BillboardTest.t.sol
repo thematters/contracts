@@ -62,7 +62,7 @@ contract BillboardTest is BillboardTestBase {
 
         // get board & check data
         IBillboardRegistry.Board memory board = operator.getBoard(1);
-        assertEq(ADMIN, board.owner);
+        assertEq(ADMIN, board.creator);
         assertEq(ADMIN, board.tenant);
         assertEq(0, board.lastHighestBidPrice);
         assertEq("", board.name);
@@ -105,13 +105,13 @@ contract BillboardTest is BillboardTestBase {
         vm.stopPrank();
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardName(1, "name");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardDescription(1, "description");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardLocation(1, "location");
 
         vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board tenant"));
@@ -141,20 +141,20 @@ contract BillboardTest is BillboardTestBase {
         // transfer board from admin to user_a
         registry.transferFrom(ADMIN, USER_A, 1);
         IBillboardRegistry.Board memory board = operator.getBoard(1);
-        assertEq(ADMIN, board.owner);
+        assertEq(ADMIN, board.creator);
         assertEq(USER_A, board.tenant);
         assertEq(USER_A, registry.ownerOf(1));
 
         vm.stopPrank();
         vm.startPrank(USER_A);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardName(1, "name by a");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardDescription(1, "description by a");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardLocation(1, "location by a");
 
         operator.setBoardContentURI(1, "uri by a");
@@ -170,20 +170,20 @@ contract BillboardTest is BillboardTestBase {
         // transfer board from user_a to user_b
         registry.safeTransferFrom(USER_A, USER_B, 1);
         board = operator.getBoard(1);
-        assertEq(ADMIN, board.owner);
+        assertEq(ADMIN, board.creator);
         assertEq(USER_B, board.tenant);
         assertEq(USER_B, registry.ownerOf(1));
 
         vm.stopPrank();
         vm.startPrank(USER_B);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardName(1, "name by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardDescription(1, "description by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardLocation(1, "location by b");
 
         operator.setBoardContentURI(1, "uri by b");
@@ -202,20 +202,20 @@ contract BillboardTest is BillboardTestBase {
 
         registry.transferFrom(USER_B, USER_C, 1);
         board = operator.getBoard(1);
-        assertEq(ADMIN, board.owner);
+        assertEq(ADMIN, board.creator);
         assertEq(USER_C, board.tenant);
         assertEq(USER_C, registry.ownerOf(1));
 
         vm.stopPrank();
         vm.startPrank(USER_C);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardName(1, "name by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardDescription(1, "description by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board owner"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
         operator.setBoardLocation(1, "location by b");
 
         operator.setBoardContentURI(1, "uri by c");
@@ -263,7 +263,7 @@ contract BillboardTest is BillboardTestBase {
         registry.transferFrom(ADMIN, USER_A, 1);
 
         IBillboardRegistry.Board memory board = operator.getBoard(1);
-        assertEq(ADMIN, board.owner);
+        assertEq(ADMIN, board.creator);
         assertEq(USER_A, board.tenant);
     }
 
