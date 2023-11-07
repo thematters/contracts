@@ -46,8 +46,13 @@ contract BillboardTestBase is Test {
         assertEq(ADMIN, registry.admin());
         assertEq(operatorAddress, registry.operator());
 
+        // upgrade auction
         operator.upgradeAuction(address(auction));
+        assertEq(address(auction), address(operator.auction()));
+
+        // upgrade registry
         operator.upgradeRegistry(address(registry));
+        assertEq(address(registry), address(operator.registry()));
     }
 
     function _mintBoard() public {
