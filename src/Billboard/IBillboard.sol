@@ -40,6 +40,20 @@ interface IBillboard {
      */
     function setIsOpened(bool value_) external;
 
+    /**
+     * @notice Add address to white list.
+     *
+     * @param value_ Address of user will be added into white list.
+     */
+    function addToWhitelist(address value_) external;
+
+    /**
+     * @notice Remove address from white list.
+     *
+     * @param value_ Address of user will be removed from white list.
+     */
+    function removeFromWhitelist(address value_) external;
+
     //////////////////////////////
     /// Board
     //////////////////////////////

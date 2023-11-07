@@ -52,6 +52,22 @@ interface IBillboardRegistry is IERC721 {
     function setIsOpened(bool value_, address sender_) external;
 
     /**
+     * @notice Add address to white list.
+     *
+     * @param value_ Address of user will be added into white list.
+     * @param sender_ Address of user who wants to update white list.
+     */
+    function addToWhitelist(address value_, address sender_) external;
+
+    /**
+     * @notice Remove address from white list.
+     *
+     * @param value_ Address of user will be removed from white list.
+     * @param sender_ Address of user who wants to update white list.
+     */
+    function removeFromWhitelist(address value_, address sender_) external;
+
+    /**
      * @notice Mint a new board (NFT).
      *
      * @param to_ Address of the new board receiver.

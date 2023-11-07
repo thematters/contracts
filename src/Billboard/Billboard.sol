@@ -62,6 +62,18 @@ contract Billboard is IBillboard {
         auction.setIsOpened(value_, msg.sender);
     }
 
+    /// @inheritdoc IBillboard
+    function addToWhitelist(address value_) external isAdmin(msg.sender) {
+        registry.addToWhitelist(value_, msg.sender);
+        auction.addToWhitelist(value_, msg.sender);
+    }
+
+    /// @inheritdoc IBillboard
+    function removeFromWhitelist(address value_) external isAdmin(msg.sender) {
+        registry.removeFromWhitelist(value_, msg.sender);
+        auction.removeFromWhitelist(value_, msg.sender);
+    }
+
     //////////////////////////////
     /// Board
     //////////////////////////////

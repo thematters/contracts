@@ -49,6 +49,59 @@ contract BillboardTest is BillboardTestBase {
         operator.setIsOpened(true);
     }
 
+    function testAddToWhitelist() public {
+        vm.startPrank(ADMIN);
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        operator.addToWhitelist(ZERO_ADDRESS);
+
+        operator.addToWhitelist(USER_A);
+        assertEq(registry.whitelist(USER_A), true);
+        assertEq(registry.whitelist(USER_B), false);
+        assertEq(auction.whitelist(USER_A), true);
+        assertEq(auction.whitelist(USER_B), false);
+
+        // not allow bypassing operator
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        registry.addToWhitelist(USER_A, ADMIN);
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        auction.addToWhitelist(USER_A, ADMIN);
+    }
+
+    function testAddToWhitelistByAttacker() public {
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        operator.addToWhitelist(USER_A);
+    }
+
+    function testRemoveToWhitelist() public {
+        vm.startPrank(ADMIN);
+
+        operator.addToWhitelist(USER_A);
+        assertEq(registry.whitelist(USER_A), true);
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        operator.removeFromWhitelist(ZERO_ADDRESS);
+
+        operator.removeFromWhitelist(USER_A);
+        assertEq(registry.whitelist(USER_A), false);
+        assertEq(auction.whitelist(USER_A), false);
+
+        // not allow bypassing operator
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        registry.removeFromWhitelist(USER_A, ADMIN);
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        auction.removeFromWhitelist(USER_A, ADMIN);
+    }
+
+    function testRemoveToWhitelistByAttacker() public {
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        operator.removeFromWhitelist(USER_B);
+    }
+
     //////////////////////////////
     /// Board
     //////////////////////////////
@@ -82,7 +135,7 @@ contract BillboardTest is BillboardTestBase {
     function testMintBoardByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "minter"));
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
         operator.mintBoard(ATTACKER);
     }
 

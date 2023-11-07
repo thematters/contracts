@@ -17,6 +17,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     address public operator;
 
+    mapping(address => bool) public whitelist;
+
     mapping(uint256 => Board) public boards;
 
     constructor(
@@ -27,6 +29,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     ) ERC721(name_, symbol_) {
         admin = admin_;
         operator = operator_;
+        whitelist[admin_] = true;
     }
 
     //////////////////////////////
@@ -90,9 +93,29 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
+    function addToWhitelist(address value_, address sender_)
+        external
+        isValidAddress(value_)
+        isAdmin(sender_)
+        isFromOperator
+    {
+        whitelist[value_] = true;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function removeFromWhitelist(address value_, address sender_)
+        external
+        isValidAddress(value_)
+        isAdmin(sender_)
+        isFromOperator
+    {
+        delete whitelist[value_];
+    }
+
+    /// @inheritdoc IBillboardRegistry
     function mint(address to_, address sender_) external isValidAddress(to_) isFromOperator returns (uint256 tokenId) {
-        if (isOpened == false && sender_ != admin) {
-            revert Unauthorized("minter");
+        if (isOpened == false && whitelist[sender_] != true) {
+            revert Unauthorized("creator");
         }
 
         tokenIds.increment();

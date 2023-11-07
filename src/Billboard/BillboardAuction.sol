@@ -12,6 +12,8 @@ contract BillboardAuction is IBillboardAuction {
 
     uint256 public taxRate;
 
+    mapping(address => bool) public whitelist;
+
     mapping(uint256 => Auction) public auctions;
 
     mapping(uint256 => address[]) public bidders;
@@ -32,6 +34,7 @@ contract BillboardAuction is IBillboardAuction {
         admin = admin_;
         operator = operator_;
         taxRate = taxRate_;
+        whitelist[admin_] = true;
     }
 
     //////////////////////////////
@@ -74,6 +77,26 @@ contract BillboardAuction is IBillboardAuction {
     }
 
     /// @inheritdoc IBillboardAuction
+    function addToWhitelist(address value_, address sender_)
+        external
+        isValidAddress(value_)
+        isAdmin(sender_)
+        isFromOperator
+    {
+        whitelist[value_] = true;
+    }
+
+    /// @inheritdoc IBillboardAuction
+    function removeFromWhitelist(address value_, address sender_)
+        external
+        isValidAddress(value_)
+        isAdmin(sender_)
+        isFromOperator
+    {
+        delete whitelist[value_];
+    }
+
+    /// @inheritdoc IBillboardAuction
     function setTaxRate(uint256 taxRate_, address sender_) external isAdmin(sender_) isFromOperator {
         taxRate = taxRate_;
     }
@@ -89,6 +112,10 @@ contract BillboardAuction is IBillboardAuction {
         uint256 amount_,
         address sender_
     ) external isFromOperator isAdmin(sender_) {
+        if (isOpened == false && whitelist[sender_] != true) {
+            revert Unauthorized("bidder");
+        }
+
         // TODO
     }
 
