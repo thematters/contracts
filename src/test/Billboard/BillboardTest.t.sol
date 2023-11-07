@@ -69,7 +69,7 @@ contract BillboardTest is BillboardTestBase {
         assertEq("", board.description);
         assertEq("", board.location);
         assertEq("", board.contentURI);
-        assertEq("", board.redirectLink);
+        assertEq("", board.redirectURI);
     }
 
     function testMintBoardByAttacker() public {
@@ -89,14 +89,14 @@ contract BillboardTest is BillboardTestBase {
         operator.setBoardDescription(1, "description");
         operator.setBoardLocation(1, "location");
         operator.setBoardContentURI(1, "uri");
-        operator.setBoardRedirectLink(1, "redirect link");
+        operator.setBoardRedirectURI(1, "redirect URI");
 
         IBillboardRegistry.Board memory board = operator.getBoard(1);
         assertEq("name", board.name);
         assertEq("description", board.description);
         assertEq("location", board.location);
         assertEq("uri", board.contentURI);
-        assertEq("redirect link", board.redirectLink);
+        assertEq("redirect URI", board.redirectURI);
     }
 
     function testSetBoardProprtiesByAttacker() public {
@@ -118,7 +118,7 @@ contract BillboardTest is BillboardTestBase {
         operator.setBoardContentURI(1, "uri");
 
         vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board tenant"));
-        operator.setBoardRedirectLink(1, "redirect link");
+        operator.setBoardRedirectURI(1, "redirect URI");
     }
 
     function testGetTokenURI() public {
@@ -158,14 +158,14 @@ contract BillboardTest is BillboardTestBase {
         operator.setBoardLocation(1, "location by a");
 
         operator.setBoardContentURI(1, "uri by a");
-        operator.setBoardRedirectLink(1, "redirect link by a");
+        operator.setBoardRedirectURI(1, "redirect URI by a");
 
         board = operator.getBoard(1);
         assertEq("", board.name);
         assertEq("", board.description);
         assertEq("", board.location);
         assertEq("uri by a", board.contentURI);
-        assertEq("redirect link by a", board.redirectLink);
+        assertEq("redirect URI by a", board.redirectURI);
 
         // transfer board from user_a to user_b
         registry.safeTransferFrom(USER_A, USER_B, 1);
@@ -187,14 +187,14 @@ contract BillboardTest is BillboardTestBase {
         operator.setBoardLocation(1, "location by b");
 
         operator.setBoardContentURI(1, "uri by b");
-        operator.setBoardRedirectLink(1, "redirect link by b");
+        operator.setBoardRedirectURI(1, "redirect URI by b");
 
         board = operator.getBoard(1);
         assertEq("", board.name);
         assertEq("", board.description);
         assertEq("", board.location);
         assertEq("uri by b", board.contentURI);
-        assertEq("redirect link by b", board.redirectLink);
+        assertEq("redirect URI by b", board.redirectURI);
 
         // transfer board from user_b to user_c by operator
         vm.stopPrank();
@@ -219,14 +219,14 @@ contract BillboardTest is BillboardTestBase {
         operator.setBoardLocation(1, "location by b");
 
         operator.setBoardContentURI(1, "uri by c");
-        operator.setBoardRedirectLink(1, "redirect link by c");
+        operator.setBoardRedirectURI(1, "redirect URI by c");
 
         board = operator.getBoard(1);
         assertEq("", board.name);
         assertEq("", board.description);
         assertEq("", board.location);
         assertEq("uri by c", board.contentURI);
-        assertEq("redirect link by c", board.redirectLink);
+        assertEq("redirect URI by c", board.redirectURI);
     }
 
     function testTransferByAttacker() public {

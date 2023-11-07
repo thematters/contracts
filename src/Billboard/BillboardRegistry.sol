@@ -115,7 +115,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             name: "",
             description: "",
             contentURI: "",
-            redirectLink: "",
+            redirectURI: "",
             location: ""
         });
         boards[newBoardId] = newBoard;
@@ -167,12 +167,12 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoardRedirectLink(
+    function setBoardRedirectURI(
         uint256 tokenId_,
-        string memory redirectLink_,
+        string memory redirectURI_,
         address sender_
     ) external isValidBoard(tokenId_) isBoardTenant(tokenId_, sender_) {
-        boards[tokenId_].redirectLink = redirectLink_;
+        boards[tokenId_].redirectURI = redirectURI_;
     }
 
     /// @inheritdoc IBillboardRegistry

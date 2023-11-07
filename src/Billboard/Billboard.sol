@@ -105,8 +105,8 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function setBoardRedirectLink(uint256 tokenId_, string memory redirectLink_) external {
-        registry.setBoardRedirectLink(tokenId_, redirectLink_, msg.sender);
+    function setBoardRedirectURI(uint256 tokenId_, string memory redirectURI_) external {
+        registry.setBoardRedirectURI(tokenId_, redirectURI_, msg.sender);
     }
 
     //////////////////////////////

@@ -93,12 +93,12 @@ interface IBillboard {
     function setBoardContentURI(uint256 tokenId_, string memory uri_) external;
 
     /**
-     * @notice Set the redirect link of a board when users clicking.
+     * @notice Set the redirect URI of a board when users clicking.
      *
      * @param tokenId_ Token ID of a board.
-     * @param redirectLink_ Redirect link of a board.
+     * @param redirectURI_ Redirect URI of a board.
      */
-    function setBoardRedirectLink(uint256 tokenId_, string memory redirectLink_) external;
+    function setBoardRedirectURI(uint256 tokenId_, string memory redirectURI_) external;
 
     //////////////////////////////
     /// Auction

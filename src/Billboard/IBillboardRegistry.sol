@@ -40,7 +40,7 @@ interface IBillboardRegistry is IERC721 {
         string description;
         string location;
         string contentURI;
-        string redirectLink;
+        string redirectURI;
     }
 
     /**
@@ -123,15 +123,15 @@ interface IBillboardRegistry is IERC721 {
     ) external;
 
     /**
-     * @notice Set the redirect link of a board when users clicking.
+     * @notice Set the redirect URI of a board when users clicking.
      *
      * @param tokenId_ Token ID of a board.
-     * @param redirectLink_ Redirect link when users clicking.
+     * @param redirectURI_ Redirect URI when users clicking.
      * @param sender_ Address of user who wants to set.
      */
-    function setBoardRedirectLink(
+    function setBoardRedirectURI(
         uint256 tokenId_,
-        string memory redirectLink_,
+        string memory redirectURI_,
         address sender_
     ) external;
 
