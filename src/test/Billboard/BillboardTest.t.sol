@@ -70,6 +70,13 @@ contract BillboardTest is BillboardTestBase {
         assertEq("", board.location);
         assertEq("", board.contentURI);
         assertEq("", board.redirectURI);
+
+        // mint again for checking id generator
+        operator.mintBoard(ADMIN);
+        assertEq(2, registry.balanceOf(ADMIN));
+        board = operator.getBoard(2);
+        assertEq(ADMIN, board.creator);
+        assertEq(ADMIN, board.tenant);
     }
 
     function testMintBoardByAttacker() public {
@@ -137,6 +144,10 @@ contract BillboardTest is BillboardTestBase {
         vm.stopPrank();
         vm.startPrank(ADMIN);
         assertEq(ADMIN, registry.ownerOf(1));
+
+        // transfer board from admin to zero address
+        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        registry.transferFrom(ADMIN, ZERO_ADDRESS, 1);
 
         // transfer board from admin to user_a
         registry.transferFrom(ADMIN, USER_A, 1);
