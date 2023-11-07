@@ -59,9 +59,6 @@ contract BillboardAuction is IBillboardAuction {
     }
 
     modifier isFromOperator() {
-        if (operator == address(0)) {
-            revert OperatorNotFound();
-        }
         if (msg.sender == address(0)) {
             revert InvalidAddress();
         }

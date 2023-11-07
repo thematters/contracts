@@ -75,9 +75,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     modifier isFromOperator() {
-        if (operator == address(0)) {
-            revert OperatorNotFound();
-        }
         if (msg.sender == address(0)) {
             revert InvalidAddress();
         }
