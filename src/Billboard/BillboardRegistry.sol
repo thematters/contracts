@@ -41,11 +41,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     modifier isValidBoard(uint256 tokenId_) {
-        uint256 latestId = tokenIds.current();
-
-        if (tokenId_ < 1 || tokenId_ > latestId) {
-            revert InvalidBoardId();
-        }
         if (!_exists(tokenId_)) {
             revert BoardNotFound();
         }

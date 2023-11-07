@@ -58,13 +58,6 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function setIsOpened(bool value_) external isAdmin(msg.sender) {
-        if (address(registry) == address(0)) {
-            revert InvalidAddress();
-        }
-        if (address(auction) == address(0)) {
-            revert InvalidAddress();
-        }
-
         registry.setIsOpened(value_, msg.sender);
         auction.setIsOpened(value_, msg.sender);
     }
