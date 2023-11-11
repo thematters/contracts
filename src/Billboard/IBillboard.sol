@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import "./IBillboardAuction.sol";
 import "./IBillboardRegistry.sol";
 
 interface IBillboard {
@@ -20,18 +19,15 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Switch the auction logic contract to another one.
-     *
-     * @param contract_ Address of new auction logic contract.
-     */
-    function upgradeAuction(address contract_) external;
-
-    /**
      * @notice Switch the registry logic contract to another one.
      *
      * @param contract_ Address of new registry logic contract.
      */
     function upgradeRegistry(address contract_) external;
+
+    //////////////////////////////
+    /// Access control
+    //////////////////////////////
 
     /**
      * @notice Toggle for operation access.
@@ -119,18 +115,36 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Set the global tax rate.
+     * @notice Get last cleared auction of a board.
      *
-     * @param taxRate_ Tax rate.
+     * @param tokenId_ Token ID of a board.
      */
-    function setTaxRate(uint256 taxRate_) external;
+    function getAuction(uint256 tokenId_) external view returns (IBillboardRegistry.Auction memory auction);
 
     /**
-     * @notice Get the global tax rate.
+     * @notice Get auction of a board by auction ID.
      *
-     * @return taxRate Tax rate.
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of a board.
      */
-    function getTaxRate() external view returns (uint256 taxRate);
+    function getAuction(uint256 tokenId_, uint256 auctionId_)
+        external
+        view
+        returns (IBillboardRegistry.Auction memory auction);
+
+    /**
+     * @notice Clear a board auction.
+     *
+     * 1. update Board.auctionId
+     * 2. update Auction.startAt, endAt
+     * 3. update Bid.isWon
+     * 4. transfer bid price to last Auction.higghestBidder
+     * 5. transfer bid tax to TaxTreasury
+     * ...
+     *
+     * @param tokenId_ Token ID of a board.
+     */
+    function clearAuction(uint256 tokenId_) external;
 
     /**
      * @notice Place bid for a board.
@@ -141,17 +155,32 @@ interface IBillboard {
     function placeBid(uint256 tokenId_, uint256 amount_) external;
 
     /**
-     * @notice Get a bid of a board.
+     * @notice Get bid of a board auction.
      *
      * @param tokenId_ Token ID of a board.
      * @param bidder_ Address of a bidder.
      *
      * @return bid Bid of a board.
      */
-    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardAuction.Bid memory bid);
+    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid);
 
     /**
-     * @notice Get bids of a board.
+     * @notice Get bid of a board auction by auction ID.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param bidder_ Address of a bidder.
+     * @param auctionId_ Auction ID of a board.
+     *
+     * @return bid Bid of a board.
+     */
+    function getBid(
+        uint256 tokenId_,
+        address bidder_,
+        uint256 auctionId_
+    ) external view returns (IBillboardRegistry.Bid memory bid);
+
+    /**
+     * @notice Get bids of a board auction.
      *
      * @param tokenId_ Token ID of a board.
      * @param limit_ Limit of returned bids.
@@ -173,20 +202,73 @@ interface IBillboard {
             uint256 total,
             uint256 limit,
             uint256 offset,
-            IBillboardAuction.Bid[] memory bids
+            IBillboardRegistry.Bid[] memory bids
         );
 
     /**
-     * @notice Clear a board auction.
+     * @notice Get bids of a board auction by auction ID.
      *
      * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of a board.
+     * @param limit_ Limit of returned bids.
+     * @param offset_ Offset of returned bids.
+     *
+     * @return total Total number of bids.
+     * @return limit Limit of returned bids.
+     * @return offset Offset of returned bids.
+     * @return bids Bids of a board.
      */
-    function clearAuction(uint256 tokenId_) external;
+    function getBidsByBoard(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        uint256 limit_,
+        uint256 offset_
+    )
+        external
+        view
+        returns (
+            uint256 total,
+            uint256 limit,
+            uint256 offset,
+            IBillboardRegistry.Bid[] memory bids
+        );
+
+    //////////////////////////////
+    /// Tax & Withdraw
+    //////////////////////////////
+
+    /**
+     * @notice Set the global tax rate.
+     *
+     * @param taxRate_ Tax rate.
+     */
+    function setTaxRate(uint256 taxRate_) external;
+
+    /**
+     * @notice Get the global tax rate.
+     *
+     * @return taxRate Tax rate.
+     */
+    function getTaxRate() external view returns (uint256 taxRate);
 
     /**
      * @notice Withdraw accumulated taxation of a board.
      *
      * @param tokenId_ Token ID of a board.
+     * @param owner_ Address of a treasury owner.
      */
-    function withdraw(uint256 tokenId_) external;
+    function withdrawTax(uint256 tokenId_, address owner_) external;
+
+    /**
+     * @notice Withdraw bid that were not won by auction id;
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of a board.
+     * @param bidder_ Address of a auction bidder.
+     */
+    function withdrawBid(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_
+    ) external;
 }

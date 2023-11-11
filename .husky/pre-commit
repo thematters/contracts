@@ -1,4 +1,6 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-npx lint-staged && make snapshot && git add .gas-snapshot
+npx lint-staged 
+
+# && make snapshot && git add .gas-snapshot

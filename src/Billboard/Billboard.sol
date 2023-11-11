@@ -1,16 +1,12 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import "./BillboardAuction.sol";
 import "./BillboardRegistry.sol";
 import "./IBillboard.sol";
-import "./IBillboardAuction.sol";
 import "./IBillboardRegistry.sol";
 
 contract Billboard is IBillboard {
     address public admin;
-
-    BillboardAuction public auction;
 
     BillboardRegistry public registry;
 
@@ -30,12 +26,6 @@ contract Billboard is IBillboard {
     }
 
     modifier isAdmin(address value_) {
-        if (admin == address(0)) {
-            revert AdminNotFound();
-        }
-        if (value_ == address(0)) {
-            revert InvalidAddress();
-        }
         if (value_ != admin) {
             revert Unauthorized("admin");
         }
@@ -47,11 +37,6 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function upgradeAuction(address contract_) external isValidAddress(contract_) isAdmin(msg.sender) {
-        auction = BillboardAuction(contract_);
-    }
-
-    /// @inheritdoc IBillboard
     function upgradeRegistry(address contract_) external isValidAddress(contract_) isAdmin(msg.sender) {
         registry = BillboardRegistry(contract_);
     }
@@ -59,19 +44,16 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function setIsOpened(bool value_) external isAdmin(msg.sender) {
         registry.setIsOpened(value_, msg.sender);
-        auction.setIsOpened(value_, msg.sender);
     }
 
     /// @inheritdoc IBillboard
     function addToWhitelist(address value_) external isAdmin(msg.sender) {
         registry.addToWhitelist(value_, msg.sender);
-        auction.addToWhitelist(value_, msg.sender);
     }
 
     /// @inheritdoc IBillboard
     function removeFromWhitelist(address value_) external isAdmin(msg.sender) {
         registry.removeFromWhitelist(value_, msg.sender);
-        auction.removeFromWhitelist(value_, msg.sender);
     }
 
     //////////////////////////////
@@ -81,7 +63,7 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function mintBoard(address to_) external isValidAddress(to_) {
         uint256 tokenId = registry.mint(to_, msg.sender);
-        auction.initTreasury(tokenId);
+        registry.initTreasury(tokenId);
     }
 
     /// @inheritdoc IBillboard
@@ -120,22 +102,22 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function setTaxRate(uint256 taxRate_) external isAdmin(msg.sender) {
-        auction.setTaxRate(taxRate_, msg.sender);
+        registry.setTaxRate(taxRate_, msg.sender);
     }
 
     /// @inheritdoc IBillboard
     function getTaxRate() external view returns (uint256 taxRate) {
-        return auction.taxRate();
+        return registry.taxRate();
     }
 
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external {
-        auction.placeBid(tokenId_, amount_, msg.sender);
+        registry.placeBid(tokenId_, amount_, msg.sender);
     }
 
     /// @inheritdoc IBillboard
-    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardAuction.Bid memory bid) {
-        return auction.getBid(tokenId_, bidder_);
+    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid) {
+        return registry.getBid(tokenId_, bidder_);
     }
 
     /// @inheritdoc IBillboard
@@ -150,21 +132,21 @@ contract Billboard is IBillboard {
             uint256 total,
             uint256 limit,
             uint256 offset,
-            IBillboardAuction.Bid[] memory bids
+            IBillboardRegistry.Bid[] memory bids
         )
     {
-        return auction.getBidsByBoard(tokenId_, limit_, offset_);
+        return registry.getBidsByBoard(tokenId_, limit_, offset_);
     }
 
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
-        auction.clearAuction(tokenId_);
+        registry.clearAuction(tokenId_);
 
         // TODO update board data
     }
 
     /// @inheritdoc IBillboard
     function withdraw(uint256 tokenId_) external {
-        auction.withdraw(tokenId_, msg.sender);
+        registry.withdraw(tokenId_, msg.sender);
     }
 }

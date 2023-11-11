@@ -9,17 +9,25 @@ import "./IBillboardRegistry.sol";
 contract BillboardRegistry is IBillboardRegistry, ERC721 {
     using Counters for Counters.Counter;
 
-    Counters.Counter private tokenIds;
-
+    // access control
     bool public isOpened = false;
-
     address public admin;
-
     address public operator;
-
     mapping(address => bool) public whitelist;
 
+    Counters.Counter private _tokenIds;
+
+    // tokenId => Board
     mapping(uint256 => Board) public boards;
+
+    // tokenId => auctionId => Auction
+    mapping(uint256 => mapping(uint256 => Auction)) public boardAuctions;
+
+    // tokenId => lastAuctionId
+    mapping(uint256 => uint256) public lastBoardAuctionId;
+
+    // board creator => TaxTreasury
+    mapping(address => TaxTreasury) public taxTreasury;
 
     constructor(
         address admin_,
@@ -43,13 +51,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _;
     }
 
-    modifier isValidBoard(uint256 tokenId_) {
-        if (!_exists(tokenId_)) {
-            revert BoardNotFound();
-        }
-        _;
-    }
-
     modifier isBoardCreator(uint256 tokenId_, address value_) {
         if (value_ != boards[tokenId_].creator) {
             revert Unauthorized("board creator");
@@ -65,12 +66,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     modifier isAdmin(address value_) {
-        if (admin == address(0)) {
-            revert AdminNotFound();
-        }
-        if (value_ == address(0)) {
-            revert InvalidAddress();
-        }
         if (value_ != admin) {
             revert Unauthorized("admin");
         }
@@ -78,9 +73,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     modifier isFromOperator() {
-        if (msg.sender == address(0)) {
-            revert InvalidAddress();
-        }
         if (msg.sender != operator) {
             revert Unauthorized("operator");
         }
@@ -118,8 +110,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             revert Unauthorized("creator");
         }
 
-        tokenIds.increment();
-        uint256 newBoardId = tokenIds.current();
+        _tokenIds.increment();
+        uint256 newBoardId = _tokenIds.current();
 
         _safeMint(to_, newBoardId);
 
@@ -141,7 +133,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function getBoard(uint256 tokenId_) external view isValidBoard(tokenId_) returns (Board memory board) {
+    function getBoard(uint256 tokenId_) external view returns (Board memory board) {
         return boards[tokenId_];
     }
 
@@ -150,7 +142,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory name_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
+    ) external isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].name = name_;
     }
 
@@ -159,7 +151,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory description_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
+    ) external isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].description = description_;
     }
 
@@ -168,7 +160,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory location_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardCreator(tokenId_, sender_) {
+    ) external isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].location = location_;
     }
 
@@ -177,7 +169,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory uri_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardTenant(tokenId_, sender_) {
+    ) external isBoardTenant(tokenId_, sender_) {
         boards[tokenId_].contentURI = uri_;
     }
 
@@ -186,16 +178,12 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         string memory redirectURI_,
         address sender_
-    ) external isValidBoard(tokenId_) isBoardTenant(tokenId_, sender_) {
+    ) external isBoardTenant(tokenId_, sender_) {
         boards[tokenId_].redirectURI = redirectURI_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoardLastHighestBidPrice(uint256 tokenId_, uint256 price_)
-        external
-        isValidBoard(tokenId_)
-        isFromOperator
-    {
+    function setBoardLastHighestBidPrice(uint256 tokenId_, uint256 price_) external isFromOperator {
         boards[tokenId_].lastHighestBidPrice = price_;
     }
 
@@ -206,13 +194,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /**
      * @notice See {IERC721-tokenURI}.
      */
-    function tokenURI(uint256 tokenId_)
-        public
-        view
-        override(ERC721)
-        isValidBoard(tokenId_)
-        returns (string memory uri)
-    {
+    function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory uri) {
         return boards[tokenId_].contentURI;
     }
 
@@ -234,7 +216,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address from_,
         address to_,
         uint256 tokenId_
-    ) public override(ERC721, IERC721) isValidBoard(tokenId_) {
+    ) public override(ERC721, IERC721) {
         safeTransferFrom(from_, to_, tokenId_, "");
     }
 
@@ -246,7 +228,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address to_,
         uint256 tokenId_,
         bytes memory data_
-    ) public override(ERC721, IERC721) isValidAddress(from_) isValidAddress(to_) isValidBoard(tokenId_) {
+    ) public override(ERC721, IERC721) isValidAddress(from_) isValidAddress(to_) {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert Unauthorized("not owner nor approved");
         }
