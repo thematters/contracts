@@ -22,8 +22,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // tokenId => auctionId => Auction
     mapping(uint256 => mapping(uint256 => Auction)) public boardAuctions;
 
-    // tokenId => lastAuctionId
-    mapping(uint256 => uint256) public lastBoardAuctionId;
+    // tokenId => nextAuctionId (start from 1)
+    mapping(uint256 => uint256) public nextBoardAuctionId;
 
     // board creator => TaxTreasury
     mapping(address => TaxTreasury) public taxTreasury;
@@ -69,6 +69,16 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         return newTokenId;
     }
 
+    /// @inheritdoc ITheSpaceRegistry
+    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external isFromOperator {
+        _safeTransfer(from_, to_, tokenId_, "");
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setBoardAuctionId(uint256 tokenId_, uint256 calldata auctionId_) external isFromOperator {
+        boards[tokenId_].auctionId = auctionId_;
+    }
+
     /// @inheritdoc IBillboardRegistry
     function setBoardName(uint256 tokenId_, string calldata name_) external isFromOperator {
         boards[tokenId_].name = name_;
@@ -102,8 +112,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         uint256 startAt_,
         uint256 endAt_
-    ) external isFromOperator returns (uint256 auctionId) {
-        auctionId = lastBoardAuctionId[tokenId_]++;
+    ) external isFromOperator returns (uint256 newAuctionId) {
+        newAuctionId = nextBoardAuctionId[tokenId_]++;
 
         Auction({startAt: startAt_, endAt: endAt_, tokenId: tokenId_});
     }
@@ -216,6 +226,5 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             revert Unauthorized("not owner nor approved");
         }
         _safeTransfer(from_, to_, tokenId_, data_);
-        boards[tokenId_].tenant = to_;
     }
 }

@@ -85,6 +85,14 @@ interface IBillboardRegistry is IERC721 {
     function mintBoard(address to_) external returns (uint256 tokenId);
 
     /**
+     * @notice Set the auctionId of a board.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of an auction.
+     */
+    function setBoardAuctionId(uint256 tokenId_, uint256 calldata auctionId_) external;
+
+    /**
      * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
@@ -158,7 +166,7 @@ interface IBillboardRegistry is IERC721 {
      *     - if any `auction.highestBidder = bidder`
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_  Auction ID of an auction.
+     * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      * @param price_ Price of a bid.
      * @param tax_ Tax of a bid.
@@ -169,7 +177,7 @@ interface IBillboardRegistry is IERC721 {
      * @notice Set the data of a bid
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_  Auction ID of an auction.
+     * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      * @param isWon_ Whether a bid is won.
      */
@@ -179,7 +187,7 @@ interface IBillboardRegistry is IERC721 {
      * @notice Transfer amount of bid price to current board owner (last tenant)
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_  Auction ID of an auction.
+     * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of the highest bid.
      * @param to_ Address of a receiver.
      */

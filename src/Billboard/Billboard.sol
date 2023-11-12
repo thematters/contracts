@@ -51,7 +51,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromBoardTenant(uint256 tokenId_) {
-        if (msg.sender != _ownerOf(tokenId_)) {
+        if (msg.sender != registry.ownerOf(tokenId_)) {
             revert Unauthorized("tenant");
         }
         _;
@@ -138,11 +138,51 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
-        registry.clearAuction(tokenId_);
+        IBillboardRegistry.Board board = registry.boards[tokenId_];
+        if (!board) revert BoardNotFound();
+
+        uint256 nextAuctionId = registry.nextBoardAuctionId[tokenId_];
+        if (nextAuctionId == 0) revert AuctionNotFound();
+
+        IBillboardRegistry.Auction nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
+
+        // reclaim ownership to board creator if no auction
+        if (!nextAuction) {
+            registry.safeTransferByOperator(msg.sender, board.creator, tokenId_);
+            return;
+        }
+
+        if (block.timestamp < nextAuction.endAt) revert AuctionNotEnded();
+
+        IBillboardRegistry.Bid highestBid = nextAuction.bids[nextAuction.highestBidder];
+        if (highestBid.price > 0) {
+            // transfer bid price to board owner (previous tenant or creator)
+            registry.transferAmount(registry.ownerOf(tokenId_), highestBid.price);
+
+            // transfer bid tax to board creator's tax treasury
+            (uint256 taxAccumulated, uint256 taxWithdrawn) = registry.taxTreasury[recipient];
+            registry.setTaxTreasury(board.creator, taxAccumulated + highestBid.tax, taxWithdrawn);
+        }
+
+        // transfer ownership
+        registry.safeTransferByOperator(registry.ownerOf(tokenId_), nextAuction.highestBidder, tokenId_);
+
+        // mark highest bid as won
+        highestBid.isWon = true;
+
+        // set auction lease
+        uint256 leaseStartAt = block.timestamp;
+        uint256 leaseEndAt = block.timestamp + 14 days;
+        registry.setAuctionLease(tokenId_, nextAuctionId, leaseStartAt, leaseEndAt);
+
+        // update Board.auctionId
+        registry.setBoardAuctionId(tokenId_, nextAuctionId);
     }
 
     /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {}
+    function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {
+        // new auction
+    }
 
     /// @inheritdoc IBillboard
     function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid) {

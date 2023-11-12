@@ -14,6 +14,12 @@ interface IBillboard {
 
     error MintClosed();
 
+    error BoardNotFound();
+
+    error AuctionNotFound();
+
+    error AuctionNotEnded();
+
     error WithdrawFailed();
 
     //////////////////////////////
@@ -118,13 +124,6 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Get last cleared auction of a board.
-     *
-     * @param tokenId_ Token ID of a board.
-     */
-    function getAuction(uint256 tokenId_) external view returns (IBillboardRegistry.Auction memory auction);
-
-    /**
      * @notice Get auction of a board by auction ID.
      *
      * @param tokenId_ Token ID of a board.
@@ -136,21 +135,14 @@ interface IBillboard {
     ) external view returns (IBillboardRegistry.Auction memory auction);
 
     /**
-     * @notice Clear a board auction.
-     *
-     * 1. update Board.auctionId
-     * 2. update Auction.startAt, endAt
-     * 3. update Bid.isWon
-     * 4. transfer bid price to last Auction.higghestBidder
-     * 5. transfer bid tax to TaxTreasury
-     * ...
+     * @notice Clear the next auction of a board.
      *
      * @param tokenId_ Token ID of a board.
      */
     function clearAuction(uint256 tokenId_) external;
 
     /**
-     * @notice Place bid for a board.
+     * @notice Place bid for the next auction of a board.
      *
      * @param tokenId_ Token ID of a board.
      * @param amount_ Amount of a bid.
