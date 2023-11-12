@@ -15,6 +15,7 @@ contract Billboard is IBillboard {
 
     constructor() {
         admin = msg.sender;
+        whitelist[msg.sender] = true;
     }
 
     //////////////////////////////
@@ -37,14 +38,14 @@ contract Billboard is IBillboard {
 
     modifier isFromBoardCreator(uint256 tokenId_) {
         if (msg.sender != boards[tokenId_].creator) {
-            revert Unauthorized("board creator");
+            revert Unauthorized("creator");
         }
         _;
     }
 
     modifier isFromBoardTenant(uint256 tokenId_) {
         if (msg.sender != _ownerOf(tokenId_)) {
-            revert Unauthorized("board tenant");
+            revert Unauthorized("tenant");
         }
         _;
     }
@@ -79,7 +80,15 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function mintBoard(address to_) external isValidAddress(to_) {
-        registry.mint(to_, msg.sender);
+        if (!isOpened) {
+            revert MintClosed();
+        }
+
+        if (!whitelist[msg.sender]) {
+            revert Unauthorized("whitelist");
+        }
+
+        registry.mint(to_);
     }
 
     /// @inheritdoc IBillboard
@@ -88,28 +97,28 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function setBoardName(uint256 tokenId_, string memory name_) external isFromBoardCreator {
+    function setBoardName(uint256 tokenId_, string calldata name_) external isFromBoardCreator {
         registry.setBoardName(tokenId_, name_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardDescription(uint256 tokenId_, string memory description_) external {
-        registry.setBoardDescription(tokenId_, description_, msg.sender);
+    function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromBoardCreator {
+        registry.setBoardDescription(tokenId_, description_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardLocation(uint256 tokenId_, string memory location_) external {
-        registry.setBoardLocation(tokenId_, location_, msg.sender);
+    function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromBoardCreator {
+        registry.setBoardLocation(tokenId_, location_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardContentURI(uint256 tokenId_, string memory uri_) external {
-        registry.setBoardContentURI(tokenId_, uri_, msg.sender);
+    function setBoardLocation(uint256 tokenId_, string calldata contentUri_) external isFromBoardCreator {
+        registry.setBoardContentUri(tokenId_, contentUri_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardRedirectURI(uint256 tokenId_, string memory redirectURI_) external {
-        registry.setBoardRedirectURI(tokenId_, redirectURI_, msg.sender);
+    function setBoardLocation(uint256 tokenId_, string calldata redirectUri_) external isFromBoardCreator {
+        registry.setBoardRedirectUri(tokenId_, redirectUri_);
     }
 
     //////////////////////////////
@@ -117,13 +126,18 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function setTaxRate(uint256 taxRate_) external isAdmin(msg.sender) {
-        registry.setTaxRate(taxRate_, msg.sender);
+    function getAuction(
+        uint256 tokenId_,
+        uint256 auctionId_
+    ) external view returns (IBillboardRegistry.Auction memory auction) {
+        return registry.boardAuctions[tokenId_][auctionId_];
     }
 
     /// @inheritdoc IBillboard
-    function getTaxRate() external view returns (uint256 taxRate) {
-        return registry.taxRate();
+    function clearAuction(uint256 tokenId_) external {
+        registry.clearAuction(tokenId_);
+
+        // TODO update board data
     }
 
     /// @inheritdoc IBillboard
@@ -137,23 +151,76 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function getBidsByBoard(
+    function getBids(
         uint256 tokenId_,
+        uint256 auctionId_,
         uint256 limit_,
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
-        return registry.getBidsByBoard(tokenId_, limit_, offset_);
+        IBillboardRegistry.Auction _auction = registry.boardAuctions[tokenId_][auctionId_];
+        uint256 _total = _auction.bids.length;
+
+        if (limit_ == 0) {
+            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
+        }
+
+        if (offset_ >= _total) {
+            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
+        }
+
+        uint256 left = _total - offset_;
+        uint256 size = left > limit_ ? limit_ : left;
+
+        IBillboardRegistry.Bid[] memory _bids = new IBillboardRegistry.Bid[](size);
+
+        for (uint256 i = 0; i < size; i++) {
+            _bids[i] = _auction.bids[offset_ + i];
+        }
+
+        return (_total, limit_, offset_, _bids);
+    }
+
+    //////////////////////////////
+    /// Tax & Withdraw
+    //////////////////////////////
+
+    /// @inheritdoc IBillboard
+    function getTaxRate() external view returns (uint256 taxRate) {
+        return registry.taxRate;
     }
 
     /// @inheritdoc IBillboard
-    function clearAuction(uint256 tokenId_) external {
-        registry.clearAuction(tokenId_);
-
-        // TODO update board data
+    function setTaxRate(uint256 taxRate_) external isFromAdmin {
+        registry.setTaxRate(taxRate_);
     }
 
     /// @inheritdoc IBillboard
-    function withdraw(uint256 tokenId_) external {
-        registry.withdraw(tokenId_, msg.sender);
+    function withdrawTax(uint256 tokenId_) external {
+        IBillboardRegistry.TaxTreasury taxTreasury = registry.taxTreasury[msg.sender];
+
+        uint256 amount = taxTreasury.accumulated - taxTreasury.withdrawn;
+
+        if (amount <= 0) revert WithdrawFailed();
+
+        // transfer tax to the owner
+        registry.transferAmount(msg.sender, amount);
+
+        // set taxTreasury.withdrawn to taxTreasury.accumulated
+        registry.setTaxTreasury(msg.sender, taxTreasury.accumulated, taxTreasury.accumulated);
+    }
+
+    /// @inheritdoc IBillboard
+    function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
+        IBillboardRegistry.Bid bid = boardAuctions[tokenId_][auctionId_].bids[msg.sender];
+        uint256 amount = bid.price + bid.tax;
+
+        if (bid.isWithdrawn) revert WithdrawFailed();
+        if (amount == 0) revert WithdrawFailed();
+
+        // transfer bid price and tax back to the bidder
+        registry.transferAmount(msg.sender, amount);
+
+        // set bid.isWithdrawn to true
+        registry.setBid(tokenId_, auctionId_, msg.sender, false, true);
     }
 }

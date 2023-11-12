@@ -49,6 +49,10 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _;
     }
 
+    //////////////////////////////
+    /// Board
+    //////////////////////////////
+
     /// @inheritdoc IBillboardRegistry
     function mint(address to_) external isFromOperator returns (uint256 tokenId) {
         _tokenIds.increment();
@@ -66,38 +70,63 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoard(
-        uint256 tokenId_,
-        string memory name_,
-        string memory description_,
-        string memory location_
-    ) external isFromOperator {
+    function setBoardName(uint256 tokenId_, string calldata name_) external isFromOperator {
         boards[tokenId_].name = name_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromOperator {
         boards[tokenId_].description = description_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromOperator {
         boards[tokenId_].location = location_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoard(uint256 tokenId_, string memory contentUri_, string memory redirectUri_) external isFromOperator {
-        boards[tokenId_].contentUri_ = contentUri_;
+    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external isFromOperator {
         boards[tokenId_].redirectUri_ = redirectUri_;
     }
 
+    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external isFromOperator {
+        boards[tokenId_].redirectUri_ = redirectUri_;
+    }
+
+    //////////////////////////////
+    /// Auction
+    //////////////////////////////
+
     /// @inheritdoc IBillboardRegistry
-    function newAuction(uint256 tokenId_, uint256 startAt_, uint256 endAt_) external returns (uint256 auctionId) {
+    function newAuction(
+        uint256 tokenId_,
+        uint256 startAt_,
+        uint256 endAt_
+    ) external isFromOperator returns (uint256 auctionId) {
         auctionId = lastBoardAuctionId[tokenId_]++;
 
         Auction({startAt: startAt_, endAt: endAt_, tokenId: tokenId_});
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setAuction(uint256 tokenId_, uint256 auctionId_, uint256 startAt_, uint256 endAt_) external {
+    function setAuction(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        uint256 startAt_,
+        uint256 endAt_
+    ) external isFromOperator {
         boardAuctions[tokenId_][auctionId_].startAt = startAt_;
         boardAuctions[tokenId_][auctionId_].endAt = endAt_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function newBid(uint256 tokenId_, uint256 auctionId_, address bidder_, uint256 price_, uint256 tax_) external {
+    function newBid(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_,
+        uint256 price_,
+        uint256 tax_
+    ) external isFromOperator {
         Bid bid = Bid({
             bidder: bidder_,
             price: price_,
@@ -111,28 +140,36 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_, bool isWithdrawn_) external {
+    function setBid(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_,
+        bool isWon_,
+        bool isWithdrawn_
+    ) external isFromOperator {
         boardAuctions[tokenId_][auctionId_].bids[bidder_].isWon = isWon_;
         boardAuctions[tokenId_][auctionId_].bids[bidder_].isWithdrawn = isWithdrawn_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function transferBidAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external {
-        uint256 amount = boardAuctions[tokenId_][auctionId_].bids[bidder_].price;
-
-        (bool success, ) = to_.call{value: amount}("");
+    function transferAmount(address to_, uint256 amount_) external isFromOperator {
+        (bool success, ) = to_.call{value: amount_}("");
         if (!success) {
             revert TransferFailed();
         }
     }
 
+    //////////////////////////////
+    /// Tax & Withdraw
+    //////////////////////////////
+
     /// @inheritdoc IBillboardRegistry
-    function setTaxRate(uint256 taxRate_) external {
+    function setTaxRate(uint256 taxRate_) external isFromOperator {
         taxRate = taxRate_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external {
+    function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external isFromOperator {
         taxTreasury[owner_].accumulated = accumulated_;
         taxTreasury[owner_].withdrawn = withdrawn_;
     }

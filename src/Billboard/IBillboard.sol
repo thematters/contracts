@@ -12,6 +12,10 @@ interface IBillboard {
 
     error Unauthorized(string type_);
 
+    error MintClosed();
+
+    error WithdrawFailed();
+
     //////////////////////////////
     /// Upgradability
     //////////////////////////////
@@ -69,44 +73,45 @@ interface IBillboard {
     function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board);
 
     /**
-     * @notice Set the name of a board.
+     * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
      * @param name_ Board name.
      */
-    function setBoardName(uint256 tokenId_, string memory name_) external;
+    function setBoardName(uint256 tokenId_, string calldata name_) external;
 
     /**
-     * @notice Set the description of a board.
+     * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
+     * @param name_ Board name.
      * @param description_ Board description.
      */
-    function setBoardDescription(uint256 tokenId_, string memory description_) external;
+    function setBoardDescription(uint256 tokenId_, string calldata description_) external;
 
     /**
-     * @notice Set the location of a board.
+     * @notice Set the location of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
      * @param location_ Digital address where a board located.
      */
-    function setBoardLocation(uint256 tokenId_, string memory location_) external;
+    function setBoardLocation(uint256 tokenId_, string calldata location_) external;
 
     /**
-     * @notice Set the content URI of a board.
+     * @notice Set the content URI and redirect URI of a board by the tenant
      *
      * @param tokenId_ Token ID of a board.
-     * @param uri_ Content URI of a board.
+     * @param contentUri_ Content URI of a board.
      */
-    function setBoardContentURI(uint256 tokenId_, string memory uri_) external;
+    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external;
 
     /**
-     * @notice Set the redirect URI of a board when users clicking.
+     * @notice Set the redirect URI and redirect URI of a board by the tenant
      *
      * @param tokenId_ Token ID of a board.
-     * @param redirectURI_ Redirect URI of a board.
+     * @param redirectURI_ Redirect URI when users clicking.
      */
-    function setBoardRedirectURI(uint256 tokenId_, string memory redirectURI_) external;
+    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external;
 
     //////////////////////////////
     /// Auction
@@ -178,24 +183,6 @@ interface IBillboard {
     ) external view returns (IBillboardRegistry.Bid memory bid);
 
     /**
-     * @notice Get bids of a board auction.
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param limit_ Limit of returned bids.
-     * @param offset_ Offset of returned bids.
-     *
-     * @return total Total number of bids.
-     * @return limit Limit of returned bids.
-     * @return offset Offset of returned bids.
-     * @return bids Bids of a board.
-     */
-    function getBidsByBoard(
-        uint256 tokenId_,
-        uint256 limit_,
-        uint256 offset_
-    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
-
-    /**
      * @notice Get bids of a board auction by auction ID.
      *
      * @param tokenId_ Token ID of a board.
@@ -208,7 +195,7 @@ interface IBillboard {
      * @return offset Offset of returned bids.
      * @return bids Bids of a board.
      */
-    function getBidsByBoard(
+    function getBids(
         uint256 tokenId_,
         uint256 auctionId_,
         uint256 limit_,
@@ -220,18 +207,18 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Set the global tax rate.
-     *
-     * @param taxRate_ Tax rate.
-     */
-    function setTaxRate(uint256 taxRate_) external;
-
-    /**
      * @notice Get the global tax rate.
      *
      * @return taxRate Tax rate.
      */
     function getTaxRate() external view returns (uint256 taxRate);
+
+    /**
+     * @notice Set the global tax rate.
+     *
+     * @param taxRate_ Tax rate.
+     */
+    function setTaxRate(uint256 taxRate_) external;
 
     /**
      * @notice Withdraw accumulated taxation of a board.

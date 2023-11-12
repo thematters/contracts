@@ -83,30 +83,45 @@ interface IBillboardRegistry is IERC721 {
     function mintBoard(address to_) external returns (uint256 tokenId);
 
     /**
-     * @notice Set the name, description and location of a board
-     * from board creator.
+     * @notice Set the name of a board by board creator.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param name_ Board name.
+     */
+    function setBoardName(uint256 tokenId_, string calldata name_) external;
+
+    /**
+     * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
      * @param name_ Board name.
      * @param description_ Board description.
-     * @param location_ Digital address where a board located.
      */
-    function setBoard(
-        uint256 tokenId_,
-        string memory name_,
-        string memory description_,
-        string memory location_
-    ) external;
+    function setBoardDescription(uint256 tokenId_, string calldata description_) external;
 
     /**
-     * @notice Set the content URI and redirect URI of a board
-     * from board tenant
+     * @notice Set the location of a board by board creator.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param location_ Digital address where a board located.
+     */
+    function setBoardLocation(uint256 tokenId_, string calldata location_) external;
+
+    /**
+     * @notice Set the content URI and redirect URI of a board by the tenant
      *
      * @param tokenId_ Token ID of a board.
      * @param contentUri_ Content URI of a board.
+     */
+    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external;
+
+    /**
+     * @notice Set the redirect URI and redirect URI of a board by the tenant
+     *
+     * @param tokenId_ Token ID of a board.
      * @param redirectURI_ Redirect URI when users clicking.
      */
-    function setBoard(uint256 tokenId_, string memory contentUri_, string memory redirectUri_) external;
+    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external;
 
     //////////////////////////////
     /// Auction
@@ -167,6 +182,10 @@ interface IBillboardRegistry is IERC721 {
      * @param to_ Address of a receiver.
      */
     function transferBidAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external;
+
+    //////////////////////////////
+    /// Tax & Withdraw
+    //////////////////////////////
 
     /**
      * @notice Set the global tax rate.
