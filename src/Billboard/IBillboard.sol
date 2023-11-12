@@ -8,8 +8,6 @@ interface IBillboard {
     /// Error
     //////////////////////////////
 
-    error AdminNotFound();
-
     error InvalidAddress();
 
     error Unauthorized(string type_);
@@ -127,10 +125,10 @@ interface IBillboard {
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of a board.
      */
-    function getAuction(uint256 tokenId_, uint256 auctionId_)
-        external
-        view
-        returns (IBillboardRegistry.Auction memory auction);
+    function getAuction(
+        uint256 tokenId_,
+        uint256 auctionId_
+    ) external view returns (IBillboardRegistry.Auction memory auction);
 
     /**
      * @notice Clear a board auction.
@@ -195,15 +193,7 @@ interface IBillboard {
         uint256 tokenId_,
         uint256 limit_,
         uint256 offset_
-    )
-        external
-        view
-        returns (
-            uint256 total,
-            uint256 limit,
-            uint256 offset,
-            IBillboardRegistry.Bid[] memory bids
-        );
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
 
     /**
      * @notice Get bids of a board auction by auction ID.
@@ -223,15 +213,7 @@ interface IBillboard {
         uint256 auctionId_,
         uint256 limit_,
         uint256 offset_
-    )
-        external
-        view
-        returns (
-            uint256 total,
-            uint256 limit,
-            uint256 offset,
-            IBillboardRegistry.Bid[] memory bids
-        );
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
 
     //////////////////////////////
     /// Tax & Withdraw
@@ -266,9 +248,5 @@ interface IBillboard {
      * @param auctionId_ Auction ID of a board.
      * @param bidder_ Address of a auction bidder.
      */
-    function withdrawBid(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_
-    ) external;
+    function withdrawBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external;
 }

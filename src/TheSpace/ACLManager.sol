@@ -9,11 +9,7 @@ import "./IACLManager.sol";
 contract ACLManager is IACLManager, Context {
     mapping(Role => address) private _roles;
 
-    constructor(
-        address aclManager_,
-        address marketAdmin_,
-        address treasuryAdmin_
-    ) {
+    constructor(address aclManager_, address marketAdmin_, address treasuryAdmin_) {
         if (aclManager_ == address(0)) revert ZeroAddress();
 
         _transferRole(Role.aclManager, aclManager_);

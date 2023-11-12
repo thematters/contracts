@@ -10,12 +10,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     using Counters for Counters.Counter;
 
     // access control
-    bool public isOpened = false;
-    address public admin;
     address public operator;
-    mapping(address => bool) public whitelist;
 
     Counters.Counter private _tokenIds;
+
+    uint256 public taxRate;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -30,47 +29,18 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     mapping(address => TaxTreasury) public taxTreasury;
 
     constructor(
-        address admin_,
         address operator_,
         string memory name_,
-        string memory symbol_
+        string memory symbol_,
+        uint256 taxRate_
     ) ERC721(name_, symbol_) {
-        admin = admin_;
         operator = operator_;
-        whitelist[admin_] = true;
+        taxRate = taxRate_;
     }
 
     //////////////////////////////
     /// Modifier
     //////////////////////////////
-
-    modifier isValidAddress(address value_) {
-        if (value_ == address(0)) {
-            revert InvalidAddress();
-        }
-        _;
-    }
-
-    modifier isBoardCreator(uint256 tokenId_, address value_) {
-        if (value_ != boards[tokenId_].creator) {
-            revert Unauthorized("board creator");
-        }
-        _;
-    }
-
-    modifier isBoardTenant(uint256 tokenId_, address value_) {
-        if (value_ != _ownerOf(tokenId_)) {
-            revert Unauthorized("board tenant");
-        }
-        _;
-    }
-
-    modifier isAdmin(address value_) {
-        if (value_ != admin) {
-            revert Unauthorized("admin");
-        }
-        _;
-    }
 
     modifier isFromOperator() {
         if (msg.sender != operator) {
@@ -80,111 +50,91 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setIsOpened(bool value_, address sender_) external isAdmin(sender_) isFromOperator {
-        isOpened = value_;
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function addToWhitelist(address value_, address sender_)
-        external
-        isValidAddress(value_)
-        isAdmin(sender_)
-        isFromOperator
-    {
-        whitelist[value_] = true;
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function removeFromWhitelist(address value_, address sender_)
-        external
-        isValidAddress(value_)
-        isAdmin(sender_)
-        isFromOperator
-    {
-        delete whitelist[value_];
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function mint(address to_, address sender_) external isValidAddress(to_) isFromOperator returns (uint256 tokenId) {
-        if (isOpened == false && whitelist[sender_] != true) {
-            revert Unauthorized("creator");
-        }
-
+    function mint(address to_) external isFromOperator returns (uint256 tokenId) {
         _tokenIds.increment();
-        uint256 newBoardId = _tokenIds.current();
+        uint256 newTokenId = _tokenIds.current();
 
-        _safeMint(to_, newBoardId);
+        _safeMint(to_, newTokenId);
 
-        Board memory newBoard = Board({
-            creator: to_,
-            tenant: to_,
-            lastHighestBidPrice: 0,
-            name: "",
-            description: "",
-            contentURI: "",
-            redirectURI: "",
-            location: ""
-        });
-        boards[newBoardId] = newBoard;
+        Board memory newBoard = Board({creator: to_});
+        boards[newTokenId] = newBoard;
 
-        emit Mint(newBoardId, to_);
+        // TODO
+        // emit Mint(newBoardId, to_);
 
-        return newBoardId;
+        return newTokenId;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function getBoard(uint256 tokenId_) external view returns (Board memory board) {
-        return boards[tokenId_];
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function setBoardName(
+    function setBoard(
         uint256 tokenId_,
         string memory name_,
-        address sender_
-    ) external isBoardCreator(tokenId_, sender_) {
-        boards[tokenId_].name = name_;
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function setBoardDescription(
-        uint256 tokenId_,
         string memory description_,
-        address sender_
-    ) external isBoardCreator(tokenId_, sender_) {
+        string memory location_
+    ) external isFromOperator {
+        boards[tokenId_].name = name_;
         boards[tokenId_].description = description_;
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function setBoardLocation(
-        uint256 tokenId_,
-        string memory location_,
-        address sender_
-    ) external isBoardCreator(tokenId_, sender_) {
         boards[tokenId_].location = location_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoardContentURI(
-        uint256 tokenId_,
-        string memory uri_,
-        address sender_
-    ) external isBoardTenant(tokenId_, sender_) {
-        boards[tokenId_].contentURI = uri_;
+    function setBoard(uint256 tokenId_, string memory contentUri_, string memory redirectUri_) external isFromOperator {
+        boards[tokenId_].contentUri_ = contentUri_;
+        boards[tokenId_].redirectUri_ = redirectUri_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoardRedirectURI(
-        uint256 tokenId_,
-        string memory redirectURI_,
-        address sender_
-    ) external isBoardTenant(tokenId_, sender_) {
-        boards[tokenId_].redirectURI = redirectURI_;
+    function newAuction(uint256 tokenId_, uint256 startAt_, uint256 endAt_) external returns (uint256 auctionId) {
+        auctionId = lastBoardAuctionId[tokenId_]++;
+
+        Auction({startAt: startAt_, endAt: endAt_, tokenId: tokenId_});
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBoardLastHighestBidPrice(uint256 tokenId_, uint256 price_) external isFromOperator {
-        boards[tokenId_].lastHighestBidPrice = price_;
+    function setAuction(uint256 tokenId_, uint256 auctionId_, uint256 startAt_, uint256 endAt_) external {
+        boardAuctions[tokenId_][auctionId_].startAt = startAt_;
+        boardAuctions[tokenId_][auctionId_].endAt = endAt_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function newBid(uint256 tokenId_, uint256 auctionId_, address bidder_, uint256 price_, uint256 tax_) external {
+        Bid bid = Bid({
+            bidder: bidder_,
+            price: price_,
+            tax: tax_,
+            auctionId: auctionId_,
+            isWithdrawn: false,
+            isWon: false
+        });
+
+        boardAuctions[tokenId_][auctionId_].bids.push(bid);
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_, bool isWithdrawn_) external {
+        boardAuctions[tokenId_][auctionId_].bids[bidder_].isWon = isWon_;
+        boardAuctions[tokenId_][auctionId_].bids[bidder_].isWithdrawn = isWithdrawn_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function transferBidAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external {
+        uint256 amount = boardAuctions[tokenId_][auctionId_].bids[bidder_].price;
+
+        (bool success, ) = to_.call{value: amount}("");
+        if (!success) {
+            revert TransferFailed();
+        }
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setTaxRate(uint256 taxRate_) external {
+        taxRate = taxRate_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external {
+        taxTreasury[owner_].accumulated = accumulated_;
+        taxTreasury[owner_].withdrawn = withdrawn_;
     }
 
     //////////////////////////////
@@ -212,11 +162,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /**
      * @notice See {IERC721-transferFrom}.
      */
-    function transferFrom(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) public override(ERC721, IERC721) {
+    function transferFrom(address from_, address to_, uint256 tokenId_) public override(ERC721, IERC721) {
         safeTransferFrom(from_, to_, tokenId_, "");
     }
 
@@ -228,7 +174,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address to_,
         uint256 tokenId_,
         bytes memory data_
-    ) public override(ERC721, IERC721) isValidAddress(from_) isValidAddress(to_) {
+    ) public override(ERC721, IERC721) {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert Unauthorized("not owner nor approved");
         }

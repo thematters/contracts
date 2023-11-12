@@ -116,11 +116,7 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function setColor(
-        uint256 tokenId_,
-        uint256 color_,
-        address owner_
-    ) external onlyOwner {
+    function setColor(uint256 tokenId_, uint256 color_, address owner_) external onlyOwner {
         pixelColor[tokenId_] = color_;
         emit Color(tokenId_, color_, owner_);
     }
@@ -130,29 +126,17 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     //////////////////////////////
 
     /// @inheritdoc ITheSpaceRegistry
-    function emitTax(
-        uint256 tokenId_,
-        address taxpayer_,
-        uint256 amount_
-    ) external onlyOwner {
+    function emitTax(uint256 tokenId_, address taxpayer_, uint256 amount_) external onlyOwner {
         emit Tax(tokenId_, taxpayer_, amount_);
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function emitPrice(
-        uint256 tokenId_,
-        uint256 price_,
-        address operator_
-    ) external onlyOwner {
+    function emitPrice(uint256 tokenId_, uint256 price_, address operator_) external onlyOwner {
         emit Price(tokenId_, price_, operator_);
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function emitUBI(
-        uint256 tokenId_,
-        address recipient_,
-        uint256 amount_
-    ) external onlyOwner {
+    function emitUBI(uint256 tokenId_, address recipient_, uint256 amount_) external onlyOwner {
         emit UBI(tokenId_, recipient_, amount_);
     }
 
@@ -162,12 +146,7 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function emitDeal(
-        uint256 tokenId_,
-        address from_,
-        address to_,
-        uint256 amount_
-    ) external onlyOwner {
+    function emitDeal(uint256 tokenId_, address from_, address to_, uint256 amount_) external onlyOwner {
         emit Deal(tokenId_, from_, to_, amount_);
     }
 
@@ -187,11 +166,7 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function safeTransferByMarket(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) external onlyOwner {
+    function safeTransferByMarket(address from_, address to_, uint256 tokenId_) external onlyOwner {
         _safeTransfer(from_, to_, tokenId_, "");
     }
 
@@ -209,11 +184,7 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
      * @notice See {IERC721-transferFrom}.
      * @dev Override to collect tax and set price before transfer.
      */
-    function transferFrom(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) public override(ERC721, IERC721) {
+    function transferFrom(address from_, address to_, uint256 tokenId_) public override(ERC721, IERC721) {
         safeTransferFrom(from_, to_, tokenId_, "");
     }
 
@@ -257,11 +228,7 @@ contract TheSpaceRegistry is ITheSpaceRegistry, ERC721Enumerable, Ownable {
     }
 
     /// @inheritdoc ITheSpaceRegistry
-    function transferCurrencyFrom(
-        address from_,
-        address to_,
-        uint256 amount_
-    ) external onlyOwner {
+    function transferCurrencyFrom(address from_, address to_, uint256 amount_) external onlyOwner {
         currency.transferFrom(from_, to_, amount_);
     }
 }

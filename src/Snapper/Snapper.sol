@@ -77,11 +77,7 @@ contract Snapper is Ownable {
      * @param initBlock_ The Contract Creation block number of The Space contract.
      * @param snapshotCid_ The initial pixels picture IPFS CID of The Space.
      */
-    function initRegion(
-        uint256 regionId,
-        uint256 initBlock_,
-        string calldata snapshotCid_
-    ) external onlyOwner {
+    function initRegion(uint256 regionId, uint256 initBlock_, string calldata snapshotCid_) external onlyOwner {
         if (_latestSnapshots[regionId].block != 0) revert CannotBeReInitialized(regionId);
 
         _latestSnapshots[regionId].block = initBlock_;

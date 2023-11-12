@@ -181,11 +181,7 @@ interface ILogbook is IRoyalty, IERC721 {
      * @param commission_ Address (frontend operator) to earn commission
      * @param commissionBPS_ Basis points of the commission
      */
-    function donateWithCommission(
-        uint256 tokenId_,
-        address commission_,
-        uint256 commissionBPS_
-    ) external payable;
+    function donateWithCommission(uint256 tokenId_, address commission_, uint256 commissionBPS_) external payable;
 
     /**
      * @notice Get a logbook

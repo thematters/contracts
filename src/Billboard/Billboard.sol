@@ -6,9 +6,12 @@ import "./IBillboard.sol";
 import "./IBillboardRegistry.sol";
 
 contract Billboard is IBillboard {
-    address public admin;
-
     BillboardRegistry public registry;
+
+    // access control
+    bool public isOpened = false;
+    address public admin;
+    mapping(address => bool) public whitelist;
 
     constructor() {
         admin = msg.sender;
@@ -25,9 +28,23 @@ contract Billboard is IBillboard {
         _;
     }
 
-    modifier isAdmin(address value_) {
-        if (value_ != admin) {
+    modifier isFromAdmin() {
+        if (msg.sender != admin) {
             revert Unauthorized("admin");
+        }
+        _;
+    }
+
+    modifier isFromBoardCreator(uint256 tokenId_) {
+        if (msg.sender != boards[tokenId_].creator) {
+            revert Unauthorized("board creator");
+        }
+        _;
+    }
+
+    modifier isFromBoardTenant(uint256 tokenId_) {
+        if (msg.sender != _ownerOf(tokenId_)) {
+            revert Unauthorized("board tenant");
         }
         _;
     }
@@ -41,19 +58,19 @@ contract Billboard is IBillboard {
         registry = BillboardRegistry(contract_);
     }
 
-    /// @inheritdoc IBillboard
-    function setIsOpened(bool value_) external isAdmin(msg.sender) {
-        registry.setIsOpened(value_, msg.sender);
+    /// @inheritdoc IBillboardRegistry
+    function setIsOpened(bool value_, address sender_) external isAdmin(sender_) {
+        isOpened = value_;
     }
 
-    /// @inheritdoc IBillboard
-    function addToWhitelist(address value_) external isAdmin(msg.sender) {
-        registry.addToWhitelist(value_, msg.sender);
+    /// @inheritdoc IBillboardRegistry
+    function addToWhitelist(address value_, address sender_) external isAdmin(sender_) {
+        whitelist[value_] = true;
     }
 
-    /// @inheritdoc IBillboard
-    function removeFromWhitelist(address value_) external isAdmin(msg.sender) {
-        registry.removeFromWhitelist(value_, msg.sender);
+    /// @inheritdoc IBillboardRegistry
+    function removeFromWhitelist(address value_, address sender_) external isAdmin(sender_) {
+        whitelist[value_] = false;
     }
 
     //////////////////////////////
@@ -62,18 +79,17 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function mintBoard(address to_) external isValidAddress(to_) {
-        uint256 tokenId = registry.mint(to_, msg.sender);
-        registry.initTreasury(tokenId);
+        registry.mint(to_, msg.sender);
     }
 
     /// @inheritdoc IBillboard
     function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board) {
-        return registry.getBoard(tokenId_);
+        return registry.boards[tokenId_];
     }
 
     /// @inheritdoc IBillboard
-    function setBoardName(uint256 tokenId_, string memory name_) external {
-        registry.setBoardName(tokenId_, name_, msg.sender);
+    function setBoardName(uint256 tokenId_, string memory name_) external isFromBoardCreator {
+        registry.setBoardName(tokenId_, name_);
     }
 
     /// @inheritdoc IBillboard
@@ -125,16 +141,7 @@ contract Billboard is IBillboard {
         uint256 tokenId_,
         uint256 limit_,
         uint256 offset_
-    )
-        external
-        view
-        returns (
-            uint256 total,
-            uint256 limit,
-            uint256 offset,
-            IBillboardRegistry.Bid[] memory bids
-        )
-    {
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
         return registry.getBidsByBoard(tokenId_, limit_, offset_);
     }
 

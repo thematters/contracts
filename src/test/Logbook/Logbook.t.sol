@@ -578,11 +578,7 @@ contract LogbookTest is Test {
         assertEq(forkCount + 1, authors.length);
     }
 
-    function testForkWithCommission(
-        uint96 amount,
-        string calldata content,
-        uint256 bps
-    ) public {
+    function testForkWithCommission(uint96 amount, string calldata content, uint256 bps) public {
         bool isInvalidBPS = bps > _ROYALTY_BPS_COMMISSION_MAX;
 
         _claimToTraveloggersOwner();
@@ -610,11 +606,7 @@ contract LogbookTest is Test {
     /**
      * Split Royalty, Withdraw
      */
-    function testSplitRoyalty(
-        uint8 logCount,
-        uint8 endAt,
-        uint96 forkPrice
-    ) public {
+    function testSplitRoyalty(uint8 logCount, uint8 endAt, uint96 forkPrice) public {
         vm.assume(logCount <= 64);
 
         _claimToTraveloggersOwner();

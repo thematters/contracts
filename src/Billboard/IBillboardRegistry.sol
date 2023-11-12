@@ -8,17 +8,13 @@ interface IBillboardRegistry is IERC721 {
     /// Error
     //////////////////////////////
 
-    error AdminNotFound();
-
-    error BoardNotFound();
-
-    error InvalidBoardId();
-
     error InvalidAddress();
 
-    error OperatorNotFound();
-
     error Unauthorized(string type_);
+
+    error ZeroAmount();
+
+    error TransferFailed();
 
     //////////////////////////////
     /// Event
@@ -87,7 +83,8 @@ interface IBillboardRegistry is IERC721 {
     function mintBoard(address to_) external returns (uint256 tokenId);
 
     /**
-     * @notice Set the name, description and location of a board.
+     * @notice Set the name, description and location of a board
+     * from board creator.
      *
      * @param tokenId_ Token ID of a board.
      * @param name_ Board name.
@@ -102,17 +99,14 @@ interface IBillboardRegistry is IERC721 {
     ) external;
 
     /**
-     * @notice Set the content URI and redirect URI of a board.
+     * @notice Set the content URI and redirect URI of a board
+     * from board tenant
      *
      * @param tokenId_ Token ID of a board.
      * @param contentUri_ Content URI of a board.
      * @param redirectURI_ Redirect URI when users clicking.
      */
-    function setBoard(
-        uint256 tokenId_,
-        string memory contentUri_,
-        string memory redirectUri_
-    ) external;
+    function setBoard(uint256 tokenId_, string memory contentUri_, string memory redirectUri_) external;
 
     //////////////////////////////
     /// Auction
@@ -125,11 +119,7 @@ interface IBillboardRegistry is IERC721 {
      * @param startAt_ Start time of an auction.
      * @param endAt_ End time of an auction.
      */
-    function newAuction(
-        uint256 tokenId_,
-        uint256 startAt_,
-        uint256 endAt_
-    ) external returns (uint256 auctionId_);
+    function newAuction(uint256 tokenId_, uint256 startAt_, uint256 endAt_) external returns (uint256 auctionId);
 
     /**
      * @notice Set the data of an auction
@@ -139,12 +129,7 @@ interface IBillboardRegistry is IERC721 {
      * @param startAt_ Start time of an auction.
      * @param endAt_ End time of an auction.
      */
-    function setAuction(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        uint256 startAt_,
-        uint256 endAt_
-    ) external;
+    function setAuction(uint256 tokenId_, uint256 auctionId_, uint256 startAt_, uint256 endAt_) external;
 
     /**
      * @notice Create new bid and add it to auction
@@ -161,13 +146,7 @@ interface IBillboardRegistry is IERC721 {
      * @param price_ Price of a bid.
      * @param tax_ Tax of a bid.
      */
-    function newBid(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_,
-        uint256 price_,
-        uint256 tax_
-    ) external;
+    function newBid(uint256 tokenId_, uint256 auctionId_, address bidder_, uint256 price_, uint256 tax_) external;
 
     /**
      * @notice Set the data of a bid
@@ -177,28 +156,17 @@ interface IBillboardRegistry is IERC721 {
      * @param bidder_ Bidder of an auction.
      * @param isWon_ Whether a bid is won.
      */
-    function setBid(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_,
-        bool isWon,
-        bool isWithdrawn
-    ) external;
+    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon, bool isWithdrawn) external;
 
     /**
-     * @notice Transfer amount of bid price to current board owner (last auction highest bidder)
+     * @notice Transfer amount of bid price to current board owner (last tenant)
      *
      * @param tokenId_ Token ID of a board.
      * @param auctionId_  Auction ID of an auction.
      * @param bidder_ Bidder of the highest bid.
      * @param to_ Address of a receiver.
      */
-    function transferBidAmount(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_,
-        address to_
-    ) external;
+    function transferBidAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external;
 
     /**
      * @notice Set the global tax rate.
@@ -214,9 +182,5 @@ interface IBillboardRegistry is IERC721 {
      * @param accumulated_ Accumulated tax.
      * @param withdrawn_ Withdrawn tax.
      */
-    function setTaxTreasury(
-        address owner_,
-        uint256 accumulated_,
-        uint256 withdrawn_
-    ) external;
+    function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external;
 }
