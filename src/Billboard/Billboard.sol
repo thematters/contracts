@@ -36,6 +36,13 @@ contract Billboard is IBillboard {
         _;
     }
 
+    modifier isFromWhitelist() {
+        if (whitelist[msg.sender] != true) {
+            revert Unauthorized("whitelist");
+        }
+        _;
+    }
+
     modifier isFromBoardCreator(uint256 tokenId_) {
         if (msg.sender != boards[tokenId_].creator) {
             revert Unauthorized("creator");
@@ -79,13 +86,9 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function mintBoard(address to_) external isValidAddress(to_) {
+    function mintBoard(address to_) external isValidAddress(to_) isFromWhitelist {
         if (!isOpened) {
             revert MintClosed();
-        }
-
-        if (!whitelist[msg.sender]) {
-            revert Unauthorized("whitelist");
         }
 
         registry.mint(to_);
@@ -97,27 +100,27 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function setBoardName(uint256 tokenId_, string calldata name_) external isFromBoardCreator {
+    function setBoardName(uint256 tokenId_, string calldata name_) external isFromBoardCreator(tokenId_) {
         registry.setBoardName(tokenId_, name_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromBoardCreator {
+    function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromBoardCreator(tokenId_) {
         registry.setBoardDescription(tokenId_, description_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromBoardCreator {
+    function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromBoardCreator(tokenId_) {
         registry.setBoardLocation(tokenId_, location_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardLocation(uint256 tokenId_, string calldata contentUri_) external isFromBoardCreator {
+    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external isFromBoardTenant(tokenId_) {
         registry.setBoardContentUri(tokenId_, contentUri_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardLocation(uint256 tokenId_, string calldata redirectUri_) external isFromBoardCreator {
+    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external isFromBoardTenant(tokenId_) {
         registry.setBoardRedirectUri(tokenId_, redirectUri_);
     }
 
@@ -136,14 +139,10 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
         registry.clearAuction(tokenId_);
-
-        // TODO update board data
     }
 
     /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 amount_) external {
-        registry.placeBid(tokenId_, amount_, msg.sender);
-    }
+    function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {}
 
     /// @inheritdoc IBillboard
     function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid) {

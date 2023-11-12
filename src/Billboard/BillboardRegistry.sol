@@ -109,14 +109,14 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setAuction(
+    function setAuctionLease(
         uint256 tokenId_,
         uint256 auctionId_,
-        uint256 startAt_,
-        uint256 endAt_
+        uint256 leaseStartAt_,
+        uint256 leaseEndAt_
     ) external isFromOperator {
-        boardAuctions[tokenId_][auctionId_].startAt = startAt_;
-        boardAuctions[tokenId_][auctionId_].endAt = endAt_;
+        boardAuctions[tokenId_][auctionId_].leaseStartAt = leaseStartAt_;
+        boardAuctions[tokenId_][auctionId_].leaseEndAt = leaseEndAt_;
     }
 
     /// @inheritdoc IBillboardRegistry

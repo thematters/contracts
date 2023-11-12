@@ -36,7 +36,7 @@ interface IBillboardRegistry is IERC721 {
 
     struct Board {
         address creator;
-        uint256 auctionId; // last cleared auction ID
+        uint256 auctionId; // last lease auction ID
         string name;
         string description;
         string location;
@@ -48,6 +48,8 @@ interface IBillboardRegistry is IERC721 {
         uint256 tokenId;
         uint256 startAt; // timestamp
         uint256 endAt; // timestamp
+        uint256 leaseStartAt; // timestamp
+        uint256 leaseEndAt; // timestamp
         address highestBidder;
         address[] bidders;
         mapping(address => Bid) bids;
@@ -141,10 +143,10 @@ interface IBillboardRegistry is IERC721 {
      *
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Token ID of a board.
-     * @param startAt_ Start time of an auction.
-     * @param endAt_ End time of an auction.
+     * @param leaseStartAt_ Start time of an board lease.
+     * @param leaseEndAt_ End time of an board lease.
      */
-    function setAuction(uint256 tokenId_, uint256 auctionId_, uint256 startAt_, uint256 endAt_) external;
+    function setAuctionLease(uint256 tokenId_, uint256 auctionId_, uint256 leaseStartAt_, uint256 leaseEndAt_) external;
 
     /**
      * @notice Create new bid and add it to auction
