@@ -181,7 +181,34 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {
-        // new auction
+        IBillboardRegistry.Board board = registry.boards[tokenId_];
+        if (!board) revert BoardNotFound();
+
+        uint256 nextAuctionId = registry.nextBoardAuctionId[tokenId_];
+        IBillboardRegistry.Auction nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
+
+        // create new auction and new bid if no next auction
+        if (!nextAuction) {
+            _newAuctionAndBid(tokenId_, amount_);
+            return;
+        }
+
+        // clear auction first if next auction is ended, then create new auction and new bid
+        if (block.timestamp >= nextAuction.endAt) {
+            clearAuction(tokenId_);
+            _newAuctionAndBid(tokenId_, amount_);
+            return;
+        } else {
+            // push new bid to next auction
+            registry.newBid(tokenId_, nextAuctionId, msg.sender, amount_, calculateTax(amount_));
+        }
+    }
+
+    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_) private {
+        uint256 startAt = block.timestamp;
+        uint256 endAt = block.timestamp + 14 days;
+        uint256 auctionId = registry.newAuction(tokenId_, startAt, endAt);
+        registry.newBid(tokenId_, auctionId, msg.sender, amount_, calculateTax(amount_));
     }
 
     /// @inheritdoc IBillboard
@@ -233,8 +260,12 @@ contract Billboard is IBillboard {
         registry.setTaxRate(taxRate_);
     }
 
+    function calculateTax(uint256 amount_) public view returns (uint256 tax) {
+        return (amount_ * registry.taxRate) / 100;
+    }
+
     /// @inheritdoc IBillboard
-    function withdrawTax(uint256 tokenId_) external {
+    function withdrawTax() external {
         IBillboardRegistry.TaxTreasury taxTreasury = registry.taxTreasury[msg.sender];
 
         uint256 amount = taxTreasury.accumulated - taxTreasury.withdrawn;
@@ -254,7 +285,7 @@ contract Billboard is IBillboard {
         uint256 amount = bid.price + bid.tax;
 
         if (bid.isWithdrawn) revert WithdrawFailed();
-        if (amount == 0) revert WithdrawFailed();
+        if (amount <= 0) revert WithdrawFailed();
 
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);

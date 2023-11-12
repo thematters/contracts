@@ -218,7 +218,7 @@ interface IBillboard {
      * @param tokenId_ Token ID of a board.
      * @param owner_ Address of a treasury owner.
      */
-    function withdrawTax(uint256 tokenId_, address owner_) external;
+    function withdrawTax() external;
 
     /**
      * @notice Withdraw bid that were not won by auction id;
@@ -227,5 +227,5 @@ interface IBillboard {
      * @param auctionId_ Auction ID of a board.
      * @param bidder_ Address of a auction bidder.
      */
-    function withdrawBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external;
+    function withdrawBid(uint256 tokenId_, uint256 auctionId_) external;
 }

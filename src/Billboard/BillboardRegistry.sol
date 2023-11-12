@@ -115,7 +115,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     ) external isFromOperator returns (uint256 newAuctionId) {
         newAuctionId = nextBoardAuctionId[tokenId_]++;
 
-        Auction({startAt: startAt_, endAt: endAt_, tokenId: tokenId_});
+        Auction({tokenId: tokenId_, startAt: startAt_, endAt: endAt_});
     }
 
     /// @inheritdoc IBillboardRegistry
