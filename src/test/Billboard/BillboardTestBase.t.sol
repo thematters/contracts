@@ -6,14 +6,12 @@ import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
 import {Billboard} from "../../Billboard/Billboard.sol";
-import {BillboardAuction} from "../../Billboard/BillboardAuction.sol";
 import {BillboardRegistry} from "../../Billboard/BillboardRegistry.sol";
 import {IBillboard} from "../../Billboard/IBillboard.sol";
 import {IBillboardRegistry} from "../../Billboard/IBillboardRegistry.sol";
 
 contract BillboardTestBase is Test {
     Billboard internal operator;
-    BillboardAuction internal auction;
     BillboardRegistry internal registry;
 
     uint256 constant TAX_RATE = 1;
@@ -36,19 +34,9 @@ contract BillboardTestBase is Test {
         assertEq(ADMIN, operator.admin());
         address operatorAddress = address(operator);
 
-        // deploy auction
-        auction = new BillboardAuction(ADMIN, operatorAddress, TAX_RATE);
-        assertEq(ADMIN, auction.admin());
-        assertEq(operatorAddress, auction.operator());
-
         // deploy registry
-        registry = new BillboardRegistry(ADMIN, operatorAddress, "BLBD", "BLBD");
-        assertEq(ADMIN, registry.admin());
+        registry = new BillboardRegistry(operatorAddress, TAX_RATE, "BLBD", "BLBD");
         assertEq(operatorAddress, registry.operator());
-
-        // upgrade auction
-        operator.upgradeAuction(address(auction));
-        assertEq(address(auction), address(operator.auction()));
 
         // upgrade registry
         operator.upgradeRegistry(address(registry));

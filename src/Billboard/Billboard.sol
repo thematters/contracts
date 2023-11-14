@@ -92,7 +92,7 @@ contract Billboard is IBillboard {
             revert MintClosed();
         }
 
-        registry.mint(to_);
+        registry.mintBoard(to_);
     }
 
     /// @inheritdoc IBillboard

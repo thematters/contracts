@@ -212,6 +212,13 @@ interface IBillboard {
     function setTaxRate(uint256 taxRate_) external;
 
     /**
+     * @notice Calculate tax of a bid.
+     *
+     * @param amount_ Amount of a bid.
+     */
+    function calculateTax(uint256 amount_) external returns (uint256 tax);
+
+    /**
      * @notice Withdraw accumulated taxation of a board.
      *
      */

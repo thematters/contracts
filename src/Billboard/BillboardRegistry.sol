@@ -36,9 +36,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     constructor(
         address operator_,
+        uint256 taxRate_,
         string memory name_,
-        string memory symbol_,
-        uint256 taxRate_
+        string memory symbol_
     ) ERC721(name_, symbol_) {
         operator = operator_;
         taxRate = taxRate_;
@@ -65,7 +65,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
 
     /// @inheritdoc IBillboardRegistry
-    function mint(address to_) external isFromOperator returns (uint256 tokenId) {
+    function mintBoard(address to_) external isFromOperator returns (uint256 tokenId) {
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
 
@@ -166,7 +166,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function getBidCount(uint256 auctionId_) external returns (uint256 count) {
+    function getBidCount(uint256 auctionId_) external view returns (uint256 count) {
         count = auctionBidders[auctionId_].length;
     }
 

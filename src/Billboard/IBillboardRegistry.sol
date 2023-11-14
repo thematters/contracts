@@ -8,11 +8,7 @@ interface IBillboardRegistry is IERC721 {
     /// Error
     //////////////////////////////
 
-    error InvalidAddress();
-
     error Unauthorized(string type_);
-
-    error ZeroAmount();
 
     error TransferFailed();
 
@@ -103,7 +99,7 @@ interface IBillboardRegistry is IERC721 {
      *
      * @param tokenId_ Token ID of a board.
      */
-    function getBoard(uint256 tokenId_) external returns (Board memory board);
+    function getBoard(uint256 tokenId_) external view returns (Board memory board);
 
     /**
      * @notice Set the auctionId of a board.
@@ -163,7 +159,7 @@ interface IBillboardRegistry is IERC721 {
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Token ID of a board.
      */
-    function getAuction(uint256 tokenId_, uint256 auctionId_) external returns (Auction memory auction);
+    function getAuction(uint256 tokenId_, uint256 auctionId_) external view returns (Auction memory auction);
 
     /**
      * @notice Create new auction
@@ -189,7 +185,7 @@ interface IBillboardRegistry is IERC721 {
      *
      * @param auctionId_ Auction ID of an auction.
      */
-    function getBidCount(uint256 auctionId_) external returns (uint256 count);
+    function getBidCount(uint256 auctionId_) external view returns (uint256 count);
 
     /**
      * @notice Get a bid of an auction
@@ -197,7 +193,7 @@ interface IBillboardRegistry is IERC721 {
      * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      */
-    function getBid(uint256 auctionId_, address bidder_) external returns (Bid memory bid);
+    function getBid(uint256 auctionId_, address bidder_) external view returns (Bid memory bid);
 
     /**
      * @notice Create new bid and add it to auction
@@ -244,7 +240,7 @@ interface IBillboardRegistry is IERC721 {
      * @param bidder_ Bidder of the highest bid.
      * @param to_ Address of a receiver.
      */
-    function transferBidAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external;
+    function transferAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external;
 
     //////////////////////////////
     /// Tax & Withdraw
