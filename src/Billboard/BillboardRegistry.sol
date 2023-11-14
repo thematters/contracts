@@ -168,7 +168,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             isWon: false
         });
 
-        auctionBidders[auctionId_].push(bid);
+        auctionBids[auctionId_][bidder_] = bid;
+        auctionBidders[auctionId_].push(bidder_);
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -179,8 +180,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         bool isWon_,
         bool isWithdrawn_
     ) external isFromOperator {
-        boardAuctions[tokenId_][auctionId_].bids[bidder_].isWon = isWon_;
-        boardAuctions[tokenId_][auctionId_].bids[bidder_].isWithdrawn = isWithdrawn_;
+        auctionBids[auctionId_][bidder_].isWon = isWon_;
+        auctionBids[auctionId_][bidder_].isWithdrawn = isWithdrawn_;
     }
 
     /// @inheritdoc IBillboardRegistry

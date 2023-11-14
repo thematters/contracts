@@ -3,6 +3,6 @@
     "editor.formatOnSave": true,
     "solidity.formatter": "prettier",
     "[solidity]": {
-        "editor.defaultFormatter": "JuanBlanco.solidity"
+        "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
     }
 }
