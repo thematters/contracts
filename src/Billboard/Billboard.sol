@@ -44,7 +44,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromBoardCreator(uint256 tokenId_) {
-        if (msg.sender != boards[tokenId_].creator) {
+        if (msg.sender != registry.boards[tokenId_].creator) {
             revert Unauthorized("creator");
         }
         _;
@@ -62,22 +62,22 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function upgradeRegistry(address contract_) external isValidAddress(contract_) isAdmin(msg.sender) {
+    function upgradeRegistry(address contract_) external isValidAddress(contract_) isFromAdmin {
         registry = BillboardRegistry(contract_);
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setIsOpened(bool value_, address sender_) external isAdmin(sender_) {
+    function setIsOpened(bool value_) external isFromAdmin {
         isOpened = value_;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function addToWhitelist(address value_, address sender_) external isAdmin(sender_) {
+    function addToWhitelist(address value_) external isFromAdmin {
         whitelist[value_] = true;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function removeFromWhitelist(address value_, address sender_) external isAdmin(sender_) {
+    function removeFromWhitelist(address value_) external isFromAdmin {
         whitelist[value_] = false;
     }
 
@@ -115,13 +115,13 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external isFromBoardTenant(tokenId_) {
-        registry.setBoardContentUri(tokenId_, contentUri_);
+    function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external isFromBoardTenant(tokenId_) {
+        registry.setBoardContentURI(tokenId_, contentURI_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external isFromBoardTenant(tokenId_) {
-        registry.setBoardRedirectUri(tokenId_, redirectUri_);
+    function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external isFromBoardTenant(tokenId_) {
+        registry.setBoardRedirectURI(tokenId_, redirectURI_);
     }
 
     //////////////////////////////
@@ -138,13 +138,13 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
-        IBillboardRegistry.Board board = registry.boards[tokenId_];
+        IBillboardRegistry.Board memory board = registry.boards[tokenId_];
         if (!board) revert BoardNotFound();
 
         uint256 nextAuctionId = registry.nextBoardAuctionId[tokenId_];
         if (nextAuctionId == 0) revert AuctionNotFound();
 
-        IBillboardRegistry.Auction nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
+        IBillboardRegistry.Auction memory nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
 
         // reclaim ownership to board creator if no auction
         if (!nextAuction) {
@@ -154,13 +154,13 @@ contract Billboard is IBillboard {
 
         if (block.timestamp < nextAuction.endAt) revert AuctionNotEnded();
 
-        IBillboardRegistry.Bid highestBid = nextAuction.bids[nextAuction.highestBidder];
+        IBillboardRegistry.Bid memory highestBid = nextAuction.bids[nextAuction.highestBidder];
         if (highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
             registry.transferAmount(registry.ownerOf(tokenId_), highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
-            (uint256 taxAccumulated, uint256 taxWithdrawn) = registry.taxTreasury[recipient];
+            (uint256 taxAccumulated, uint256 taxWithdrawn) = registry.taxTreasury[board.creator];
             registry.setTaxTreasury(board.creator, taxAccumulated + highestBid.tax, taxWithdrawn);
         }
 
@@ -181,11 +181,11 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {
-        IBillboardRegistry.Board board = registry.boards[tokenId_];
+        IBillboardRegistry.Board memory board = registry.boards[tokenId_];
         if (!board) revert BoardNotFound();
 
         uint256 nextAuctionId = registry.nextBoardAuctionId[tokenId_];
-        IBillboardRegistry.Auction nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
+        IBillboardRegistry.Auction memory nextAuction = registry.boardAuctions[tokenId_][nextAuctionId];
 
         // create new auction and new bid if no next auction
         if (!nextAuction) {
@@ -195,7 +195,7 @@ contract Billboard is IBillboard {
 
         // clear auction first if next auction is ended, then create new auction and new bid
         if (block.timestamp >= nextAuction.endAt) {
-            clearAuction(tokenId_);
+            this.clearAuction(tokenId_);
             _newAuctionAndBid(tokenId_, amount_);
             return;
         } else {
@@ -223,7 +223,7 @@ contract Billboard is IBillboard {
         uint256 limit_,
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
-        IBillboardRegistry.Auction _auction = registry.boardAuctions[tokenId_][auctionId_];
+        IBillboardRegistry.Auction memory _auction = registry.boardAuctions[tokenId_][auctionId_];
         uint256 _total = _auction.bids.length;
 
         if (limit_ == 0) {
@@ -266,7 +266,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawTax() external {
-        IBillboardRegistry.TaxTreasury taxTreasury = registry.taxTreasury[msg.sender];
+        IBillboardRegistry.TaxTreasury memory taxTreasury = registry.taxTreasury[msg.sender];
 
         uint256 amount = taxTreasury.accumulated - taxTreasury.withdrawn;
 
@@ -281,7 +281,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
-        IBillboardRegistry.Bid bid = boardAuctions[tokenId_][auctionId_].bids[msg.sender];
+        IBillboardRegistry.Bid memory bid = registry.boardAuctions[tokenId_][auctionId_].bids[msg.sender];
         uint256 amount = bid.price + bid.tax;
 
         if (bid.isWithdrawn) revert WithdrawFailed();

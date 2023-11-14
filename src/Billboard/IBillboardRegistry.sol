@@ -51,8 +51,6 @@ interface IBillboardRegistry is IERC721 {
         uint256 leaseStartAt; // timestamp
         uint256 leaseEndAt; // timestamp
         address highestBidder;
-        address[] bidders;
-        mapping(address => Bid) bids;
     }
 
     struct Bid {
@@ -90,7 +88,7 @@ interface IBillboardRegistry is IERC721 {
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of an auction.
      */
-    function setBoardAuctionId(uint256 tokenId_, uint256 calldata auctionId_) external;
+    function setBoardAuctionId(uint256 tokenId_, uint256 auctionId_) external;
 
     /**
      * @notice Set the name of a board by board creator.
@@ -104,7 +102,6 @@ interface IBillboardRegistry is IERC721 {
      * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
-     * @param name_ Board name.
      * @param description_ Board description.
      */
     function setBoardDescription(uint256 tokenId_, string calldata description_) external;
@@ -121,9 +118,9 @@ interface IBillboardRegistry is IERC721 {
      * @notice Set the content URI and redirect URI of a board by the tenant
      *
      * @param tokenId_ Token ID of a board.
-     * @param contentUri_ Content URI of a board.
+     * @param contentURI_ Content URI of a board.
      */
-    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external;
+    function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external;
 
     /**
      * @notice Set the redirect URI and redirect URI of a board by the tenant
@@ -131,7 +128,7 @@ interface IBillboardRegistry is IERC721 {
      * @param tokenId_ Token ID of a board.
      * @param redirectURI_ Redirect URI when users clicking.
      */
-    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external;
+    function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external;
 
     //////////////////////////////
     /// Auction
@@ -180,8 +177,9 @@ interface IBillboardRegistry is IERC721 {
      * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      * @param isWon_ Whether a bid is won.
+     * @param isWithdrawn_ Whether a bid is won.
      */
-    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon, bool isWithdrawn) external;
+    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_, bool isWithdrawn_) external;
 
     /**
      * @notice Transfer amount of bid price to current board owner (last tenant)

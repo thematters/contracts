@@ -90,7 +90,6 @@ interface IBillboard {
      * @notice Set the name of a board by board creator.
      *
      * @param tokenId_ Token ID of a board.
-     * @param name_ Board name.
      * @param description_ Board description.
      */
     function setBoardDescription(uint256 tokenId_, string calldata description_) external;
@@ -107,9 +106,9 @@ interface IBillboard {
      * @notice Set the content URI and redirect URI of a board by the tenant
      *
      * @param tokenId_ Token ID of a board.
-     * @param contentUri_ Content URI of a board.
+     * @param contentURI_ Content URI of a board.
      */
-    function setBoardContentUri(uint256 tokenId_, string calldata contentUri_) external;
+    function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external;
 
     /**
      * @notice Set the redirect URI and redirect URI of a board by the tenant
@@ -117,7 +116,7 @@ interface IBillboard {
      * @param tokenId_ Token ID of a board.
      * @param redirectURI_ Redirect URI when users clicking.
      */
-    function setBoardRedirectUri(uint256 tokenId_, string calldata redirectUri_) external;
+    function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external;
 
     //////////////////////////////
     /// Auction
@@ -215,8 +214,6 @@ interface IBillboard {
     /**
      * @notice Withdraw accumulated taxation of a board.
      *
-     * @param tokenId_ Token ID of a board.
-     * @param owner_ Address of a treasury owner.
      */
     function withdrawTax() external;
 
@@ -225,7 +222,6 @@ interface IBillboard {
      *
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of a board.
-     * @param bidder_ Address of a auction bidder.
      */
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external;
 }
