@@ -69,6 +69,13 @@ interface IBillboardRegistry is IERC721 {
         uint256 withdrawn;
     }
 
+    /**
+     * @notice Set the new operator.
+     *
+     * @param operator_ Address of the new operator.
+     */
+    function setOperator(address operator_) external;
+
     //////////////////////////////
     /// Board
     //////////////////////////////
@@ -81,6 +88,22 @@ interface IBillboardRegistry is IERC721 {
      * @return tokenId Token ID of the new board.
      */
     function mintBoard(address to_) external returns (uint256 tokenId);
+
+    /**
+     * @notice Transfer a board (NFT) by the operator.
+     *
+     * @param from_ Address of the board sender.
+     * @param to_ Address of the board receiver.
+     * @param tokenId_ Token ID of the board.
+     */
+    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external;
+
+    /**
+     * @notice Get a board
+     *
+     * @param tokenId_ Token ID of a board.
+     */
+    function getBoard(uint256 tokenId_) external returns (Board memory board);
 
     /**
      * @notice Set the auctionId of a board.
@@ -135,6 +158,14 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
 
     /**
+     * @notice Get an auction
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Token ID of a board.
+     */
+    function getAuction(uint256 tokenId_, uint256 auctionId_) external returns (Auction memory auction);
+
+    /**
      * @notice Create new auction
      *
      * @param tokenId_ Token ID of a board.
@@ -154,6 +185,21 @@ interface IBillboardRegistry is IERC721 {
     function setAuctionLease(uint256 tokenId_, uint256 auctionId_, uint256 leaseStartAt_, uint256 leaseEndAt_) external;
 
     /**
+     * @notice Get bid count of an auction
+     *
+     * @param auctionId_ Auction ID of an auction.
+     */
+    function getBidCount(uint256 auctionId_) external returns (uint256 count);
+
+    /**
+     * @notice Get a bid of an auction
+     *
+     * @param auctionId_ Auction ID of an auction.
+     * @param bidder_ Bidder of an auction.
+     */
+    function getBid(uint256 auctionId_, address bidder_) external returns (Bid memory bid);
+
+    /**
      * @notice Create new bid and add it to auction
      *
      * 1. Create new bid: `new Bid()`
@@ -171,15 +217,24 @@ interface IBillboardRegistry is IERC721 {
     function newBid(uint256 tokenId_, uint256 auctionId_, address bidder_, uint256 price_, uint256 tax_) external;
 
     /**
-     * @notice Set the data of a bid
+     * @notice Set isWon of a bid
      *
      * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      * @param isWon_ Whether a bid is won.
+     */
+    function setBidWon(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_) external;
+
+    /**
+     * @notice Set isWithdrawn of a bid
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of an auction.
+     * @param bidder_ Bidder of an auction.
      * @param isWithdrawn_ Whether a bid is won.
      */
-    function setBid(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_, bool isWithdrawn_) external;
+    function setBidWithdrawn(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWithdrawn_) external;
 
     /**
      * @notice Transfer amount of bid price to current board owner (last tenant)

@@ -55,6 +55,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _;
     }
 
+    /// @inheritdoc IBillboardRegistry
+    function setOperator(address operator_) external isFromOperator {
+        operator = operator_;
+    }
+
     //////////////////////////////
     /// Board
     //////////////////////////////
@@ -66,7 +71,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
         _safeMint(to_, newTokenId);
 
-        Board memory newBoard = Board({
+        Board memory _newBoard = Board({
             creator: to_,
             auctionId: 0,
             name: "",
@@ -75,7 +80,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             contentURI: "",
             redirectURI: ""
         });
-        boards[newTokenId] = newBoard;
+        boards[newTokenId] = _newBoard;
 
         // TODO
         // emit Mint(newBoardId, to_);
@@ -86,6 +91,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external isFromOperator {
         _safeTransfer(from_, to_, tokenId_, "");
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function getBoard(uint256 tokenId_) external view returns (Board memory board) {
+        board = boards[tokenId_];
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -122,6 +132,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
 
     /// @inheritdoc IBillboardRegistry
+    function getAuction(uint256 tokenId_, uint256 auctionId_) external view returns (Auction memory auction) {
+        auction = boardAuctions[tokenId_][auctionId_];
+    }
+
+    /// @inheritdoc IBillboardRegistry
     function newAuction(
         uint256 tokenId_,
         uint256 startAt_,
@@ -151,6 +166,16 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
+    function getBidCount(uint256 auctionId_) external returns (uint256 count) {
+        count = auctionBidders[auctionId_].length;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function getBid(uint256 auctionId_, address bidder_) external view returns (Bid memory bid) {
+        bid = auctionBids[auctionId_][bidder_];
+    }
+
+    /// @inheritdoc IBillboardRegistry
     function newBid(
         uint256 tokenId_,
         uint256 auctionId_,
@@ -158,7 +183,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 price_,
         uint256 tax_
     ) external isFromOperator {
-        Bid memory bid = Bid({
+        Bid memory _bid = Bid({
             bidder: bidder_,
             price: price_,
             tax: tax_,
@@ -168,26 +193,29 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             isWon: false
         });
 
-        auctionBids[auctionId_][bidder_] = bid;
+        auctionBids[auctionId_][bidder_] = _bid;
         auctionBidders[auctionId_].push(bidder_);
     }
 
     /// @inheritdoc IBillboardRegistry
-    function setBid(
+    function setBidWon(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_) external isFromOperator {
+        auctionBids[auctionId_][bidder_].isWon = isWon_;
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function setBidWithdrawn(
         uint256 tokenId_,
         uint256 auctionId_,
         address bidder_,
-        bool isWon_,
         bool isWithdrawn_
     ) external isFromOperator {
-        auctionBids[auctionId_][bidder_].isWon = isWon_;
         auctionBids[auctionId_][bidder_].isWithdrawn = isWithdrawn_;
     }
 
     /// @inheritdoc IBillboardRegistry
     function transferAmount(address to_, uint256 amount_) external isFromOperator {
-        (bool success, ) = to_.call{value: amount_}("");
-        if (!success) {
+        (bool _success, ) = to_.call{value: amount_}("");
+        if (!_success) {
             revert TransferFailed();
         }
     }
