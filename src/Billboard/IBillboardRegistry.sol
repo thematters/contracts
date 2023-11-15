@@ -183,17 +183,19 @@ interface IBillboardRegistry is IERC721 {
     /**
      * @notice Get bid count of an auction
      *
+     * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of an auction.
      */
-    function getBidCount(uint256 auctionId_) external view returns (uint256 count);
+    function getBidCount(uint256 tokenId_, uint256 auctionId_) external view returns (uint256 count);
 
     /**
      * @notice Get a bid of an auction
      *
+     * @param tokenId_ Token ID of a board.
      * @param auctionId_ Auction ID of an auction.
      * @param bidder_ Bidder of an auction.
      */
-    function getBid(uint256 auctionId_, address bidder_) external view returns (Bid memory bid);
+    function getBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external view returns (Bid memory bid);
 
     /**
      * @notice Create new bid and add it to auction
@@ -233,14 +235,12 @@ interface IBillboardRegistry is IERC721 {
     function setBidWithdrawn(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWithdrawn_) external;
 
     /**
-     * @notice Transfer amount of bid price to current board owner (last tenant)
+     * @notice Transfer amount to a receiver.
      *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
-     * @param bidder_ Bidder of the highest bid.
      * @param to_ Address of a receiver.
+     * @param amount_ Amount.
      */
-    function transferAmount(uint256 tokenId_, uint256 auctionId_, address bidder_, address to_) external;
+    function transferAmount(address to_, uint256 amount_) external;
 
     //////////////////////////////
     /// Tax & Withdraw

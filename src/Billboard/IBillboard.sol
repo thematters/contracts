@@ -149,28 +149,18 @@ interface IBillboard {
     function placeBid(uint256 tokenId_, uint256 amount_) external;
 
     /**
-     * @notice Get bid of a board auction.
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param bidder_ Address of a bidder.
-     *
-     * @return bid Bid of a board.
-     */
-    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid);
-
-    /**
      * @notice Get bid of a board auction by auction ID.
      *
      * @param tokenId_ Token ID of a board.
-     * @param bidder_ Address of a bidder.
      * @param auctionId_ Auction ID of a board.
+     * @param bidder_ Address of a bidder.
      *
      * @return bid Bid of a board.
      */
     function getBid(
         uint256 tokenId_,
-        address bidder_,
-        uint256 auctionId_
+        uint256 auctionId_,
+        address bidder_
     ) external view returns (IBillboardRegistry.Bid memory bid);
 
     /**

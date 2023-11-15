@@ -67,17 +67,17 @@ contract Billboard is IBillboard {
         registry = BillboardRegistry(contract_);
     }
 
-    /// @inheritdoc IBillboardRegistry
+    /// @inheritdoc IBillboard
     function setIsOpened(bool value_) external isFromAdmin {
         isOpened = value_;
     }
 
-    /// @inheritdoc IBillboardRegistry
+    /// @inheritdoc IBillboard
     function addToWhitelist(address value_) external isFromAdmin {
         whitelist[value_] = true;
     }
 
-    /// @inheritdoc IBillboardRegistry
+    /// @inheritdoc IBillboard
     function removeFromWhitelist(address value_) external isFromAdmin {
         whitelist[value_] = false;
     }
@@ -155,7 +155,11 @@ contract Billboard is IBillboard {
 
         if (block.timestamp < _nextAuction.endAt) revert AuctionNotEnded();
 
-        IBillboardRegistry.Bid memory _highestBid = registry.getBid(_nextAuctionId, _nextAuction.highestBidder);
+        IBillboardRegistry.Bid memory _highestBid = registry.getBid(
+            tokenId_,
+            _nextAuctionId,
+            _nextAuction.highestBidder
+        );
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
             registry.transferAmount(registry.ownerOf(tokenId_), _highestBid.price);
@@ -213,8 +217,12 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function getBid(uint256 tokenId_, address bidder_) external view returns (IBillboardRegistry.Bid memory bid) {
-        return registry.getBid(tokenId_, bidder_);
+    function getBid(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_
+    ) external view returns (IBillboardRegistry.Bid memory bid) {
+        return registry.getBid(tokenId_, auctionId_, bidder_);
     }
 
     /// @inheritdoc IBillboard
@@ -224,8 +232,7 @@ contract Billboard is IBillboard {
         uint256 limit_,
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
-        IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId_, auctionId_);
-        uint256 _total = registry.getBidCount(auctionId_);
+        uint256 _total = registry.getBidCount(tokenId_, auctionId_);
 
         if (limit_ == 0) {
             return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
@@ -241,8 +248,8 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Bid[] memory _bids = new IBillboardRegistry.Bid[](_size);
 
         for (uint256 i = 0; i < _size; i++) {
-            address _bidder = registry.auctionBidders(auctionId_, offset_ + i);
-            _bids[i] = registry.getBid(auctionId_, _bidder);
+            address _bidder = registry.auctionBidders(tokenId_, auctionId_, offset_ + i);
+            _bids[i] = registry.getBid(tokenId_, auctionId_, _bidder);
         }
 
         return (_total, limit_, offset_, _bids);
@@ -283,7 +290,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
-        IBillboardRegistry.Bid memory _bid = registry.getBid(auctionId_, msg.sender);
+        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, auctionId_, msg.sender);
         uint256 amount = _bid.price + _bid.tax;
 
         if (_bid.isWithdrawn) revert WithdrawFailed();

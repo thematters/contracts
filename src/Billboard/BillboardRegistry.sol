@@ -25,11 +25,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // tokenId => nextAuctionId (start from 1)
     mapping(uint256 => uint256) public nextBoardAuctionId;
 
-    // auctionId => bidders
-    mapping(uint256 => address[]) public auctionBidders;
+    // tokenId => auctionId => bidders
+    mapping(uint256 => mapping(uint256 => address[])) public auctionBidders;
 
-    // auctioId => bidder => Bid
-    mapping(uint256 => mapping(address => Bid)) auctionBids;
+    // tokenId => auctionId => bidder => Bid
+    mapping(uint256 => mapping(uint256 => mapping(address => Bid))) public auctionBids;
 
     // board creator => TaxTreasury
     mapping(address => TaxTreasury) public taxTreasury;
@@ -166,13 +166,13 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function getBidCount(uint256 auctionId_) external view returns (uint256 count) {
-        count = auctionBidders[auctionId_].length;
+    function getBidCount(uint256 tokenId_, uint256 auctionId_) external view returns (uint256 count) {
+        count = auctionBidders[tokenId_][auctionId_].length;
     }
 
     /// @inheritdoc IBillboardRegistry
-    function getBid(uint256 auctionId_, address bidder_) external view returns (Bid memory bid) {
-        bid = auctionBids[auctionId_][bidder_];
+    function getBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external view returns (Bid memory bid) {
+        bid = auctionBids[tokenId_][auctionId_][bidder_];
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -193,13 +193,13 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             isWon: false
         });
 
-        auctionBids[auctionId_][bidder_] = _bid;
-        auctionBidders[auctionId_].push(bidder_);
+        auctionBids[tokenId_][auctionId_][bidder_] = _bid;
+        auctionBidders[tokenId_][auctionId_].push(bidder_);
     }
 
     /// @inheritdoc IBillboardRegistry
     function setBidWon(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_) external isFromOperator {
-        auctionBids[auctionId_][bidder_].isWon = isWon_;
+        auctionBids[tokenId_][auctionId_][bidder_].isWon = isWon_;
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -209,7 +209,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address bidder_,
         bool isWithdrawn_
     ) external isFromOperator {
-        auctionBids[auctionId_][bidder_].isWithdrawn = isWithdrawn_;
+        auctionBids[tokenId_][auctionId_][bidder_].isWithdrawn = isWithdrawn_;
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -262,20 +262,5 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
      */
     function transferFrom(address from_, address to_, uint256 tokenId_) public override(ERC721, IERC721) {
         safeTransferFrom(from_, to_, tokenId_, "");
-    }
-
-    /**
-     * @notice See {IERC721-safeTransferFrom}.
-     */
-    function safeTransferFrom(
-        address from_,
-        address to_,
-        uint256 tokenId_,
-        bytes memory data_
-    ) public override(ERC721, IERC721) {
-        if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
-            revert Unauthorized("not owner nor approved");
-        }
-        _safeTransfer(from_, to_, tokenId_, data_);
     }
 }
