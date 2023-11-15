@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import "forge-std/console2.sol";
+import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
@@ -38,9 +38,9 @@ contract BillboardTestBase is Test {
         vm.stopPrank();
     }
 
-    function _mintBoard() public {
+    function _mintBoard(address to_) public returns (uint256 tokenId) {
         vm.prank(ADMIN);
-        operator.mintBoard(ADMIN);
+        tokenId = operator.mintBoard(to_);
         assertEq(registry.balanceOf(ADMIN), 1);
     }
 }

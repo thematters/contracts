@@ -92,6 +92,9 @@ contract BillboardTest is BillboardTestBase {
         operator.mintBoard(ADMIN);
         assertEq(registry.balanceOf(ADMIN), 1);
 
+        // ownership
+        assertEq(registry.ownerOf(1), ADMIN);
+
         // get board & check data
         IBillboardRegistry.Board memory board = operator.getBoard(1);
         assertEq(board.creator, ADMIN);
@@ -125,57 +128,54 @@ contract BillboardTest is BillboardTestBase {
         operator.mintBoard(ATTACKER);
     }
 
-    // function testSetBoardProperties() public {
-    //     _mintBoard();
+    function testSetBoardProperties() public {
+        uint256 _tokenId = _mintBoard(ADMIN);
 
-    //     vm.stopPrank();
-    //     vm.startPrank(ADMIN);
+        vm.startPrank(ADMIN);
 
-    //     operator.setBoardName(1, "name");
-    //     operator.setBoardDescription(1, "description");
-    //     operator.setBoardLocation(1, "location");
-    //     operator.setBoardContentURI(1, "uri");
-    //     operator.setBoardRedirectURI(1, "redirect URI");
+        operator.setBoardName(_tokenId, "name");
+        operator.setBoardDescription(_tokenId, "description");
+        operator.setBoardLocation(_tokenId, "location");
+        operator.setBoardContentURI(_tokenId, "uri");
+        operator.setBoardRedirectURI(_tokenId, "redirect URI");
 
-    //     IBillboardRegistry.Board memory board = operator.getBoard(1);
-    //     assertEq("name", board.name);
-    //     assertEq("description", board.description);
-    //     assertEq("location", board.location);
-    //     assertEq("uri", board.contentURI);
-    //     assertEq("redirect URI", board.redirectURI);
-    // }
+        IBillboardRegistry.Board memory board = operator.getBoard(1);
+        assertEq(board.name, "name");
+        assertEq(board.description, "description");
+        assertEq(board.location, "location");
+        assertEq(board.contentURI, "uri");
+        assertEq(board.redirectURI, "redirect URI");
+    }
 
-    // function testSetBoardProprtiesByAttacker() public {
-    //     _mintBoard();
+    function testSetBoardProprtiesByAttacker() public {
+        uint256 _tokenId = _mintBoard(ADMIN);
 
-    //     vm.stopPrank();
-    //     vm.startPrank(ATTACKER);
+        vm.startPrank(ATTACKER);
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
-    //     operator.setBoardName(1, "name");
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        operator.setBoardName(_tokenId, "name");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
-    //     operator.setBoardDescription(1, "description");
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        operator.setBoardDescription(_tokenId, "description");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
-    //     operator.setBoardLocation(1, "location");
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        operator.setBoardLocation(_tokenId, "location");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board tenant"));
-    //     operator.setBoardContentURI(1, "uri");
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "tenant"));
+        operator.setBoardContentURI(_tokenId, "uri");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board tenant"));
-    //     operator.setBoardRedirectURI(1, "redirect URI");
-    // }
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "tenant"));
+        operator.setBoardRedirectURI(_tokenId, "redirect URI");
+    }
 
-    // function testGetTokenURI() public {
-    //     _mintBoard();
+    function testGetTokenURI() public {
+        uint256 _tokenId = _mintBoard(ADMIN);
 
-    //     vm.stopPrank();
-    //     vm.startPrank(ADMIN);
+        vm.startPrank(ADMIN);
 
-    //     operator.setBoardContentURI(1, "new uri");
-    //     assertEq("new uri", registry.tokenURI(1));
-    // }
+        operator.setBoardContentURI(_tokenId, "new uri");
+        assertEq(registry.tokenURI(_tokenId), "new uri");
+    }
 
     // function testTransfer() public {
     //     _mintBoard();
@@ -198,13 +198,13 @@ contract BillboardTest is BillboardTestBase {
     //     vm.stopPrank();
     //     vm.startPrank(USER_A);
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardName(1, "name by a");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardDescription(1, "description by a");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardLocation(1, "location by a");
 
     //     operator.setBoardContentURI(1, "uri by a");
@@ -227,13 +227,13 @@ contract BillboardTest is BillboardTestBase {
     //     vm.stopPrank();
     //     vm.startPrank(USER_B);
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardName(1, "name by b");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardDescription(1, "description by b");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardLocation(1, "location by b");
 
     //     operator.setBoardContentURI(1, "uri by b");
@@ -259,13 +259,13 @@ contract BillboardTest is BillboardTestBase {
     //     vm.stopPrank();
     //     vm.startPrank(USER_C);
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardName(1, "name by b");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardDescription(1, "description by b");
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "board creator"));
+    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
     //     operator.setBoardLocation(1, "location by b");
 
     //     operator.setBoardContentURI(1, "uri by c");

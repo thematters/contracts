@@ -63,7 +63,7 @@ interface IBillboard {
      *
      * @param to_ Address of the new board receiver.
      */
-    function mintBoard(address to_) external;
+    function mintBoard(address to_) external returns (uint256 tokenId);
 
     /**
      * @notice Get a board data.

@@ -93,9 +93,9 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function mintBoard(address to_) external {
+    function mintBoard(address to_) external returns (uint256 tokenId) {
         if (isOpened || whitelist[msg.sender] == true) {
-            registry.mintBoard(to_);
+            tokenId = registry.mintBoard(to_);
         } else {
             revert Unauthorized("whitelist");
         }

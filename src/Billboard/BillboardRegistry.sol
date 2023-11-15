@@ -67,9 +67,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function mintBoard(address to_) external isFromOperator returns (uint256 tokenId) {
         _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
+        tokenId = _tokenIds.current();
 
-        _safeMint(to_, newTokenId);
+        _safeMint(to_, tokenId);
 
         Board memory _newBoard = Board({
             creator: to_,
@@ -80,12 +80,10 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             contentURI: "",
             redirectURI: ""
         });
-        boards[newTokenId] = _newBoard;
+        boards[tokenId] = _newBoard;
 
         // TODO
         // emit Mint(newBoardId, to_);
-
-        return newTokenId;
     }
 
     /// @inheritdoc IBillboardRegistry
