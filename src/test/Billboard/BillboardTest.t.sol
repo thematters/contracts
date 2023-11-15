@@ -90,7 +90,7 @@ contract BillboardTest is BillboardTestBase {
 
         // mint
         operator.mintBoard(ADMIN);
-        assertEq(1, registry.balanceOf(ADMIN));
+        assertEq(registry.balanceOf(ADMIN), 1);
 
         // get board & check data
         IBillboardRegistry.Board memory board = operator.getBoard(1);
@@ -104,17 +104,26 @@ contract BillboardTest is BillboardTestBase {
 
         // mint again for checking id generator
         operator.mintBoard(ADMIN);
-        assertEq(2, registry.balanceOf(ADMIN));
+        assertEq(registry.balanceOf(ADMIN), 2);
         board = operator.getBoard(2);
         assertEq(board.creator, ADMIN);
     }
 
-    // function testMintBoardByAttacker() public {
-    //     vm.startPrank(ATTACKER);
+    function testMintBoardIfOpened() public {
+        vm.startPrank(ADMIN);
+        operator.setIsOpened(true);
 
-    //     vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
-    //     operator.mintBoard(ATTACKER);
-    // }
+        vm.startPrank(USER_A);
+        operator.mintBoard(USER_A);
+        assertEq(registry.balanceOf(USER_A), 1);
+    }
+
+    function testMintBoardByAttacker() public {
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
+        operator.mintBoard(ATTACKER);
+    }
 
     // function testSetBoardProperties() public {
     //     _mintBoard();
