@@ -245,17 +245,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /**
-     * @notice See {IERC721-isApprovedForAll}.
-     */
-    function isApprovedForAll(address owner_, address operator_) public view override(ERC721, IERC721) returns (bool) {
-        if (operator_ == operator) {
-            return true;
-        }
-
-        return super.isApprovedForAll(owner_, operator_);
-    }
-
-    /**
      * @notice See {IERC721-transferFrom}.
      */
     function transferFrom(address from_, address to_, uint256 tokenId_) public override(ERC721, IERC721) {
