@@ -8,11 +8,7 @@ interface IBillboard {
     /// Error
     //////////////////////////////
 
-    error InvalidAddress();
-
     error Unauthorized(string type_);
-
-    error MintClosed();
 
     error BoardNotFound();
 
@@ -27,11 +23,11 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Switch the registry logic contract to another one.
+     * @notice Set the address of operator to current registry contract.
      *
-     * @param contract_ Address of new registry logic contract.
+     * @param operator_ Address of operator_.
      */
-    function upgradeRegistry(address contract_) external;
+    function setRegistryOperator(address operator_) external;
 
     //////////////////////////////
     /// Access control

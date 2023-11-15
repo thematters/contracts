@@ -13,21 +13,23 @@ contract Billboard is IBillboard {
     address public admin;
     mapping(address => bool) public whitelist;
 
-    constructor() {
+    constructor(address registry_, uint256 taxRate_, string memory name_, string memory symbol_) {
         admin = msg.sender;
         whitelist[msg.sender] = true;
+
+        // deploy operator only
+        if (registry_ != address(0)) {
+            registry = BillboardRegistry(registry_);
+        }
+        // deploy operator and registry
+        else {
+            registry = new BillboardRegistry(address(this), taxRate_, name_, symbol_);
+        }
     }
 
     //////////////////////////////
     /// Modifiers
     //////////////////////////////
-
-    modifier isValidAddress(address value_) {
-        if (value_ == address(0)) {
-            revert InvalidAddress();
-        }
-        _;
-    }
 
     modifier isFromAdmin() {
         if (msg.sender != admin) {
@@ -63,9 +65,13 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function upgradeRegistry(address contract_) external isValidAddress(contract_) isFromAdmin {
-        registry = BillboardRegistry(contract_);
+    function setRegistryOperator(address operator_) external isFromAdmin {
+        registry.setOperator(operator_);
     }
+
+    //////////////////////////////
+    /// Access control
+    //////////////////////////////
 
     /// @inheritdoc IBillboard
     function setIsOpened(bool value_) external isFromAdmin {
@@ -87,9 +93,9 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function mintBoard(address to_) external isValidAddress(to_) isFromWhitelist {
-        if (!isOpened) {
-            revert MintClosed();
+    function mintBoard(address to_) external {
+        if (!isOpened && whitelist[msg.sender] != true) {
+            revert Unauthorized("whitelist");
         }
 
         registry.mintBoard(to_);
@@ -191,6 +197,10 @@ contract Billboard is IBillboard {
 
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
+
+        // TODO: check if current address already has bidded
+        // TODO: transfer ETH to registry
+        // TODO: set highestBidder
 
         // create new auction and new bid if no next auction
         if (_nextAuction.tokenId == 0) {

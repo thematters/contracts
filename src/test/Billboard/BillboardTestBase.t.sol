@@ -29,26 +29,18 @@ contract BillboardTestBase is Test {
     function setUp() public {
         vm.startPrank(ADMIN);
 
-        // deploy operator
-        operator = new Billboard();
-        assertEq(ADMIN, operator.admin());
-        address operatorAddress = address(operator);
+        // deploy operator & registry
+        operator = new Billboard(address(0), TAX_RATE, "BLBD", "BLBD");
+        registry = operator.registry();
+        assertEq(operator.admin(), ADMIN);
+        assertEq(registry.operator(), address(operator));
 
-        // deploy registry
-        registry = new BillboardRegistry(operatorAddress, TAX_RATE, "BLBD", "BLBD");
-        assertEq(operatorAddress, registry.operator());
-
-        // upgrade registry
-        operator.upgradeRegistry(address(registry));
-        assertEq(address(registry), address(operator.registry()));
+        vm.stopPrank();
     }
 
     function _mintBoard() public {
-        vm.stopPrank();
-        vm.startPrank(ADMIN);
-
-        // mint
+        vm.prank(ADMIN);
         operator.mintBoard(ADMIN);
-        assertEq(1, registry.balanceOf(ADMIN));
+        assertEq(registry.balanceOf(ADMIN), 1);
     }
 }
