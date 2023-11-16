@@ -13,7 +13,7 @@ contract Billboard is IBillboard {
     address public admin;
     mapping(address => bool) public whitelist;
 
-    constructor(address registry_, uint256 taxRate_, string memory name_, string memory symbol_) {
+    constructor(address payable registry_, uint256 taxRate_, string memory name_, string memory symbol_) {
         admin = msg.sender;
         whitelist[msg.sender] = true;
 
@@ -144,7 +144,7 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function clearAuction(uint256 tokenId_) external {
+    function clearAuction(uint256 tokenId_) public {
         // revert if board not found
         (address _boardCreator, , , , , ) = registry.boards(tokenId_);
         if (_boardCreator == address(0)) revert BoardNotFound();
@@ -160,7 +160,7 @@ contract Billboard is IBillboard {
 
         // reclaim ownership to board creator if no auction
         address _prevOwner = registry.ownerOf(tokenId_);
-        if (_nextAuction.tokenId == 0 && _prevOwner != _boardCreator) {
+        if (_nextAuction.startAt == 0 && _prevOwner != _boardCreator) {
             registry.safeTransferByOperator(_prevOwner, _boardCreator, tokenId_);
             return;
         }
@@ -200,14 +200,14 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
 
         // create new auction and new bid if no next auction
-        if (_nextAuction.tokenId == 0) {
+        if (_nextAuction.startAt == 0) {
             _newAuctionAndBid(tokenId_, amount_);
             return;
         }
 
         // clear auction first if next auction is ended, then create new auction and new bid
         if (block.timestamp >= _nextAuction.endAt) {
-            this.clearAuction(tokenId_);
+            clearAuction(tokenId_);
             _newAuctionAndBid(tokenId_, amount_);
             return;
         } else {
@@ -216,7 +216,10 @@ contract Billboard is IBillboard {
                 revert BidAlreadyPlaced();
             }
 
-            registry.newBid(tokenId_, _nextAuctionId, msg.sender, amount_, calculateTax(amount_));
+            uint256 _tax = calculateTax(amount_);
+            registry.newBid(tokenId_, _nextAuctionId, msg.sender, amount_, _tax);
+
+            _lockBidPriceAndTax(amount_ + _tax);
         }
     }
 
@@ -224,7 +227,18 @@ contract Billboard is IBillboard {
         uint256 _startAt = block.timestamp;
         uint256 _endAt = block.timestamp + 14 days;
         uint256 _auctionId = registry.newAuction(tokenId_, _startAt, _endAt);
-        registry.newBid(tokenId_, _auctionId, msg.sender, amount_, calculateTax(amount_));
+        uint256 _tax = calculateTax(amount_);
+
+        registry.newBid(tokenId_, _auctionId, msg.sender, amount_, _tax);
+
+        _lockBidPriceAndTax(amount_ + _tax);
+    }
+
+    function _lockBidPriceAndTax(uint256 amount_) private {
+        (bool _success, ) = address(registry).call{value: amount_}("");
+        if (!_success) {
+            revert TransferFailed();
+        }
     }
 
     /// @inheritdoc IBillboard

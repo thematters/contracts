@@ -55,6 +55,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         _;
     }
 
+    // Function to receive Ether.
+    receive() external payable {}
+
     /// @inheritdoc IBillboardRegistry
     function setOperator(address operator_) external isFromOperator {
         operator = operator_;
@@ -71,7 +74,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
         _safeMint(to_, tokenId);
 
-        Board memory _newBoard = Board({
+        boards[tokenId] = Board({
             creator: to_,
             name: "",
             description: "",
@@ -79,7 +82,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             contentURI: "",
             redirectURI: ""
         });
-        boards[tokenId] = _newBoard;
 
         // TODO
         // emit Mint(newBoardId, to_);
@@ -134,10 +136,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 startAt_,
         uint256 endAt_
     ) external isFromOperator returns (uint256 newAuctionId) {
-        newAuctionId = nextBoardAuctionId[tokenId_]++;
+        nextBoardAuctionId[tokenId_]++;
 
-        Auction({
-            tokenId: tokenId_,
+        newAuctionId = nextBoardAuctionId[tokenId_];
+
+        boardAuctions[tokenId_][newAuctionId] = Auction({
             startAt: startAt_,
             endAt: endAt_,
             leaseStartAt: 0,
@@ -179,7 +182,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             bidder: bidder_,
             price: price_,
             tax: tax_,
-            auctionId: auctionId_,
             placedAt: block.timestamp,
             isWithdrawn: false,
             isWon: false
@@ -199,12 +201,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         Bid memory highestBid = auctionBids[tokenId_][auctionId_][highestBidder];
         if (highestBid.bidder == address(0) || price_ > highestBid.price) {
             boardAuctions[tokenId_][auctionId_].highestBidder = bidder_;
-        }
-
-        // lock ETH
-        (bool _success, ) = address(this).call{value: price_ + tax_}("");
-        if (!_success) {
-            revert TransferFailed();
         }
     }
 

@@ -20,6 +20,8 @@ interface IBillboard {
 
     error WithdrawFailed();
 
+    error TransferFailed();
+
     //////////////////////////////
     /// Upgradability
     //////////////////////////////

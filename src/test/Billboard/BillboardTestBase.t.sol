@@ -30,7 +30,7 @@ contract BillboardTestBase is Test {
         vm.startPrank(ADMIN);
 
         // deploy operator & registry
-        operator = new Billboard(address(0), TAX_RATE, "BLBD", "BLBD");
+        operator = new Billboard(payable(address(0)), TAX_RATE, "BLBD", "BLBD");
         registry = operator.registry();
         assertEq(operator.admin(), ADMIN);
         assertEq(registry.operator(), address(operator));

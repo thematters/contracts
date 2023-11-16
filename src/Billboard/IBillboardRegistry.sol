@@ -40,7 +40,6 @@ interface IBillboardRegistry is IERC721 {
     }
 
     struct Auction {
-        uint256 tokenId;
         uint256 startAt; // timestamp
         uint256 endAt; // timestamp
         uint256 leaseStartAt; // timestamp
@@ -52,7 +51,6 @@ interface IBillboardRegistry is IERC721 {
         address bidder;
         uint256 price;
         uint256 tax;
-        uint256 auctionId;
         uint256 placedAt; // timestamp
         bool isWon;
         bool isWithdrawn;
