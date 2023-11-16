@@ -191,16 +191,12 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 amount_) external isFromWhitelist {
+    function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist {
         (address _boardCreator, , , , , , ) = registry.boards(tokenId_);
         if (_boardCreator == address(0)) revert BoardNotFound();
 
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
-
-        // TODO: check if current address already has bidded
-        // TODO: transfer ETH to registry
-        // TODO: set highestBidder
 
         // create new auction and new bid if no next auction
         if (_nextAuction.tokenId == 0) {
@@ -215,6 +211,10 @@ contract Billboard is IBillboard {
             return;
         } else {
             // push new bid to next auction
+            if (registry.getBid(tokenId_, _nextAuctionId, msg.sender).bidder != address(0)) {
+                revert BidAlreadyPlaced();
+            }
+
             registry.newBid(tokenId_, _nextAuctionId, msg.sender, amount_, calculateTax(amount_));
         }
     }

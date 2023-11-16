@@ -16,6 +16,8 @@ interface IBillboard {
 
     error AuctionNotEnded();
 
+    error BidAlreadyPlaced();
+
     error WithdrawFailed();
 
     //////////////////////////////
@@ -142,7 +144,7 @@ interface IBillboard {
      * @param tokenId_ Token ID of a board.
      * @param amount_ Amount of a bid.
      */
-    function placeBid(uint256 tokenId_, uint256 amount_) external;
+    function placeBid(uint256 tokenId_, uint256 amount_) external payable;
 
     /**
      * @notice Get bid of a board auction by auction ID.

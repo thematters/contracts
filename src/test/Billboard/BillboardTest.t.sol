@@ -274,14 +274,14 @@ contract BillboardTest is BillboardTestBase {
 
         vm.startPrank(ADMIN);
         registry.approve(USER_A, _tokenId);
-        assertEq(USER_A, registry.getApproved(_tokenId));
+        assertEq(registry.getApproved(_tokenId), USER_A);
 
         vm.stopPrank();
         vm.startPrank(USER_A);
         registry.transferFrom(ADMIN, USER_A, _tokenId);
 
         IBillboardRegistry.Board memory board = operator.getBoard(_tokenId);
-        assertEq(ADMIN, board.creator);
+        assertEq(board.creator, ADMIN);
     }
 
     function testApproveByAttacker() public {
@@ -293,9 +293,9 @@ contract BillboardTest is BillboardTestBase {
         registry.approve(USER_A, _tokenId);
     }
 
-    // //////////////////////////////
-    // /// Auction
-    // //////////////////////////////
+    //////////////////////////////
+    /// Auction
+    //////////////////////////////
 
     // function testBid() public {}
 

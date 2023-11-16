@@ -22,7 +22,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // tokenId => auctionId => Auction
     mapping(uint256 => mapping(uint256 => Auction)) public boardAuctions;
 
-    // tokenId => nextAuctionId (start from 1)
+    // tokenId => nextAuctionId (start from 1 if exists)
     mapping(uint256 => uint256) public nextBoardAuctionId;
 
     // tokenId => auctionId => bidders
@@ -191,8 +191,27 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             isWon: false
         });
 
+        // add to auction bids
         auctionBids[tokenId_][auctionId_][bidder_] = _bid;
+
+        // add to auction bidders
         auctionBidders[tokenId_][auctionId_].push(bidder_);
+
+        // set auction highest bidder if no highest bidder or price is higher.
+        //
+        // Note: for same price, the first bidder will always be
+        // the highest bidder since the block.timestamp is always greater.
+        address highestBidder = boardAuctions[tokenId_][auctionId_].highestBidder;
+        Bid memory highestBid = auctionBids[tokenId_][auctionId_][highestBidder];
+        if (highestBid.bidder == address(0) || price_ > highestBid.price) {
+            boardAuctions[tokenId_][auctionId_].highestBidder = bidder_;
+        }
+
+        // lock ETH
+        (bool _success, ) = address(this).call{value: price_ + tax_}("");
+        if (!_success) {
+            revert TransferFailed();
+        }
     }
 
     /// @inheritdoc IBillboardRegistry
