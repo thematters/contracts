@@ -178,14 +178,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 price_,
         uint256 tax_
     ) external isFromOperator {
-        Bid memory _bid = Bid({
-            bidder: bidder_,
-            price: price_,
-            tax: tax_,
-            placedAt: block.timestamp,
-            isWithdrawn: false,
-            isWon: false
-        });
+        Bid memory _bid = Bid({price: price_, tax: tax_, placedAt: block.timestamp, isWithdrawn: false, isWon: false});
 
         // add to auction bids
         auctionBids[tokenId_][auctionId_][bidder_] = _bid;
@@ -199,7 +192,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         // the highest bidder since the block.timestamp is always greater.
         address highestBidder = boardAuctions[tokenId_][auctionId_].highestBidder;
         Bid memory highestBid = auctionBids[tokenId_][auctionId_][highestBidder];
-        if (highestBid.bidder == address(0) || price_ > highestBid.price) {
+        if (highestBidder == address(0) || price_ > highestBid.price) {
             boardAuctions[tokenId_][auctionId_].highestBidder = bidder_;
         }
     }

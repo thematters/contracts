@@ -339,7 +339,6 @@ contract BillboardTest is BillboardTestBase {
         // check auction
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-
         assertEq(_nextAuctionId, 1);
         assertEq(_auction.startAt, block.timestamp);
         assertEq(_auction.endAt, block.timestamp + 14 days);
@@ -349,12 +348,136 @@ contract BillboardTest is BillboardTestBase {
 
         // check bid
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, ADMIN);
-        assertEq(_bid.bidder, ADMIN);
         assertEq(_bid.price, _amount);
         assertEq(_bid.tax, _tax);
         assertEq(_bid.placedAt, block.timestamp);
         assertEq(_bid.isWon, false);
         assertEq(_bid.isWithdrawn, false);
+    }
+
+    function testPlaceBidWithSamePrice() public {
+        uint256 _tokenId = _mintBoard();
+        uint256 _amount = 1 ether;
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // bid with ADMIN
+        vm.startPrank(ADMIN);
+        vm.deal(ADMIN, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, ADMIN);
+
+        // add USER_A to whitelist
+        operator.addToWhitelist(USER_A);
+
+        // bid with USER_A
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+        _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, ADMIN);
+
+        // check if USER_A's bid exists
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
+        assertEq(_bid.placedAt, block.timestamp);
+
+        // check registry balance
+        assertEq(address(registry).balance, _total * 2);
+    }
+
+    function testPlaceBidWithHigherPrice() public {
+        uint256 _tokenId = _mintBoard();
+        uint256 _amount = 1 ether;
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // bid with ADMIN
+        vm.startPrank(ADMIN);
+        vm.deal(ADMIN, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, ADMIN);
+
+        // add USER_A to whitelist
+        operator.addToWhitelist(USER_A);
+
+        // bid with USER_A
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, _total * 2);
+        operator.placeBid{value: _total * 2}(_tokenId, _amount * 2);
+        _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, USER_A);
+    }
+
+    function testPlaceBidZeroPrice() public {
+        uint256 _tokenId = _mintBoard();
+
+        vm.startPrank(ADMIN);
+        vm.deal(ADMIN, 1 ether);
+        uint256 _prevBalance = ADMIN.balance;
+
+        operator.placeBid{value: 0}(_tokenId, 0);
+
+        // check balances
+        uint256 _afterBalance = ADMIN.balance;
+        assertEq(_afterBalance, _prevBalance);
+        assertEq(address(operator).balance, 0);
+        assertEq(address(registry).balance, 0);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, ADMIN);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, ADMIN);
+        assertEq(_bid.placedAt, block.timestamp);
+    }
+
+    function testPlaceBidByWhitelist() public {
+        uint256 _tokenId = _mintBoard();
+        uint256 _amount = 1 ether;
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        vm.prank(ADMIN);
+        operator.addToWhitelist(USER_A);
+
+        vm.deal(USER_A, _total);
+        vm.prank(USER_A);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+        assertEq(USER_A.balance, 0);
+    }
+
+    function testCannotPlaceBidTwice() public {
+        uint256 _tokenId = _mintBoard();
+        uint256 _amount = 1 ether;
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        vm.startPrank(ADMIN);
+        vm.deal(ADMIN, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+        assertEq(ADMIN.balance, 0);
+
+        vm.deal(ADMIN, _total);
+        vm.expectRevert(abi.encodeWithSignature("BidAlreadyPlaced()"));
+        operator.placeBid{value: _total}(_tokenId, _amount);
+    }
+
+    function testCannotPlaceBidByAttacker() public {
+        uint256 _tokenId = _mintBoard();
+        uint256 _amount = 1 ether;
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        vm.startPrank(ATTACKER);
+        vm.deal(ATTACKER, _total);
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
+        operator.placeBid{value: _total}(_tokenId, _amount);
     }
 
     // function testClearAuction() public {}

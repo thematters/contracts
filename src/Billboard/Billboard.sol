@@ -212,7 +212,7 @@ contract Billboard is IBillboard {
             return;
         } else {
             // push new bid to next auction
-            if (registry.getBid(tokenId_, _nextAuctionId, msg.sender).bidder != address(0)) {
+            if (registry.getBid(tokenId_, _nextAuctionId, msg.sender).placedAt != 0) {
                 revert BidAlreadyPlaced();
             }
 

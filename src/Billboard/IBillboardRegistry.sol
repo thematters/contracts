@@ -48,7 +48,6 @@ interface IBillboardRegistry is IERC721 {
     }
 
     struct Bid {
-        address bidder;
         uint256 price;
         uint256 tax;
         uint256 placedAt; // timestamp
