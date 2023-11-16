@@ -260,6 +260,14 @@ contract BillboardTest is BillboardTestBase {
         registry.transferFrom(USER_B, USER_C, _tokenId);
     }
 
+    function testTransferByOperator() public {
+        uint256 _tokenId = _mintBoard();
+
+        vm.startPrank(address(operator));
+        registry.safeTransferByOperator(ADMIN, USER_A, _tokenId);
+        assertEq(registry.ownerOf(_tokenId), USER_A);
+    }
+
     function testCannotTransferByAttacker() public {
         uint256 _tokenId = _mintBoard();
 

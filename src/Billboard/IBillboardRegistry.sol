@@ -32,7 +32,6 @@ interface IBillboardRegistry is IERC721 {
 
     struct Board {
         address creator;
-        uint256 auctionId; // last lease auction ID
         string name;
         string description;
         string location;
@@ -100,14 +99,6 @@ interface IBillboardRegistry is IERC721 {
      * @param tokenId_ Token ID of a board.
      */
     function getBoard(uint256 tokenId_) external view returns (Board memory board);
-
-    /**
-     * @notice Set the auctionId of a board.
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
-     */
-    function setBoardAuctionId(uint256 tokenId_, uint256 auctionId_) external;
 
     /**
      * @notice Set the name of a board by board creator.

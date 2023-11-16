@@ -73,7 +73,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
         Board memory _newBoard = Board({
             creator: to_,
-            auctionId: 0,
             name: "",
             description: "",
             location: "",
@@ -94,11 +93,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function getBoard(uint256 tokenId_) external view returns (Board memory board) {
         board = boards[tokenId_];
-    }
-
-    /// @inheritdoc IBillboardRegistry
-    function setBoardAuctionId(uint256 tokenId_, uint256 auctionId_) external isFromOperator {
-        boards[tokenId_].auctionId = auctionId_;
     }
 
     /// @inheritdoc IBillboardRegistry

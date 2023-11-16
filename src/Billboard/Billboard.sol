@@ -46,7 +46,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromBoardCreator(uint256 tokenId_) {
-        (address _boardCreator, , , , , , ) = registry.boards(tokenId_);
+        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
         if (_boardCreator != msg.sender) {
             revert Unauthorized("creator");
         }
@@ -145,21 +145,25 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) external {
-        (address _boardCreator, , , , , , ) = registry.boards(tokenId_);
+        // revert if board not found
+        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
         if (_boardCreator == address(0)) revert BoardNotFound();
 
+        // revert if it's a new board
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         if (_nextAuctionId == 0) revert AuctionNotFound();
 
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
 
+        // revert if auction is still running
+        if (block.timestamp < _nextAuction.endAt) revert AuctionNotEnded();
+
         // reclaim ownership to board creator if no auction
-        if (_nextAuction.tokenId == 0) {
-            registry.safeTransferByOperator(msg.sender, _boardCreator, tokenId_);
+        address _prevOwner = registry.ownerOf(tokenId_);
+        if (_nextAuction.tokenId == 0 && _prevOwner != _boardCreator) {
+            registry.safeTransferByOperator(_prevOwner, _boardCreator, tokenId_);
             return;
         }
-
-        if (block.timestamp < _nextAuction.endAt) revert AuctionNotEnded();
 
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(
             tokenId_,
@@ -168,7 +172,7 @@ contract Billboard is IBillboard {
         );
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
-            registry.transferAmount(registry.ownerOf(tokenId_), _highestBid.price);
+            registry.transferAmount(_prevOwner, _highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
             (, uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(_boardCreator);
@@ -176,7 +180,7 @@ contract Billboard is IBillboard {
         }
 
         // transfer ownership
-        registry.safeTransferByOperator(registry.ownerOf(tokenId_), _nextAuction.highestBidder, tokenId_);
+        registry.safeTransferByOperator(_prevOwner, _nextAuction.highestBidder, tokenId_);
 
         // mark highest bid as won
         registry.setBidWon(tokenId_, _nextAuctionId, _nextAuction.highestBidder, true);
@@ -185,14 +189,11 @@ contract Billboard is IBillboard {
         uint256 leaseStartAt = block.timestamp;
         uint256 leaseEndAt = block.timestamp + 14 days;
         registry.setAuctionLease(tokenId_, _nextAuctionId, leaseStartAt, leaseEndAt);
-
-        // update Board.auctionId
-        registry.setBoardAuctionId(tokenId_, _nextAuctionId);
     }
 
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist {
-        (address _boardCreator, , , , , , ) = registry.boards(tokenId_);
+        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
         if (_boardCreator == address(0)) revert BoardNotFound();
 
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
@@ -304,6 +305,7 @@ contract Billboard is IBillboard {
         uint256 amount = _bid.price + _bid.tax;
 
         if (_bid.isWithdrawn) revert WithdrawFailed();
+        if (_bid.isWon) revert WithdrawFailed();
         if (amount <= 0) revert WithdrawFailed();
 
         // transfer bid price and tax back to the bidder
