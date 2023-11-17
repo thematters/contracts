@@ -8,7 +8,7 @@ interface IBillboard {
     /// Error
     //////////////////////////////
 
-    error Unauthorized(string type_);
+    error Unauthorized(string reason_);
 
     error BoardNotFound();
 
@@ -16,9 +16,11 @@ interface IBillboard {
 
     error AuctionNotEnded();
 
+    error BidNotFound();
+
     error BidAlreadyPlaced();
 
-    error WithdrawFailed();
+    error WithdrawFailed(string reason_);
 
     error TransferFailed();
 

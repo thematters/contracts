@@ -14,7 +14,7 @@ contract BillboardTestBase is Test {
     Billboard internal operator;
     BillboardRegistry internal registry;
 
-    uint256 constant TAX_RATE = 1;
+    uint256 constant TAX_RATE = 1; // 1% per day
 
     address constant ZERO_ADDRESS = address(0);
     address constant FAKE_CONTRACT = address(1);

@@ -413,9 +413,12 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_auction.highestBidder, USER_A);
 
         // bid with USER_B
+        _amount = _amount * 2;
+        _tax = operator.calculateTax(_amount);
+        _total = _amount + _tax;
+        vm.deal(USER_B, _total);
         vm.startPrank(USER_B);
-        vm.deal(USER_B, _total * 2);
-        operator.placeBid{value: _total * 2}(_tokenId, _amount * 2);
+        operator.placeBid{value: _total}(_tokenId, _amount);
         _auction = registry.getAuction(_tokenId, _nextAuctionId);
         assertEq(_auction.highestBidder, USER_B);
     }
@@ -596,6 +599,8 @@ contract BillboardTest is BillboardTestBase {
     /// Tax & Withdraw
     //////////////////////////////
 
+    function testCalculateTax() public {}
+
     function testSetTaxRate() public {
         vm.startPrank(ADMIN);
 
@@ -610,11 +615,231 @@ contract BillboardTest is BillboardTestBase {
         operator.setTaxRate(2);
     }
 
-    function testWithdrawTax() public {}
+    function testWithdrawTax(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
 
-    function testCannotWithdrawTaxByAttacker() public {}
+        uint256 _tokenId = _mintBoard();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
 
-    function testWithdrawBid() public {}
+        vm.prank(ADMIN);
+        operator.addToWhitelist(USER_A);
 
-    function testCannotWithdrawBidByAttacker() public {}
+        // place a bid and win auction
+        vm.deal(USER_A, _total);
+        vm.prank(USER_A);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        uint256 _prevRegistryBalance = address(registry).balance;
+        uint256 _prevAdminBalance = ADMIN.balance;
+
+        // withdraw tax
+        vm.prank(ADMIN);
+        operator.withdrawTax();
+
+        // check balances
+        assertEq(address(registry).balance, _prevRegistryBalance - _tax);
+        assertEq(ADMIN.balance, _prevAdminBalance + _tax);
+    }
+
+    function testCannnotWithdrawTaxIfZero() public {
+        uint256 _tokenId = _mintBoard();
+
+        vm.prank(ADMIN);
+        operator.addToWhitelist(USER_A);
+
+        // place a bid and win auction
+        vm.deal(USER_A, 0);
+        vm.prank(USER_A);
+        operator.placeBid{value: 0}(_tokenId, 0);
+
+        vm.prank(ADMIN);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        operator.withdrawTax();
+    }
+
+    function testCannnotWithdrawTaxIfSmallAmount(uint8 _amount) public {
+        uint256 _tax = operator.calculateTax(_amount);
+        vm.assume(_tax <= 0);
+
+        uint256 _tokenId = _mintBoard();
+
+        vm.prank(ADMIN);
+        operator.addToWhitelist(USER_A);
+
+        // place a bid and win auction
+        vm.deal(USER_A, _amount);
+        vm.prank(USER_A);
+        operator.placeBid{value: _amount}(_tokenId, _amount);
+
+        vm.prank(ADMIN);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        operator.withdrawTax();
+    }
+
+    function testCannotWithdrawTaxByAttacker() public {
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        operator.withdrawTax();
+    }
+
+    function testWithdrawBid(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // new auction and new bid with USER_A
+        vm.deal(USER_A, _total);
+        vm.prank(USER_A);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // new bid with USER_B
+        vm.deal(USER_B, _total);
+        vm.prank(USER_B);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // clear auction
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        operator.clearAuction(_tokenId);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, USER_A);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _nextAuctionId, USER_A);
+        assertEq(_bidA.isWon, true);
+        IBillboardRegistry.Bid memory _bidB = registry.getBid(_tokenId, _nextAuctionId, USER_B);
+        assertEq(_bidB.isWon, false);
+
+        // withdraw bid
+        vm.prank(USER_B);
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+        assertEq(USER_B.balance, _total);
+    }
+
+    function testCannotWithBidTwice(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // new auction and new bid with USER_A
+        vm.deal(USER_A, _total);
+        vm.prank(USER_A);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // new bid with USER_B
+        vm.deal(USER_B, _total);
+        vm.prank(USER_B);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // clear auction
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        operator.clearAuction(_tokenId);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, USER_A);
+
+        // withdraw bid
+        vm.prank(USER_B);
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+        assertEq(USER_B.balance, _total);
+
+        // withdraw bid again
+        vm.prank(USER_B);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "withdrawn"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
+
+    function testCannotWithdrawBidIfWon(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // new auction and new bid with USER_A
+        vm.deal(USER_A, _total);
+        vm.prank(USER_A);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // clear auction
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        operator.clearAuction(_tokenId);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.highestBidder, USER_A);
+
+        // withdraw bid
+        vm.prank(USER_A);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "won"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
+
+    function testCannotWithdrawBidIfAuctionNotEnded(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // new auction and new bid with USER_A
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // auction is not ended
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        vm.expectRevert(abi.encodeWithSignature("AuctionNotEnded()"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+
+        // auction is ended but not cleared
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "auction not cleared"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
+
+    function testCannotWithdrawBidIfAuctionNotCleared(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
+        // new auction and new bid with USER_A
+        vm.prank(USER_A);
+        vm.deal(USER_A, _total);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // new bid with USER_B
+        vm.deal(USER_B, _total);
+        vm.prank(USER_B);
+        operator.placeBid{value: _total}(_tokenId, _amount);
+
+        // auction is ended but not cleared
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
+        vm.prank(USER_B);
+        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "auction not cleared"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
+
+    function testCannotWithdrawBidIfNotFound() public {
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+
+        vm.prank(USER_A);
+        vm.expectRevert(abi.encodeWithSignature("BidNotFound()"));
+        operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
 }

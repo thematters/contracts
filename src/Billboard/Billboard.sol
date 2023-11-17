@@ -309,7 +309,7 @@ contract Billboard is IBillboard {
     }
 
     function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        return amount_ * (registry.taxRate() / 100) * registry.leaseTerm();
+        tax = (amount_ * registry.taxRate() * registry.leaseTerm()) / 1 days / 100;
     }
 
     /// @inheritdoc IBillboard
@@ -318,7 +318,7 @@ contract Billboard is IBillboard {
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
 
-        if (amount <= 0) revert WithdrawFailed();
+        if (amount <= 0) revert WithdrawFailed("zero amount");
 
         // transfer tax to the owner
         registry.transferAmount(msg.sender, amount);
@@ -329,12 +329,20 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
+        // revert if auction is still running
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId_, auctionId_);
+        if (block.timestamp < _auction.endAt) revert AuctionNotEnded();
+
+        // revert if auction is not cleared
+        if (_auction.leaseEndAt == 0) revert WithdrawFailed("auction not cleared");
+
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, auctionId_, msg.sender);
         uint256 amount = _bid.price + _bid.tax;
 
-        if (_bid.isWithdrawn) revert WithdrawFailed();
-        if (_bid.isWon) revert WithdrawFailed();
-        if (amount <= 0) revert WithdrawFailed();
+        if (_bid.placedAt == 0) revert BidNotFound();
+        if (_bid.isWithdrawn) revert WithdrawFailed("withdrawn");
+        if (_bid.isWon) revert WithdrawFailed("won");
+        if (amount <= 0) revert WithdrawFailed("zero amount");
 
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);
