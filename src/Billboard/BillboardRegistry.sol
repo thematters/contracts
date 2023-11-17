@@ -15,6 +15,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     Counters.Counter private _tokenIds;
 
     uint256 public taxRate;
+    uint256 public leaseTerm = 14 days;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;

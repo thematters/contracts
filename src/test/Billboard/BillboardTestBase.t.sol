@@ -43,4 +43,21 @@ contract BillboardTestBase is Test {
         tokenId = operator.mintBoard(ADMIN);
         assertEq(registry.balanceOf(ADMIN), 1);
     }
+
+    function _mintBoardAndPlaceBid() public returns (uint256 tokenId, uint256 _nextAuctionId) {
+        tokenId = _mintBoard();
+
+        // (new board) ADMIN places first bid and takes the ownership
+        vm.startPrank(ADMIN);
+        operator.placeBid{value: 0}(tokenId, 0);
+        _nextAuctionId = registry.nextBoardAuctionId(tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId, _nextAuctionId);
+        assertEq(_nextAuctionId, 1);
+        assertEq(_auction.highestBidder, ADMIN);
+
+        // add USER_A and USER_B to whitelist
+        operator.addToWhitelist(USER_A);
+        operator.addToWhitelist(USER_B);
+        vm.stopPrank();
+    }
 }

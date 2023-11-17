@@ -165,30 +165,37 @@ contract Billboard is IBillboard {
             return;
         }
 
+        _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
+    }
+
+    function _clearAuction(uint256 tokenId_, address boardCreator_, uint256 nextAuctionId_) private {
+        IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(
             tokenId_,
-            _nextAuctionId,
+            nextAuctionId_,
             _nextAuction.highestBidder
         );
+
+        address _prevOwner = registry.ownerOf(tokenId_);
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
             registry.transferAmount(_prevOwner, _highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
-            (, uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(_boardCreator);
-            registry.setTaxTreasury(_boardCreator, _taxAccumulated + _highestBid.tax, _taxWithdrawn);
+            (, uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
+            registry.setTaxTreasury(boardCreator_, _taxAccumulated + _highestBid.tax, _taxWithdrawn);
         }
 
         // transfer ownership
         registry.safeTransferByOperator(_prevOwner, _nextAuction.highestBidder, tokenId_);
 
         // mark highest bid as won
-        registry.setBidWon(tokenId_, _nextAuctionId, _nextAuction.highestBidder, true);
+        registry.setBidWon(tokenId_, nextAuctionId_, _nextAuction.highestBidder, true);
 
         // set auction lease
         uint256 leaseStartAt = block.timestamp;
-        uint256 leaseEndAt = block.timestamp + 14 days;
-        registry.setAuctionLease(tokenId_, _nextAuctionId, leaseStartAt, leaseEndAt);
+        uint256 leaseEndAt = leaseStartAt + registry.leaseTerm();
+        registry.setAuctionLease(tokenId_, nextAuctionId_, leaseStartAt, leaseEndAt);
     }
 
     /// @inheritdoc IBillboard
@@ -199,19 +206,26 @@ contract Billboard is IBillboard {
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
 
-        // create new auction and new bid if no next auction
+        // if it's a new board without next auction,
+        // create new auction and new bid first,
+        // then clear auction and transfer ownership to the bidder immediately.
         if (_nextAuction.startAt == 0) {
-            _newAuctionAndBid(tokenId_, amount_);
+            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, block.timestamp);
+            _clearAuction(tokenId_, _boardCreator, _auctionId);
             return;
         }
 
-        // clear auction first if next auction is ended, then create new auction and new bid
+        // if next auction is ended,
+        // clear auction first,
+        // then create new auction and new bid
         if (block.timestamp >= _nextAuction.endAt) {
-            clearAuction(tokenId_);
-            _newAuctionAndBid(tokenId_, amount_);
+            _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
+            _newAuctionAndBid(tokenId_, amount_, block.timestamp + registry.leaseTerm());
             return;
-        } else {
-            // push new bid to next auction
+        }
+        // if next auction is not ended,
+        // push new bid to next auction
+        else {
             if (registry.getBid(tokenId_, _nextAuctionId, msg.sender).placedAt != 0) {
                 revert BidAlreadyPlaced();
             }
@@ -223,13 +237,13 @@ contract Billboard is IBillboard {
         }
     }
 
-    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_) private {
+    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_, uint256 endAt_) private returns (uint256 auctionId) {
         uint256 _startAt = block.timestamp;
-        uint256 _endAt = block.timestamp + 14 days;
-        uint256 _auctionId = registry.newAuction(tokenId_, _startAt, _endAt);
         uint256 _tax = calculateTax(amount_);
 
-        registry.newBid(tokenId_, _auctionId, msg.sender, amount_, _tax);
+        auctionId = registry.newAuction(tokenId_, _startAt, endAt_);
+
+        registry.newBid(tokenId_, auctionId, msg.sender, amount_, _tax);
 
         _lockBidPriceAndTax(amount_ + _tax);
     }
@@ -295,7 +309,7 @@ contract Billboard is IBillboard {
     }
 
     function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        return (amount_ * registry.taxRate()) / 100;
+        return amount_ * (registry.taxRate() / 100) * registry.leaseTerm();
     }
 
     /// @inheritdoc IBillboard
