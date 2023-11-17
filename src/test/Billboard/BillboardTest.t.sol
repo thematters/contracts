@@ -21,7 +21,7 @@ contract BillboardTest is BillboardTestBase {
         assertEq(registry.operator(), address(newOperator));
     }
 
-    function testUpgradeRegistryByAttacker() public {
+    function testCannotUpgradeRegistryByAttacker() public {
         vm.startPrank(ATTACKER);
 
         vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
@@ -189,7 +189,7 @@ contract BillboardTest is BillboardTestBase {
         assertEq(registry.tokenURI(_tokenId), "new uri");
     }
 
-    function testTransfer() public {
+    function testSetBoardPropertiesAfterTransfer() public {
         // mint
         uint256 _tokenId = _mintBoard();
 
@@ -272,7 +272,7 @@ contract BillboardTest is BillboardTestBase {
         registry.transferFrom(USER_B, USER_C, _tokenId);
     }
 
-    function testTransferByOperator() public {
+    function testSafeTransferByOperator() public {
         uint256 _tokenId = _mintBoard();
 
         vm.startPrank(address(operator));
@@ -280,16 +280,16 @@ contract BillboardTest is BillboardTestBase {
         assertEq(registry.ownerOf(_tokenId), USER_A);
     }
 
-    function testCannotTransferByAttacker() public {
+    function testCannotSafeTransferByAttacker() public {
         uint256 _tokenId = _mintBoard();
 
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert("ERC721: caller is not token owner or approved");
-        registry.transferFrom(ADMIN, ATTACKER, _tokenId);
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        registry.safeTransferByOperator(ADMIN, ATTACKER, _tokenId);
     }
 
-    function testApprove() public {
+    function testApproveAndTransfer() public {
         uint256 _tokenId = _mintBoard();
 
         vm.startPrank(ADMIN);
@@ -317,12 +317,11 @@ contract BillboardTest is BillboardTestBase {
     /// Auction
     //////////////////////////////
 
-    function testPlaceBidOnNewBoard() public {
+    function testPlaceBidOnNewBoard(uint96 _amount) public {
         vm.prank(ADMIN);
         operator.addToWhitelist(USER_A);
 
         uint256 _tokenId = _mintBoard();
-        uint256 _amount = 1 ether;
         uint256 _tax = operator.calculateTax(_amount);
         uint256 _total = _amount + _tax;
         vm.deal(USER_A, _total);
@@ -362,9 +361,8 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.isWithdrawn, false);
     }
 
-    function testPlaceBidWithSamePrice() public {
+    function testPlaceBidWithSamePrices(uint96 _amount) public {
         (uint256 _tokenId, uint256 _prevNextAuctionId) = _mintBoardAndPlaceBid();
-        uint256 _amount = 1 ether;
         uint256 _tax = operator.calculateTax(_amount);
         uint256 _total = _amount + _tax;
 
@@ -398,9 +396,11 @@ contract BillboardTest is BillboardTestBase {
         assertEq(address(registry).balance, _total * 2);
     }
 
-    function testPlaceBidWithHigherPrice() public {
+    function testPlaceBidWithHigherPrice(uint96 _amount) public {
+        vm.assume(_amount > 0);
+        vm.assume(_amount < type(uint96).max / 2);
+
         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-        uint256 _amount = 1 ether;
         uint256 _tax = operator.calculateTax(_amount);
         uint256 _total = _amount + _tax;
 
@@ -424,7 +424,6 @@ contract BillboardTest is BillboardTestBase {
         uint256 _tokenId = _mintBoard();
 
         vm.startPrank(ADMIN);
-        vm.deal(ADMIN, 1 ether);
         uint256 _prevBalance = ADMIN.balance;
 
         operator.placeBid{value: 0}(_tokenId, 0);
@@ -502,9 +501,8 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_newBid.isWon, false);
     }
 
-    function testCannotPlaceBidTwice() public {
+    function testCannotPlaceBidTwice(uint96 _amount) public {
         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-        uint256 _amount = 1 ether;
         uint256 _tax = operator.calculateTax(_amount);
         uint256 _total = _amount + _tax;
 
@@ -528,6 +526,38 @@ contract BillboardTest is BillboardTestBase {
         vm.deal(ATTACKER, _total);
         vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
         operator.placeBid{value: _total}(_tokenId, _amount);
+    }
+
+    function testClearAuctionIfAuctionEnded() public {
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        uint256 _placedAt = block.timestamp;
+        uint256 _clearedAt = block.timestamp + registry.leaseTerm() + 1 minutes;
+
+        // place a bid
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, 0);
+        operator.placeBid{value: 0}(_tokenId, 0);
+
+        // clear auction
+        vm.warp(_clearedAt);
+        operator.clearAuction(_tokenId);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.startAt, _placedAt);
+        assertEq(_auction.endAt, _placedAt + registry.leaseTerm());
+        assertEq(_auction.leaseStartAt, _clearedAt);
+        assertEq(_auction.leaseEndAt, _clearedAt + registry.leaseTerm());
+        assertEq(_auction.highestBidder, USER_A);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
+        assertEq(_bid.price, 0);
+        assertEq(_bid.tax, 0);
+        assertEq(_bid.placedAt, _placedAt);
+        assertEq(_bid.isWon, true);
+        assertEq(_bid.isWithdrawn, false);
     }
 
     function testCannotClearAuctionOnNewBoard() public {
@@ -559,6 +589,8 @@ contract BillboardTest is BillboardTestBase {
         vm.expectRevert(abi.encodeWithSignature("AuctionNotEnded()"));
         operator.clearAuction(_tokenId);
     }
+
+    function getBids() public {}
 
     //////////////////////////////
     /// Tax & Withdraw
