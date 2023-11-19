@@ -593,7 +593,49 @@ contract BillboardTest is BillboardTestBase {
         operator.clearAuction(_tokenId);
     }
 
-    function getBids() public {}
+    function testGetBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
+        vm.assume(_bidCount > 0);
+        vm.assume(_bidCount <= 64);
+        vm.assume(_limit <= _bidCount);
+        vm.assume(_offset <= _limit);
+
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+
+        for (uint8 i = 0; i < _bidCount; i++) {
+            address _bidder = address(uint160(2000 + i));
+
+            vm.prank(ADMIN);
+            operator.addToWhitelist(_bidder);
+
+            uint256 _amount = 1 ether + i;
+            uint256 _tax = operator.calculateTax(_amount);
+            uint256 _totalAmount = _amount + _tax;
+
+            vm.deal(_bidder, _totalAmount);
+            vm.prank(_bidder);
+            operator.placeBid{value: _totalAmount}(_tokenId, _amount);
+        }
+
+        // get bids
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        console.log(_nextAuctionId);
+        (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBids(
+            _tokenId,
+            _nextAuctionId,
+            _limit,
+            _offset
+        );
+        uint256 _left = _t - _offset;
+        uint256 _size = _left > _limit ? _limit : _left;
+        assertEq(_t, _bidCount);
+        assertEq(_l, _limit);
+        assertEq(_bids.length, _size);
+        assertEq(_o, _offset);
+        for (uint256 i = 0; i < _size; i++) {
+            uint256 _amount = 1 ether + _offset + i;
+            assertEq(_bids[i].price, _amount);
+        }
+    }
 
     //////////////////////////////
     /// Tax & Withdraw
