@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./BillboardTestBase.t.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BillboardTest is BillboardTestBase {
     //////////////////////////////
@@ -89,6 +90,8 @@ contract BillboardTest is BillboardTestBase {
         vm.startPrank(ADMIN);
 
         // mint
+        vm.expectEmit(true, true, true, true);
+        emit IERC721.Transfer(address(0), ADMIN, 1);
         operator.mintBoard(ADMIN);
         assertEq(registry.balanceOf(ADMIN), 1);
 
@@ -105,6 +108,8 @@ contract BillboardTest is BillboardTestBase {
         assertEq(board.redirectURI, "");
 
         // mint again for checking id generator
+        vm.expectEmit(true, true, true, true);
+        emit IERC721.Transfer(address(0), ADMIN, 2);
         operator.mintBoard(ADMIN);
         assertEq(registry.balanceOf(ADMIN), 2);
         board = operator.getBoard(2);
@@ -289,6 +294,9 @@ contract BillboardTest is BillboardTestBase {
     function testSafeTransferByOperator() public {
         uint256 _tokenId = _mintBoard();
 
+        vm.expectEmit(true, true, true, true);
+        emit IERC721.Transfer(ADMIN, USER_A, _tokenId);
+
         vm.startPrank(address(operator));
         registry.safeTransferByOperator(ADMIN, USER_A, _tokenId);
         assertEq(registry.ownerOf(_tokenId), USER_A);
@@ -306,16 +314,20 @@ contract BillboardTest is BillboardTestBase {
     function testApproveAndTransfer() public {
         uint256 _tokenId = _mintBoard();
 
-        vm.startPrank(ADMIN);
+        vm.expectEmit(true, true, true, true);
+        emit IERC721.Approval(ADMIN, USER_A, _tokenId);
+        vm.prank(ADMIN);
         registry.approve(USER_A, _tokenId);
         assertEq(registry.getApproved(_tokenId), USER_A);
 
-        vm.stopPrank();
-        vm.startPrank(USER_A);
+        vm.expectEmit(true, true, true, true);
+        emit IERC721.Transfer(ADMIN, USER_A, _tokenId);
+        vm.prank(USER_A);
         registry.transferFrom(ADMIN, USER_A, _tokenId);
 
         IBillboardRegistry.Board memory board = operator.getBoard(_tokenId);
         assertEq(board.creator, ADMIN);
+        assertEq(registry.ownerOf(_tokenId), USER_A);
     }
 
     function testCannotApproveByAttacker() public {
@@ -334,6 +346,9 @@ contract BillboardTest is BillboardTestBase {
     function testPlaceBidOnNewBoard(uint96 _amount) public {
         vm.prank(ADMIN);
         operator.addToWhitelist(USER_A);
+
+        vm.expectEmit(true, false, false, false);
+        emit IERC721.Transfer(address(0), ADMIN, 1);
 
         uint256 _tokenId = _mintBoard();
         uint256 _tax = operator.calculateTax(_amount);
