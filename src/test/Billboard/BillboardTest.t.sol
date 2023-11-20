@@ -13,8 +13,10 @@ contract BillboardTest is BillboardTestBase {
         vm.startPrank(ADMIN);
 
         // deploy new operator
-        Billboard newOperator = new Billboard(payable(registry), TAX_RATE, "BLBD", "BLBD");
+        Billboard newOperator = new Billboard(payable(registry), TAX_RATE, "Billboard2", "BLBD2");
         assertEq(newOperator.admin(), ADMIN);
+        assertEq(registry.name(), "Billboard"); // registry is not changed
+        assertEq(registry.symbol(), "BLBD"); // registry is not changed
 
         // upgrade registry's operator
         assertEq(registry.operator(), address(operator));
