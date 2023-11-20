@@ -45,4 +45,4 @@ deploy-curation: clean
 
 ## Billboard
 deploy-billboard: clean
-	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_REGISTRY_ADDRESS} 1 "Billboard" "BLBD" --legacy
+	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_REGISTRY_ADDRESS} 1 "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
