@@ -196,6 +196,9 @@ contract Billboard is IBillboard {
         uint256 leaseStartAt = block.timestamp;
         uint256 leaseEndAt = leaseStartAt + registry.leaseTerm();
         registry.setAuctionLease(tokenId_, nextAuctionId_, leaseStartAt, leaseEndAt);
+
+        // emit AuctionCleared
+        registry.emitAuctionCleared(tokenId_, nextAuctionId_, _nextAuction.highestBidder, leaseStartAt, leaseEndAt);
     }
 
     /// @inheritdoc IBillboard
@@ -325,6 +328,9 @@ contract Billboard is IBillboard {
 
         // set taxTreasury.withdrawn to taxTreasury.accumulated
         registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
+
+        // emit TaxWithdrawn
+        registry.emitTaxWithdrawn(msg.sender, amount);
     }
 
     /// @inheritdoc IBillboard
@@ -349,5 +355,8 @@ contract Billboard is IBillboard {
 
         // set bid.isWithdrawn to true
         registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
+
+        // emit BidWithdrawn
+        registry.emitBidWithdrawn(tokenId_, auctionId_, msg.sender, _bid.price, _bid.tax);
     }
 }

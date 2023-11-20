@@ -101,25 +101,30 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function setBoardName(uint256 tokenId_, string calldata name_) external isFromOperator {
         boards[tokenId_].name = name_;
+        emit BoardNameUpdated(tokenId_, name_);
     }
 
     /// @inheritdoc IBillboardRegistry
     function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromOperator {
         boards[tokenId_].description = description_;
+        emit BoardDescriptionUpdated(tokenId_, description_);
     }
 
     /// @inheritdoc IBillboardRegistry
     function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromOperator {
         boards[tokenId_].location = location_;
+        emit BoardLocationUpdated(tokenId_, location_);
     }
 
     /// @inheritdoc IBillboardRegistry
     function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external isFromOperator {
         boards[tokenId_].contentURI = contentURI_;
+        emit BoardContentURIUpdated(tokenId_, contentURI_);
     }
 
     function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external isFromOperator {
         boards[tokenId_].redirectURI = redirectURI_;
+        emit BoardRedirectURIUpdated(tokenId_, redirectURI_);
     }
 
     //////////////////////////////
@@ -148,6 +153,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             leaseEndAt: 0,
             highestBidder: address(0)
         });
+
+        emit AuctionCreated(tokenId_, newAuctionId, startAt_, endAt_);
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -196,11 +203,15 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         if (highestBidder == address(0) || price_ > highestBid.price) {
             boardAuctions[tokenId_][auctionId_].highestBidder = bidder_;
         }
+
+        emit BidCreated(tokenId_, auctionId_, bidder_, price_, tax_);
     }
 
     /// @inheritdoc IBillboardRegistry
     function setBidWon(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_) external isFromOperator {
         auctionBids[tokenId_][auctionId_][bidder_].isWon = isWon_;
+
+        emit BidWon(tokenId_, auctionId_, bidder_);
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -228,6 +239,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function setTaxRate(uint256 taxRate_) external isFromOperator {
         taxRate = taxRate_;
+
+        emit TaxRateUpdated(taxRate_);
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -252,5 +265,36 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
      */
     function transferFrom(address from_, address to_, uint256 tokenId_) public override(ERC721, IERC721) {
         safeTransferFrom(from_, to_, tokenId_, "");
+    }
+
+    //////////////////////////////
+    /// Event emission
+    //////////////////////////////
+
+    /// @inheritdoc IBillboardRegistry
+    function emitAuctionCleared(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address highestBidder_,
+        uint256 leaseStartAt_,
+        uint256 leaseEndAt_
+    ) external {
+        emit AuctionCleared(tokenId_, auctionId_, highestBidder_, leaseStartAt_, leaseEndAt_);
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function emitBidWithdrawn(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_,
+        uint256 price_,
+        uint256 tax_
+    ) external {
+        emit BidWithdrawn(tokenId_, auctionId_, bidder_, price_, tax_);
+    }
+
+    /// @inheritdoc IBillboardRegistry
+    function emitTaxWithdrawn(address owner_, uint256 amount_) external {
+        emit TaxWithdrawn(owner_, amount_);
     }
 }

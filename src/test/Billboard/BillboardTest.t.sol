@@ -145,10 +145,24 @@ contract BillboardTest is BillboardTestBase {
 
         vm.startPrank(ADMIN);
 
+        vm.expectEmit(true, true, false, false);
+        emit IBillboardRegistry.BoardNameUpdated(_tokenId, "name");
         operator.setBoardName(_tokenId, "name");
+
+        vm.expectEmit(true, true, false, false);
+        emit IBillboardRegistry.BoardDescriptionUpdated(_tokenId, "description");
         operator.setBoardDescription(_tokenId, "description");
+
+        vm.expectEmit(true, true, false, false);
+        emit IBillboardRegistry.BoardLocationUpdated(_tokenId, "location");
         operator.setBoardLocation(_tokenId, "location");
+
+        vm.expectEmit(true, true, false, false);
+        emit IBillboardRegistry.BoardContentURIUpdated(_tokenId, "uri");
         operator.setBoardContentURI(_tokenId, "uri");
+
+        vm.expectEmit(true, true, false, false);
+        emit IBillboardRegistry.BoardRedirectURIUpdated(_tokenId, "redirect URI");
         operator.setBoardRedirectURI(_tokenId, "redirect URI");
 
         IBillboardRegistry.Board memory board = operator.getBoard(1);
@@ -331,6 +345,21 @@ contract BillboardTest is BillboardTestBase {
         uint256 _prevBidderBalance = USER_A.balance;
         uint256 _prevOperatorBalance = address(operator).balance;
         uint256 _prevRegistryBalance = address(registry).balance;
+
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCreated(_tokenId, _prevNextActionId + 1, block.timestamp, block.timestamp);
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.BidCreated(_tokenId, _prevNextActionId + 1, USER_A, _amount, _tax);
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.BidWon(_tokenId, _prevNextActionId + 1, USER_A);
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(
+            _tokenId,
+            _prevNextActionId + 1,
+            USER_A,
+            block.timestamp,
+            block.timestamp + registry.leaseTerm()
+        );
 
         vm.prank(USER_A);
         operator.placeBid{value: _total}(_tokenId, _amount);
@@ -532,7 +561,7 @@ contract BillboardTest is BillboardTestBase {
     }
 
     function testClearAuctionIfAuctionEnded() public {
-        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
         uint256 _placedAt = block.timestamp;
         uint256 _clearedAt = block.timestamp + registry.leaseTerm() + 1 minutes;
 
@@ -542,6 +571,15 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: 0}(_tokenId, 0);
 
         // clear auction
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(
+            _tokenId,
+            _prevAuctionId + 1,
+            USER_A,
+            _clearedAt,
+            _clearedAt + registry.leaseTerm()
+        );
+
         vm.warp(_clearedAt);
         operator.clearAuction(_tokenId);
 
@@ -641,10 +679,22 @@ contract BillboardTest is BillboardTestBase {
     /// Tax & Withdraw
     //////////////////////////////
 
-    function testCalculateTax() public {}
+    function testCalculateTax() public {
+        uint256 _amount = 100;
+        uint256 _taxRate = 10; // 10% per day
+
+        vm.startPrank(ADMIN);
+        operator.setTaxRate(_taxRate);
+
+        uint256 _tax = operator.calculateTax(_amount);
+        assertEq(_tax, (_amount * _taxRate * 14) / 100);
+    }
 
     function testSetTaxRate() public {
         vm.startPrank(ADMIN);
+
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.TaxRateUpdated(2);
 
         operator.setTaxRate(2);
         assertEq(operator.getTaxRate(), 2);
@@ -676,6 +726,9 @@ contract BillboardTest is BillboardTestBase {
         uint256 _prevAdminBalance = ADMIN.balance;
 
         // withdraw tax
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.TaxWithdrawn(ADMIN, _tax);
+
         vm.prank(ADMIN);
         operator.withdrawTax();
 
@@ -759,6 +812,9 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bidB.isWon, false);
 
         // withdraw bid
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.BidWithdrawn(_tokenId, _nextAuctionId, USER_B, _amount, _tax);
+
         vm.prank(USER_B);
         operator.withdrawBid(_tokenId, _nextAuctionId);
         assertEq(USER_B.balance, _total);

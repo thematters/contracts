@@ -16,15 +16,130 @@ interface IBillboardRegistry is IERC721 {
     /// Event
     //////////////////////////////
 
-    // TODO
-    // mint & transfer (no need, inherted from ERC721)
-    // set board (name, uris, etc.)
-    // set tax rate
-    // new auction
-    // clear auction
-    // new bid
-    // withdraw bid
-    // withdraw tax
+    /**
+     * @notice Board name is updated.
+     *
+     * @param tokenId Token ID of the board.
+     * @param name New name of the board.
+     */
+    event BoardNameUpdated(uint256 indexed tokenId, string name);
+
+    /**
+     * @notice Board description is updated.
+     *
+     * @param tokenId Token ID of the board.
+     * @param description New description of the board.
+     */
+    event BoardDescriptionUpdated(uint256 indexed tokenId, string description);
+
+    /**
+     * @notice Board location is updated.
+     *
+     * @param tokenId Token ID of the board.
+     * @param location New location of the board.
+     */
+    event BoardLocationUpdated(uint256 indexed tokenId, string location);
+
+    /**
+     * @notice Board content URI is updated.
+     *
+     * @param tokenId Token ID of the board.
+     * @param contentURI New content URI of the board.
+     */
+    event BoardContentURIUpdated(uint256 indexed tokenId, string contentURI);
+
+    /**
+     * @notice Board redirect URI is updated.
+     *
+     * @param tokenId Token ID of the board.
+     * @param redirectURI New redirect URI of the board.
+     */
+    event BoardRedirectURIUpdated(uint256 indexed tokenId, string redirectURI);
+
+    /**
+     * @notice Global tax rate is updated.
+     *
+     * @param taxRate New tax rate.
+     */
+    event TaxRateUpdated(uint256 taxRate);
+
+    /**
+     * @notice Auction is created.
+     *
+     * @param tokenId Token ID of the board.
+     * @param auctionId Auction ID of the auction.
+     * @param startAt Start time of the auction.
+     * @param endAt End time of the auction.
+     */
+    event AuctionCreated(uint256 indexed tokenId, uint256 indexed auctionId, uint256 startAt, uint256 endAt);
+
+    /**
+     * @notice Auction is cleared.
+     *
+     * @param tokenId Token ID of the board.
+     * @param auctionId Auction ID of the auction.
+     * @param highestBidder Highest bidder of the auction.
+     * @param leaseStartAt Start time of the lease.
+     * @param leaseEndAt End time of the lease.
+     */
+    event AuctionCleared(
+        uint256 indexed tokenId,
+        uint256 indexed auctionId,
+        address indexed highestBidder,
+        uint256 leaseStartAt,
+        uint256 leaseEndAt
+    );
+
+    /**
+     * @notice Bid is created.
+     *
+     * @param tokenId Token ID of the board.
+     * @param auctionId Auction ID of the auction.
+     * @param bidder Bidder of the auction.
+     * @param price Price of the bid.
+     * @param tax Tax of the bid.
+     */
+    event BidCreated(
+        uint256 indexed tokenId,
+        uint256 indexed auctionId,
+        address indexed bidder,
+        uint256 price,
+        uint256 tax
+    );
+
+    /**
+     * @notice Bid is won.
+     *
+     * @param tokenId Token ID of the board.
+     * @param auctionId Auction ID of the auction.
+     * @param bidder Bidder of the auction.
+     */
+    event BidWon(uint256 indexed tokenId, uint256 indexed auctionId, address indexed bidder);
+
+    /**
+     * @notice Bid is withdrawn.
+     *
+     * @param tokenId Token ID of the board.
+     * @param auctionId Auction ID of the auction.
+     * @param bidder Bidder of the auction.
+     * @param price Price of the bid.
+     * @param tax Tax of the bid.
+     */
+    event BidWithdrawn(
+        uint256 indexed tokenId,
+        uint256 indexed auctionId,
+        address indexed bidder,
+        uint256 price,
+        uint256 tax
+    );
+
+    /**
+     * @notice Tax is withdrawn.
+     *
+     * @param owner Owner of the treasury.
+     * @param amount Amount of the tax.
+     */
+    event TaxWithdrawn(address indexed owner, uint256 amount);
 
     //////////////////////////////
     /// Struct
@@ -249,4 +364,50 @@ interface IBillboardRegistry is IERC721 {
      * @param withdrawn_ Withdrawn tax.
      */
     function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external;
+
+    //////////////////////////////
+    /// Event emission
+    //////////////////////////////
+
+    /**
+     * @notice Emit `AuctionCleared` event.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of an auction.
+     * @param highestBidder_ Highest bidder of an auction.
+     * @param leaseStartAt_ Start time of an board lease.
+     * @param leaseEndAt_ End time of an board lease.
+     */
+    function emitAuctionCleared(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address highestBidder_,
+        uint256 leaseStartAt_,
+        uint256 leaseEndAt_
+    ) external;
+
+    /**
+     * @notice Emit `BidWithdrawn` event.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param auctionId_ Auction ID of an auction.
+     * @param bidder_ Bidder of an auction.
+     * @param price_ Price of a bid.
+     * @param tax_ Tax of a bid.
+     */
+    function emitBidWithdrawn(
+        uint256 tokenId_,
+        uint256 auctionId_,
+        address bidder_,
+        uint256 price_,
+        uint256 tax_
+    ) external;
+
+    /**
+     * @notice Emit `TaxWithdrawn` event.
+     *
+     * @param owner_ Address of a treasury owner.
+     * @param amount_ Amount.
+     */
+    function emitTaxWithdrawn(address owner_, uint256 amount_) external;
 }
