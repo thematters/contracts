@@ -84,6 +84,12 @@ Testing
 make test
 ```
 
+Static Analyzers
+
+```bash
+make analyze-billboard
+```
+
 ## Deployment
 
 ### Deploy on Local Node:

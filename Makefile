@@ -11,9 +11,15 @@ coverage :; forge coverage --report=summary
 build: clean
 	forge build
 test:
-	forge test --gas-report
+	forge test --gas-report -vvv
 trace: clean
 	forge test -vvvvv --gas-report
+
+# Static Analyzers
+analyze-logbook   :; slither src/Logbook/Logbook.sol
+analyze-the-space :; slither src/TheSpace/TheSpace.sol
+analyze-curation  :; slither src/Curation/Curation.sol
+analyze-billboard :; slither src/Billboard/Billboard.sol
 
 # Deployments
 ## Logbook
@@ -36,3 +42,7 @@ deploy-snapper: clean
 ## Curation
 deploy-curation: clean
 	@forge create Curation --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
+
+## Billboard
+deploy-billboard: clean
+	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_REGISTRY_ADDRESS} 1 "Billboard" "BLBD" --legacy

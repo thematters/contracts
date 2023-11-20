@@ -4,5 +4,7 @@
     "solidity.formatter": "prettier",
     "[solidity]": {
         "editor.defaultFormatter": "NomicFoundation.hardhat-solidity"
-    }
+    },
+    "solidity.packageDefaultDependenciesContractsDirectory": "src",
+    "solidity.packageDefaultDependenciesDirectory": "lib"
 }
