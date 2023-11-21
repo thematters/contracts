@@ -71,7 +71,7 @@ interface IBillboardRegistry is IERC721 {
      * @param startAt Start time of the auction.
      * @param endAt End time of the auction.
      */
-    event AuctionCreated(uint256 indexed tokenId, uint256 indexed auctionId, uint256 startAt, uint256 endAt);
+    event AuctionCreated(uint256 indexed tokenId, uint256 indexed auctionId, uint64 startAt, uint64 endAt);
 
     /**
      * @notice Auction is cleared.
@@ -86,8 +86,8 @@ interface IBillboardRegistry is IERC721 {
         uint256 indexed tokenId,
         uint256 indexed auctionId,
         address indexed highestBidder,
-        uint256 leaseStartAt,
-        uint256 leaseEndAt
+        uint64 leaseStartAt,
+        uint64 leaseEndAt
     );
 
     /**
@@ -155,10 +155,10 @@ interface IBillboardRegistry is IERC721 {
     }
 
     struct Auction {
-        uint256 startAt; // timestamp
-        uint256 endAt; // timestamp
-        uint256 leaseStartAt; // timestamp
-        uint256 leaseEndAt; // timestamp
+        uint64 startAt; // timestamp
+        uint64 endAt; // timestamp
+        uint64 leaseStartAt; // timestamp
+        uint64 leaseEndAt; // timestamp
         address highestBidder;
     }
 
@@ -271,7 +271,7 @@ interface IBillboardRegistry is IERC721 {
      * @param startAt_ Start time of an auction.
      * @param endAt_ End time of an auction.
      */
-    function newAuction(uint256 tokenId_, uint256 startAt_, uint256 endAt_) external returns (uint256 auctionId);
+    function newAuction(uint256 tokenId_, uint64 startAt_, uint64 endAt_) external returns (uint256 auctionId);
 
     /**
      * @notice Set the data of an auction
@@ -281,7 +281,7 @@ interface IBillboardRegistry is IERC721 {
      * @param leaseStartAt_ Start time of an board lease.
      * @param leaseEndAt_ End time of an board lease.
      */
-    function setAuctionLease(uint256 tokenId_, uint256 auctionId_, uint256 leaseStartAt_, uint256 leaseEndAt_) external;
+    function setAuctionLease(uint256 tokenId_, uint256 auctionId_, uint64 leaseStartAt_, uint64 leaseEndAt_) external;
 
     /**
      * @notice Get bid count of an auction
@@ -382,8 +382,8 @@ interface IBillboardRegistry is IERC721 {
         uint256 tokenId_,
         uint256 auctionId_,
         address highestBidder_,
-        uint256 leaseStartAt_,
-        uint256 leaseEndAt_
+        uint64 leaseStartAt_,
+        uint64 leaseEndAt_
     ) external;
 
     /**

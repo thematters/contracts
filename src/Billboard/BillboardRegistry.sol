@@ -15,7 +15,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     Counters.Counter private _tokenIds;
 
     uint256 public taxRate;
-    uint256 public leaseTerm = 14 days;
+    uint64 public leaseTerm = 14 days;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -139,8 +139,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function newAuction(
         uint256 tokenId_,
-        uint256 startAt_,
-        uint256 endAt_
+        uint64 startAt_,
+        uint64 endAt_
     ) external isFromOperator returns (uint256 newAuctionId) {
         nextBoardAuctionId[tokenId_]++;
 
@@ -161,8 +161,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     function setAuctionLease(
         uint256 tokenId_,
         uint256 auctionId_,
-        uint256 leaseStartAt_,
-        uint256 leaseEndAt_
+        uint64 leaseStartAt_,
+        uint64 leaseEndAt_
     ) external isFromOperator {
         boardAuctions[tokenId_][auctionId_].leaseStartAt = leaseStartAt_;
         boardAuctions[tokenId_][auctionId_].leaseEndAt = leaseEndAt_;
@@ -276,8 +276,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 tokenId_,
         uint256 auctionId_,
         address highestBidder_,
-        uint256 leaseStartAt_,
-        uint256 leaseEndAt_
+        uint64 leaseStartAt_,
+        uint64 leaseEndAt_
     ) external {
         emit AuctionCleared(tokenId_, auctionId_, highestBidder_, leaseStartAt_, leaseEndAt_);
     }

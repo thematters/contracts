@@ -193,8 +193,8 @@ contract Billboard is IBillboard {
         registry.setBidWon(tokenId_, nextAuctionId_, _nextAuction.highestBidder, true);
 
         // set auction lease
-        uint256 leaseStartAt = block.timestamp;
-        uint256 leaseEndAt = leaseStartAt + registry.leaseTerm();
+        uint64 leaseStartAt = uint64(block.timestamp);
+        uint64 leaseEndAt = uint64(leaseStartAt + registry.leaseTerm());
         registry.setAuctionLease(tokenId_, nextAuctionId_, leaseStartAt, leaseEndAt);
 
         // emit AuctionCleared
@@ -213,7 +213,7 @@ contract Billboard is IBillboard {
         // create new auction and new bid first,
         // then clear auction and transfer ownership to the bidder immediately.
         if (_nextAuction.startAt == 0) {
-            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, block.timestamp);
+            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp));
             _clearAuction(tokenId_, _boardCreator, _auctionId);
             return;
         }
@@ -223,7 +223,7 @@ contract Billboard is IBillboard {
         // then create new auction and new bid
         if (block.timestamp >= _nextAuction.endAt) {
             _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
-            _newAuctionAndBid(tokenId_, amount_, block.timestamp + registry.leaseTerm());
+            _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp + registry.leaseTerm()));
             return;
         }
         // if next auction is not ended,
@@ -240,8 +240,8 @@ contract Billboard is IBillboard {
         }
     }
 
-    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_, uint256 endAt_) private returns (uint256 auctionId) {
-        uint256 _startAt = block.timestamp;
+    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_, uint64 endAt_) private returns (uint256 auctionId) {
+        uint64 _startAt = uint64(block.timestamp);
         uint256 _tax = calculateTax(amount_);
 
         auctionId = registry.newAuction(tokenId_, _startAt, endAt_);

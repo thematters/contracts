@@ -6,14 +6,6 @@ on:
       - master
       - main
       - develop
-  pull_request:
-    # Optionally configure to run only for changes in specific files. For example:
-    # paths:
-    # - src/**
-    # - test/**
-    # - foundry.toml
-    # - remappings.txt
-    # - .github/workflows/foundry-gas-diff.yml
 
 jobs:
   compare_gas_reports:
