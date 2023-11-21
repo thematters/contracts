@@ -23,10 +23,17 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: actions/setup-node@v2
+      - name: Install dev dependencies
+        run: npm install
+
       - name: Install Foundry
-        uses: onbjerg/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Run lint check
+        run: npm run lint:check
 
       - name: Env
         run: cp .env.local.example .env.local
