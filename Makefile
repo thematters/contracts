@@ -6,14 +6,15 @@ update:; forge update
 
 # Build & test
 clean    :; forge clean
-snapshot :; forge snapshot --gas-report
+snapshot :; forge snapshot
+gas-report :; forge test --gas-report
 coverage :; forge coverage --report=summary
 build: clean
 	forge build
 test:
-	forge test --gas-report -vvv
+	forge test -vvv
 trace: clean
-	forge test -vvvvv --gas-report
+	forge test -vvvvv 
 
 # Static Analyzers
 analyze-logbook   :; slither src/Logbook/Logbook.sol
