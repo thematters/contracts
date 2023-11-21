@@ -3,7 +3,6 @@ name: Report gas diff
 on:
   push:
     branches-ignore:
-      - master
       - main
       - develop
   pull_request:
