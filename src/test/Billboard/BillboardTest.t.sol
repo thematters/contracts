@@ -364,7 +364,12 @@ contract BillboardTest is BillboardTestBase {
         uint256 _prevRegistryBalance = address(registry).balance;
 
         vm.expectEmit(true, true, true, true);
-        emit IBillboardRegistry.AuctionCreated(_tokenId, _prevNextActionId + 1, block.timestamp, block.timestamp);
+        emit IBillboardRegistry.AuctionCreated(
+            _tokenId,
+            _prevNextActionId + 1,
+            uint64(block.timestamp),
+            uint64(block.timestamp)
+        );
         vm.expectEmit(true, true, true, true);
         emit IBillboardRegistry.BidCreated(_tokenId, _prevNextActionId + 1, USER_A, _amount, _tax);
         vm.expectEmit(true, true, true, true);
@@ -374,8 +379,8 @@ contract BillboardTest is BillboardTestBase {
             _tokenId,
             _prevNextActionId + 1,
             USER_A,
-            block.timestamp,
-            block.timestamp + registry.leaseTerm()
+            uint64(block.timestamp),
+            uint64(block.timestamp + registry.leaseTerm())
         );
 
         vm.prank(USER_A);
@@ -579,8 +584,8 @@ contract BillboardTest is BillboardTestBase {
 
     function testClearAuctionIfAuctionEnded() public {
         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
-        uint256 _placedAt = block.timestamp;
-        uint256 _clearedAt = block.timestamp + registry.leaseTerm() + 1 minutes;
+        uint64 _placedAt = uint64(block.timestamp);
+        uint64 _clearedAt = uint64(block.timestamp) + registry.leaseTerm() + 1 minutes;
 
         // place a bid
         vm.startPrank(USER_A);
