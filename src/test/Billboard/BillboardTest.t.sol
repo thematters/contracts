@@ -354,8 +354,9 @@ contract BillboardTest is BillboardTestBase {
 
         uint256 _tokenId = _mintBoard();
         uint256 _tax = operator.calculateTax(_amount);
+        uint256 _overpaid = 0.1 ether;
         uint256 _total = _amount + _tax;
-        vm.deal(USER_A, _total);
+        vm.deal(USER_A, _total + _overpaid);
 
         uint256 _prevNextActionId = registry.nextBoardAuctionId(_tokenId);
         uint256 _prevCreatorBalance = ADMIN.balance;
@@ -384,7 +385,7 @@ contract BillboardTest is BillboardTestBase {
         );
 
         vm.prank(USER_A);
-        operator.placeBid{value: _total}(_tokenId, _amount);
+        operator.placeBid{value: _total + _overpaid}(_tokenId, _amount);
 
         // check balances
         assertEq(ADMIN.balance, _prevCreatorBalance + _amount);

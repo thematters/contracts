@@ -259,9 +259,19 @@ contract Billboard is IBillboard {
     }
 
     function _lockBidPriceAndTax(uint256 amount_) private {
+        // transfer bid price and tax to the registry
         (bool _success, ) = address(registry).call{value: amount_}("");
         if (!_success) {
             revert TransferFailed();
+        }
+
+        // refund if overpaid
+        uint256 _overpaid = msg.value - amount_;
+        if (_overpaid > 0) {
+            (bool _refundSuccess, ) = msg.sender.call{value: _overpaid}("");
+            if (!_refundSuccess) {
+                revert TransferFailed();
+            }
         }
     }
 
