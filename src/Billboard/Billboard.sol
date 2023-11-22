@@ -39,7 +39,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromWhitelist() {
-        if (whitelist[msg.sender] != true) {
+        if (!whitelist[msg.sender]) {
             revert Unauthorized("whitelist");
         }
         _;
@@ -94,7 +94,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function mintBoard(address to_) external returns (uint256 tokenId) {
-        if (isOpened || whitelist[msg.sender] == true) {
+        if (isOpened || whitelist[msg.sender]) {
             tokenId = registry.mintBoard(to_);
         } else {
             revert Unauthorized("whitelist");
@@ -140,7 +140,7 @@ contract Billboard is IBillboard {
         uint256 tokenId_,
         uint256 auctionId_
     ) external view returns (IBillboardRegistry.Auction memory auction) {
-        return registry.getAuction(tokenId_, auctionId_);
+        auction = registry.getAuction(tokenId_, auctionId_);
     }
 
     /// @inheritdoc IBillboard

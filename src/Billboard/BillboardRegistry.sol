@@ -12,7 +12,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // access control
     address public operator;
 
-    Counters.Counter private _tokenIds;
+    Counters.Counter public lastTokenId;
 
     uint256 public taxRate;
     uint64 public leaseTerm = 14 days;
@@ -70,8 +70,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     /// @inheritdoc IBillboardRegistry
     function mintBoard(address to_) external isFromOperator returns (uint256 tokenId) {
-        _tokenIds.increment();
-        tokenId = _tokenIds.current();
+        lastTokenId.increment();
+        tokenId = lastTokenId.current();
 
         _safeMint(to_, tokenId);
 
@@ -83,9 +83,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             contentURI: "",
             redirectURI: ""
         });
-
-        // TODO
-        // emit Mint(newBoardId, to_);
     }
 
     /// @inheritdoc IBillboardRegistry
