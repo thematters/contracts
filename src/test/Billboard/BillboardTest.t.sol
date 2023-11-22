@@ -753,7 +753,6 @@ contract BillboardTest is BillboardTestBase {
 
         // get bids
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-        console.log(_nextAuctionId);
         (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBids(
             _tokenId,
             _nextAuctionId,
