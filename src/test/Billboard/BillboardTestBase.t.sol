@@ -43,7 +43,6 @@ contract BillboardTestBase is Test {
     function _mintBoard() public returns (uint256 tokenId) {
         vm.prank(ADMIN);
         tokenId = operator.mintBoard(ADMIN);
-        assertEq(registry.balanceOf(ADMIN), 1);
     }
 
     function _mintBoardAndPlaceBid() public returns (uint256 tokenId, uint256 _nextAuctionId) {

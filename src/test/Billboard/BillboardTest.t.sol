@@ -623,6 +623,80 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.isWithdrawn, false);
     }
 
+    function testClearAuctionsIfAuctionEnded() public {
+        (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
+        (uint256 _tokenId2, uint256 _prevAuctionId2) = _mintBoardAndPlaceBid();
+
+        uint64 _placedAt = uint64(block.timestamp);
+        uint64 _clearedAt = uint64(block.timestamp) + registry.leaseTerm() + 1 minutes;
+
+        // place bids
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, 0);
+        operator.placeBid{value: 0}(_tokenId, 0);
+
+        vm.startPrank(USER_B);
+        vm.deal(USER_B, 0);
+        operator.placeBid{value: 0}(_tokenId2, 0);
+
+        // clear auction
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(
+            _tokenId,
+            _prevAuctionId + 1,
+            USER_A,
+            _clearedAt,
+            _clearedAt + registry.leaseTerm()
+        );
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(
+            _tokenId2,
+            _prevAuctionId2 + 1,
+            USER_B,
+            _clearedAt,
+            _clearedAt + registry.leaseTerm()
+        );
+
+        vm.warp(_clearedAt);
+
+        uint256[] memory _tokenIds = new uint256[](2);
+        _tokenIds[0] = _tokenId;
+        _tokenIds[1] = _tokenId2;
+        operator.clearAuctions(_tokenIds);
+
+        // check auction
+        uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
+        IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
+        assertEq(_auction.startAt, _placedAt);
+        assertEq(_auction.endAt, _placedAt + registry.leaseTerm());
+        assertEq(_auction.leaseStartAt, _clearedAt);
+        assertEq(_auction.leaseEndAt, _clearedAt + registry.leaseTerm());
+        assertEq(_auction.highestBidder, USER_A);
+
+        uint256 _nextAuctionId2 = registry.nextBoardAuctionId(_tokenId2);
+        IBillboardRegistry.Auction memory _auction2 = registry.getAuction(_tokenId2, _nextAuctionId2);
+        assertEq(_auction2.startAt, _placedAt);
+        assertEq(_auction2.endAt, _placedAt + registry.leaseTerm());
+        assertEq(_auction2.leaseStartAt, _clearedAt);
+        assertEq(_auction2.leaseEndAt, _clearedAt + registry.leaseTerm());
+        assertEq(_auction2.highestBidder, USER_B);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
+        assertEq(_bid.price, 0);
+        assertEq(_bid.tax, 0);
+        assertEq(_bid.placedAt, _placedAt);
+        assertEq(_bid.isWon, true);
+        assertEq(_bid.isWithdrawn, false);
+
+        IBillboardRegistry.Bid memory _bid2 = registry.getBid(_tokenId2, _nextAuctionId2, USER_B);
+        assertEq(_bid2.price, 0);
+        assertEq(_bid2.tax, 0);
+        assertEq(_bid2.placedAt, _placedAt);
+        assertEq(_bid2.isWon, true);
+        assertEq(_bid2.isWithdrawn, false);
+    }
+
     function testCannotClearAuctionOnNewBoard() public {
         uint256 _mintedAt = block.timestamp;
         uint256 _clearedAt = _mintedAt + 1;

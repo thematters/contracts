@@ -143,6 +143,13 @@ interface IBillboard {
     function clearAuction(uint256 tokenId_) external;
 
     /**
+     * @notice Clear the next auction of mutiple boards.
+     *
+     * @param tokenIds_ Token IDs of boards.
+     */
+    function clearAuctions(uint256[] calldata tokenIds_) external;
+
+    /**
      * @notice Place bid for the next auction of a board.
      *
      * @param tokenId_ Token ID of a board.

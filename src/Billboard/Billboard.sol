@@ -168,6 +168,13 @@ contract Billboard is IBillboard {
         _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
     }
 
+    /// @inheritdoc IBillboard
+    function clearAuctions(uint256[] calldata tokenIds_) external {
+        for (uint256 i = 0; i < tokenIds_.length; i++) {
+            clearAuction(tokenIds_[i]);
+        }
+    }
+
     function _clearAuction(uint256 tokenId_, address boardCreator_, uint256 nextAuctionId_) private {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(
