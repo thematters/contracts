@@ -5,26 +5,6 @@ import "./IBillboardRegistry.sol";
 
 interface IBillboard {
     //////////////////////////////
-    /// Error
-    //////////////////////////////
-
-    error Unauthorized(string reason_);
-
-    error BoardNotFound();
-
-    error AuctionNotFound();
-
-    error AuctionNotEnded();
-
-    error BidNotFound();
-
-    error BidAlreadyPlaced();
-
-    error WithdrawFailed(string reason_);
-
-    error TransferFailed();
-
-    //////////////////////////////
     /// Upgradability
     //////////////////////////////
 

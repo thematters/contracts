@@ -32,31 +32,23 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     modifier isFromAdmin() {
-        if (msg.sender != admin) {
-            revert Unauthorized("admin");
-        }
+        require(msg.sender == admin, "Admin");
         _;
     }
 
     modifier isFromWhitelist() {
-        if (!whitelist[msg.sender]) {
-            revert Unauthorized("whitelist");
-        }
+        require(whitelist[msg.sender], "Whitelist");
         _;
     }
 
     modifier isFromBoardCreator(uint256 tokenId_) {
         (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        if (_boardCreator != msg.sender) {
-            revert Unauthorized("creator");
-        }
+        require(_boardCreator == msg.sender, "Creator");
         _;
     }
 
     modifier isFromBoardTenant(uint256 tokenId_) {
-        if (msg.sender != registry.ownerOf(tokenId_)) {
-            revert Unauthorized("tenant");
-        }
+        require(msg.sender == registry.ownerOf(tokenId_), "Tenant");
         _;
     }
 
@@ -94,11 +86,9 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function mintBoard(address to_) external returns (uint256 tokenId) {
-        if (isOpened || whitelist[msg.sender]) {
-            tokenId = registry.mintBoard(to_);
-        } else {
-            revert Unauthorized("whitelist");
-        }
+        require(isOpened || whitelist[msg.sender], "Whitelist");
+
+        tokenId = registry.mintBoard(to_);
     }
 
     /// @inheritdoc IBillboard
@@ -147,16 +137,16 @@ contract Billboard is IBillboard {
     function clearAuction(uint256 tokenId_) public {
         // revert if board not found
         (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        if (_boardCreator == address(0)) revert BoardNotFound();
+        require(_boardCreator != address(0), "Board not found");
 
         // revert if it's a new board
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
-        if (_nextAuctionId == 0) revert AuctionNotFound();
+        require(_nextAuctionId != 0, "Auction not found");
 
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
 
         // revert if auction is still running
-        if (block.timestamp < _nextAuction.endAt) revert AuctionNotEnded();
+        require(block.timestamp >= _nextAuction.endAt, "Auction not ended");
 
         // reclaim ownership to board creator if no auction
         address _prevOwner = registry.ownerOf(tokenId_);
@@ -211,7 +201,7 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist {
         (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        if (_boardCreator == address(0)) revert BoardNotFound();
+        require(_boardCreator != address(0), "Board not found");
 
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
@@ -236,9 +226,7 @@ contract Billboard is IBillboard {
         // if next auction is not ended,
         // push new bid to next auction
         else {
-            if (registry.getBid(tokenId_, _nextAuctionId, msg.sender).placedAt != 0) {
-                revert BidAlreadyPlaced();
-            }
+            require(registry.getBid(tokenId_, _nextAuctionId, msg.sender).placedAt == 0, "Bid already placed");
 
             uint256 _tax = calculateTax(amount_);
             registry.newBid(tokenId_, _nextAuctionId, msg.sender, amount_, _tax);
@@ -261,17 +249,13 @@ contract Billboard is IBillboard {
     function _lockBidPriceAndTax(uint256 amount_) private {
         // transfer bid price and tax to the registry
         (bool _success, ) = address(registry).call{value: amount_}("");
-        if (!_success) {
-            revert TransferFailed();
-        }
+        require(_success, "Transfer failed");
 
         // refund if overpaid
         uint256 _overpaid = msg.value - amount_;
         if (_overpaid > 0) {
             (bool _refundSuccess, ) = msg.sender.call{value: _overpaid}("");
-            if (!_refundSuccess) {
-                revert TransferFailed();
-            }
+            require(_refundSuccess, "Transfer failed");
         }
     }
 
@@ -338,7 +322,7 @@ contract Billboard is IBillboard {
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
 
-        if (amount <= 0) revert WithdrawFailed("zero amount");
+        require(amount > 0, "Zero amount");
 
         // transfer tax to the owner
         registry.transferAmount(msg.sender, amount);
@@ -354,18 +338,18 @@ contract Billboard is IBillboard {
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
         // revert if auction is still running
         IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId_, auctionId_);
-        if (block.timestamp < _auction.endAt) revert AuctionNotEnded();
+        require(block.timestamp >= _auction.endAt, "Auction not ended");
 
         // revert if auction is not cleared
-        if (_auction.leaseEndAt == 0) revert WithdrawFailed("auction not cleared");
+        require(_auction.leaseEndAt != 0, "Auction not cleared");
 
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, auctionId_, msg.sender);
         uint256 amount = _bid.price + _bid.tax;
 
-        if (_bid.placedAt == 0) revert BidNotFound();
-        if (_bid.isWithdrawn) revert WithdrawFailed("withdrawn");
-        if (_bid.isWon) revert WithdrawFailed("won");
-        if (amount <= 0) revert WithdrawFailed("zero amount");
+        require(_bid.placedAt != 0, "Bid not found");
+        require(!_bid.isWithdrawn, "Bid already withdrawn");
+        require(!_bid.isWon, "Bid already won");
+        require(amount > 0, "Zero amount");
 
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);

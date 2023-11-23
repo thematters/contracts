@@ -5,14 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 interface IBillboardRegistry is IERC721 {
     //////////////////////////////
-    /// Error
-    //////////////////////////////
-
-    error Unauthorized(string type_);
-
-    error TransferFailed();
-
-    //////////////////////////////
     /// Event
     //////////////////////////////
 

@@ -50,9 +50,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
 
     modifier isFromOperator() {
-        if (msg.sender != operator) {
-            revert Unauthorized("operator");
-        }
+        require(msg.sender == operator, "Operator");
         _;
     }
 
@@ -224,9 +222,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function transferAmount(address to_, uint256 amount_) external isFromOperator {
         (bool _success, ) = to_.call{value: amount_}("");
-        if (!_success) {
-            revert TransferFailed();
-        }
+        require(_success, "transfer failed");
     }
 
     //////////////////////////////

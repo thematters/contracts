@@ -27,7 +27,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotUpgradeRegistryByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        vm.expectRevert("Admin");
         operator.setRegistryOperator(FAKE_CONTRACT);
     }
 
@@ -48,7 +48,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotSetIsOpenedByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        vm.expectRevert("Admin");
         operator.setIsOpened(true);
     }
 
@@ -63,7 +63,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotAddToWhitelistByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        vm.expectRevert("Admin");
         operator.addToWhitelist(USER_A);
     }
 
@@ -80,7 +80,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotRemoveToWhitelistByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        vm.expectRevert("Admin");
         operator.removeFromWhitelist(USER_B);
     }
 
@@ -129,7 +129,7 @@ contract BillboardTest is BillboardTestBase {
 
     function testMintBoardByWhitelist() public {
         vm.prank(USER_A);
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
+        vm.expectRevert("Whitelist");
         operator.mintBoard(USER_A);
 
         vm.prank(ADMIN);
@@ -143,7 +143,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotMintBoardByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
+        vm.expectRevert("Whitelist");
         operator.mintBoard(ATTACKER);
     }
 
@@ -185,19 +185,19 @@ contract BillboardTest is BillboardTestBase {
 
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardName(_tokenId, "name");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardDescription(_tokenId, "description");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardLocation(_tokenId, "location");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "tenant"));
+        vm.expectRevert("Tenant");
         operator.setBoardContentURI(_tokenId, "uri");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "tenant"));
+        vm.expectRevert("Tenant");
         operator.setBoardRedirectURI(_tokenId, "redirect URI");
     }
 
@@ -227,13 +227,13 @@ contract BillboardTest is BillboardTestBase {
         vm.stopPrank();
         vm.startPrank(USER_A);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardName(_tokenId, "name by a");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardDescription(_tokenId, "description by a");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardLocation(_tokenId, "location by a");
 
         operator.setBoardContentURI(_tokenId, "uri by a");
@@ -255,13 +255,13 @@ contract BillboardTest is BillboardTestBase {
         vm.stopPrank();
         vm.startPrank(USER_B);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardName(_tokenId, "name by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardDescription(_tokenId, "description by b");
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "creator"));
+        vm.expectRevert("Creator");
         operator.setBoardLocation(_tokenId, "location by b");
 
         operator.setBoardContentURI(_tokenId, "uri by b");
@@ -309,7 +309,7 @@ contract BillboardTest is BillboardTestBase {
 
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "operator"));
+        vm.expectRevert("Operator");
         registry.safeTransferByOperator(ADMIN, ATTACKER, _tokenId);
     }
 
@@ -411,6 +411,26 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.placedAt, block.timestamp);
         assertEq(_bid.isWon, true);
         assertEq(_bid.isWithdrawn, false);
+    }
+
+    function testSomethin() public {
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        (uint256 _tokenId2, ) = _mintBoardAndPlaceBid();
+        (uint256 _tokenId3, ) = _mintBoardAndPlaceBid();
+
+        vm.startPrank(USER_A);
+        operator.placeBid{value: 0}(_tokenId, 0);
+        operator.placeBid{value: 0}(_tokenId2, 0);
+
+        vm.startPrank(USER_B);
+        operator.placeBid{value: 0}(_tokenId3, 0);
+
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        uint256[] memory _tokenIds = new uint256[](3);
+        _tokenIds[0] = _tokenId;
+        _tokenIds[1] = _tokenId2;
+        _tokenIds[2] = _tokenId3;
+        operator.clearAuctions(_tokenIds);
     }
 
     function testPlaceBidWithSamePrices(uint96 _amount) public {
@@ -567,7 +587,7 @@ contract BillboardTest is BillboardTestBase {
         assertEq(USER_A.balance, 0);
 
         vm.deal(USER_A, _total);
-        vm.expectRevert(abi.encodeWithSignature("BidAlreadyPlaced()"));
+        vm.expectRevert("Bid already placed");
         operator.placeBid{value: _total}(_tokenId, _amount);
     }
 
@@ -579,7 +599,7 @@ contract BillboardTest is BillboardTestBase {
 
         vm.startPrank(ATTACKER);
         vm.deal(ATTACKER, _total);
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "whitelist"));
+        vm.expectRevert("Whitelist");
         operator.placeBid{value: _total}(_tokenId, _amount);
     }
 
@@ -707,7 +727,7 @@ contract BillboardTest is BillboardTestBase {
 
         // clear auction
         vm.warp(_clearedAt);
-        vm.expectRevert(abi.encodeWithSignature("AuctionNotFound()"));
+        vm.expectRevert("Auction not found");
         operator.clearAuction(_tokenId);
     }
 
@@ -720,11 +740,11 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: 0}(_tokenId, 0);
 
         // try to clear auction
-        vm.expectRevert(abi.encodeWithSignature("AuctionNotEnded()"));
+        vm.expectRevert("Auction not ended");
         operator.clearAuction(_tokenId);
 
         vm.warp(block.timestamp + registry.leaseTerm() - 1 seconds);
-        vm.expectRevert(abi.encodeWithSignature("AuctionNotEnded()"));
+        vm.expectRevert("Auction not ended");
         operator.clearAuction(_tokenId);
     }
 
@@ -799,7 +819,7 @@ contract BillboardTest is BillboardTestBase {
     function testCannotSetTaxRateByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized(string)", "admin"));
+        vm.expectRevert("Admin");
         operator.setTaxRate(2);
     }
 
@@ -845,7 +865,7 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: 0}(_tokenId, 0);
 
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        vm.expectRevert("Zero amount");
         operator.withdrawTax();
     }
 
@@ -864,14 +884,14 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: _amount}(_tokenId, _amount);
 
         vm.prank(ADMIN);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        vm.expectRevert("Zero amount");
         operator.withdrawTax();
     }
 
     function testCannotWithdrawTaxByAttacker() public {
         vm.startPrank(ATTACKER);
 
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "zero amount"));
+        vm.expectRevert("Zero amount");
         operator.withdrawTax();
     }
 
@@ -949,7 +969,7 @@ contract BillboardTest is BillboardTestBase {
 
         // withdraw bid again
         vm.prank(USER_B);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "withdrawn"));
+        vm.expectRevert("Bid already withdrawn");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
 
@@ -976,7 +996,7 @@ contract BillboardTest is BillboardTestBase {
 
         // withdraw bid
         vm.prank(USER_A);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "won"));
+        vm.expectRevert("Bid already won");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
 
@@ -994,12 +1014,12 @@ contract BillboardTest is BillboardTestBase {
 
         // auction is not ended
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-        vm.expectRevert(abi.encodeWithSignature("AuctionNotEnded()"));
+        vm.expectRevert("Auction not ended");
         operator.withdrawBid(_tokenId, _nextAuctionId);
 
         // auction is ended but not cleared
         vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "auction not cleared"));
+        vm.expectRevert("Auction not cleared");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
 
@@ -1024,7 +1044,7 @@ contract BillboardTest is BillboardTestBase {
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
         vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
         vm.prank(USER_B);
-        vm.expectRevert(abi.encodeWithSignature("WithdrawFailed(string)", "auction not cleared"));
+        vm.expectRevert("Auction not cleared");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
 
@@ -1033,7 +1053,7 @@ contract BillboardTest is BillboardTestBase {
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
 
         vm.prank(USER_A);
-        vm.expectRevert(abi.encodeWithSignature("BidNotFound()"));
+        vm.expectRevert("Bid not found");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
 }
