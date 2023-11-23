@@ -167,13 +167,20 @@ contract Billboard is IBillboard {
 
     function _clearAuction(uint256 tokenId_, address boardCreator_, uint256 nextAuctionId_) private {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
+
+        // skip if auction is already cleared
+        if (_nextAuction.leaseEndAt != 0) {
+            return;
+        }
+
+        address _prevOwner = registry.ownerOf(tokenId_);
+
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(
             tokenId_,
             nextAuctionId_,
             _nextAuction.highestBidder
         );
 
-        address _prevOwner = registry.ownerOf(tokenId_);
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
             registry.transferAmount(_prevOwner, _highestBid.price);
