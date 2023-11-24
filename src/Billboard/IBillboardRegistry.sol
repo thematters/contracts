@@ -9,6 +9,11 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
 
     /**
+     * @notice Operator is updated.
+     */
+    event OperatorUpdated(address indexed operator);
+
+    /**
      * @notice Board name is updated.
      *
      * @param tokenId Token ID of the board.

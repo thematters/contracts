@@ -15,7 +15,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     Counters.Counter public lastTokenId;
 
     uint256 public taxRate;
-    uint64 public leaseTerm = 14 days;
+    uint64 public constant leaseTerm = 14 days;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -41,6 +41,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
+        require(operator_ != address(0), "Zero address");
         operator = operator_;
         taxRate = taxRate_;
     }
@@ -59,7 +60,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     /// @inheritdoc IBillboardRegistry
     function setOperator(address operator_) external isFromOperator {
+        require(operator_ != address(0), "Zero address");
+
         operator = operator_;
+
+        emit OperatorUpdated(operator_);
     }
 
     //////////////////////////////
@@ -221,6 +226,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     /// @inheritdoc IBillboardRegistry
     function transferAmount(address to_, uint256 amount_) external isFromOperator {
+        require(to_ != address(0), "Zero address");
         (bool _success, ) = to_.call{value: amount_}("");
         require(_success, "transfer failed");
     }

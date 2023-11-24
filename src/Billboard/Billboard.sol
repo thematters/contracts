@@ -6,12 +6,11 @@ import "./IBillboard.sol";
 import "./IBillboardRegistry.sol";
 
 contract Billboard is IBillboard {
-    BillboardRegistry public registry;
-
     // access control
-    bool public isOpened = false;
-    address public admin;
+    BillboardRegistry public immutable registry;
+    address public immutable admin;
     mapping(address => bool) public whitelist;
+    bool public isOpened = false;
 
     constructor(address payable registry_, uint256 taxRate_, string memory name_, string memory symbol_) {
         admin = msg.sender;
