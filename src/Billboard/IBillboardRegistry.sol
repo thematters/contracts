@@ -163,7 +163,6 @@ interface IBillboardRegistry is IERC721 {
     }
 
     struct TaxTreasury {
-        address owner;
         uint256 accumulated;
         uint256 withdrawn;
     }

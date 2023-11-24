@@ -186,7 +186,7 @@ contract Billboard is IBillboard {
             registry.transferAmount(_prevOwner, _highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
-            (, uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
+            (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
             registry.setTaxTreasury(boardCreator_, _taxAccumulated + _highestBid.tax, _taxWithdrawn);
         }
 
@@ -325,7 +325,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawTax() external {
-        (, uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(msg.sender);
+        (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(msg.sender);
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
 
