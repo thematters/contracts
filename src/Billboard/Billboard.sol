@@ -42,8 +42,8 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromBoardCreator(uint256 tokenId_) {
-        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        require(_boardCreator == msg.sender, "Creator");
+        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
+        require(_board.creator == msg.sender, "Creator");
         _;
     }
 
@@ -136,8 +136,8 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) public {
         // revert if board not found
-        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        require(_boardCreator != address(0), "Board not found");
+        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
+        require(_board.creator != address(0), "Board not found");
 
         // revert if it's a new board
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
@@ -150,12 +150,12 @@ contract Billboard is IBillboard {
 
         // reclaim ownership to board creator if no auction
         address _prevOwner = registry.ownerOf(tokenId_);
-        if (_nextAuction.startAt == 0 && _prevOwner != _boardCreator) {
-            registry.safeTransferByOperator(_prevOwner, _boardCreator, tokenId_);
+        if (_nextAuction.startAt == 0 && _prevOwner != _board.creator) {
+            registry.safeTransferByOperator(_prevOwner, _board.creator, tokenId_);
             return;
         }
 
-        _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
+        _clearAuction(tokenId_, _board.creator, _nextAuctionId);
     }
 
     /// @inheritdoc IBillboard
@@ -207,8 +207,8 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist {
-        (address _boardCreator, , , , , ) = registry.boards(tokenId_);
-        require(_boardCreator != address(0), "Board not found");
+        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
+        require(_board.creator != address(0), "Board not found");
 
         uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
@@ -218,7 +218,7 @@ contract Billboard is IBillboard {
         // then clear auction and transfer ownership to the bidder immediately.
         if (_nextAuction.startAt == 0) {
             uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp));
-            _clearAuction(tokenId_, _boardCreator, _auctionId);
+            _clearAuction(tokenId_, _board.creator, _auctionId);
             return;
         }
 
@@ -226,7 +226,7 @@ contract Billboard is IBillboard {
         // clear auction first,
         // then create new auction and new bid
         if (block.timestamp >= _nextAuction.endAt) {
-            _clearAuction(tokenId_, _boardCreator, _nextAuctionId);
+            _clearAuction(tokenId_, _board.creator, _nextAuctionId);
             _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp + registry.leaseTerm()));
             return;
         }
