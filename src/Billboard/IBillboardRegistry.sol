@@ -256,7 +256,7 @@ interface IBillboardRegistry is IERC721 {
      * @notice Get an auction
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Token ID of a board.
+     * @param auctionId_ Auction ID of a auction.
      */
     function getAuction(uint256 tokenId_, uint256 auctionId_) external view returns (Auction memory auction);
 

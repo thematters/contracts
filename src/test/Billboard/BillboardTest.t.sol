@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import "forge-std/console.sol";
 import "./BillboardTestBase.t.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -789,6 +790,62 @@ contract BillboardTest is BillboardTestBase {
             uint256 _amount = 1 ether + _offset + i;
             assertEq(_bids[i].price, _amount);
         }
+    }
+
+    function testGetLastWonBid() public {
+        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+
+        // check the first won bid by ADMIN
+        IBillboardRegistry.Bid memory _bid = operator.getLastWonBid(_tokenId);
+        assertEq(_bid.price, 0);
+
+        // place a bid by USER_A during the second auction
+        uint256 _amount_a = 3 ether;
+        uint256 _tax_a = operator.calculateTax(_amount_a);
+        uint256 _total_a = _amount_a + _tax_a;
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, _total_a);
+        operator.placeBid{value: _total_a}(_tokenId, _amount_a);
+
+        // place a bid by USER_B during the second auction
+        uint256 _amount_b = 1 ether;
+        uint256 _tax_b = operator.calculateTax(_amount_b);
+        uint256 _total_b = _amount_b + _tax_b;
+        vm.startPrank(USER_B);
+        vm.deal(USER_B, _total_b);
+        operator.placeBid{value: _total_b}(_tokenId, _amount_b);
+
+        // check the last won bid is still the first bid before clearing
+        _bid = operator.getLastWonBid(_tokenId);
+        assertEq(_bid.price, 0);
+
+        // clear auction
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        operator.clearAuction(_tokenId);
+
+        // check the second won bid
+        _bid = operator.getLastWonBid(_tokenId);
+        assertEq(_bid.price, 3 ether);
+
+        // place a bid by USER_A during the thrid auction
+        _amount_a = 5 ether;
+        _tax_a = operator.calculateTax(_amount_a);
+        _total_a = _amount_a + _tax_a;
+        vm.startPrank(USER_A);
+        vm.deal(USER_A, _total_a);
+        operator.placeBid{value: _total_a}(_tokenId, _amount_a);
+
+        // check last won bid is still the second bid before clearing
+        _bid = operator.getLastWonBid(_tokenId);
+        assertEq(_bid.price, 3 ether);
+
+        // clear auction
+        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        operator.clearAuction(_tokenId);
+
+        // check the third won bid
+        _bid = operator.getLastWonBid(_tokenId);
+        assertEq(_bid.price, 5 ether);
     }
 
     //////////////////////////////

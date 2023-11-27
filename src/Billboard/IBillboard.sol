@@ -172,6 +172,13 @@ interface IBillboard {
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
 
+    /**
+     * @notice Get the last won bid of a board.
+     *
+     * @param tokenId_ Token ID of a board.
+     */
+    function getLastWonBid(uint256 tokenId_) external view returns (IBillboardRegistry.Bid memory bid);
+
     //////////////////////////////
     /// Tax & Withdraw
     //////////////////////////////

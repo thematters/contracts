@@ -304,6 +304,25 @@ contract Billboard is IBillboard {
         return (_total, limit_, offset_, _bids);
     }
 
+    /// @inheritdoc IBillboard
+    function getLastWonBid(uint256 tokenId_) external view returns (IBillboardRegistry.Bid memory bid) {
+        uint256 _auctionId = registry.nextBoardAuctionId(tokenId_);
+        require(_auctionId > 0, "Last cleared auction not found");
+
+        IBillboardRegistry.Auction memory auction = registry.getAuction(tokenId_, _auctionId);
+        bid = registry.getBid(tokenId_, _auctionId, auction.highestBidder);
+
+        // check if the auction is ended
+        if (bid.isWon == true) {
+            return bid;
+        }
+
+        // get previous auction
+        uint256 _lastAuctionId = _auctionId - 1;
+        auction = registry.getAuction(tokenId_, _lastAuctionId);
+        bid = registry.getBid(tokenId_, _lastAuctionId, auction.highestBidder);
+    }
+
     //////////////////////////////
     /// Tax & Withdraw
     //////////////////////////////
