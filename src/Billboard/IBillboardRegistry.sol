@@ -152,17 +152,17 @@ interface IBillboardRegistry is IERC721 {
     }
 
     struct Auction {
-        uint64 startAt; // timestamp
-        uint64 endAt; // timestamp
-        uint64 leaseStartAt; // timestamp
-        uint64 leaseEndAt; // timestamp
+        uint64 startAt; // block number
+        uint64 endAt; // block number
+        uint64 leaseStartAt; // block number
+        uint64 leaseEndAt; // block number
         address highestBidder;
     }
 
     struct Bid {
         uint256 price;
         uint256 tax;
-        uint256 placedAt; // timestamp
+        uint256 placedAt; // block number
         bool isWon;
         bool isWithdrawn;
     }

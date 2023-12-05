@@ -15,7 +15,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     Counters.Counter public lastTokenId;
 
     uint256 public taxRate;
-    uint64 public constant leaseTerm = 14 days;
+    uint64 public leaseTerm;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -38,12 +38,14 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     constructor(
         address operator_,
         uint256 taxRate_,
+        uint64 leaseTerm_,
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
         require(operator_ != address(0), "Zero address");
         operator = operator_;
         taxRate = taxRate_;
+        leaseTerm = leaseTerm_;
     }
 
     //////////////////////////////
@@ -186,7 +188,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 price_,
         uint256 tax_
     ) external isFromOperator {
-        Bid memory _bid = Bid({price: price_, tax: tax_, placedAt: block.timestamp, isWithdrawn: false, isWon: false});
+        Bid memory _bid = Bid({price: price_, tax: tax_, placedAt: block.number, isWithdrawn: false, isWon: false});
 
         // add to auction bids
         auctionBids[tokenId_][auctionId_][bidder_] = _bid;
@@ -197,7 +199,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         // set auction highest bidder if no highest bidder or price is higher.
         //
         // Note: for same price, the first bidder will always be
-        // the highest bidder since the block.timestamp is always greater.
+        // the highest bidder since the block.number is always greater.
         address highestBidder = boardAuctions[tokenId_][auctionId_].highestBidder;
         Bid memory highestBid = auctionBids[tokenId_][auctionId_][highestBidder];
         if (highestBidder == address(0) || price_ > highestBid.price) {

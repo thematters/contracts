@@ -12,7 +12,13 @@ contract Billboard is IBillboard {
     mapping(address => bool) public whitelist;
     bool public isOpened = false;
 
-    constructor(address payable registry_, uint256 taxRate_, string memory name_, string memory symbol_) {
+    constructor(
+        address payable registry_,
+        uint256 taxRate_,
+        uint64 leaseTerm_,
+        string memory name_,
+        string memory symbol_
+    ) {
         admin = msg.sender;
         whitelist[msg.sender] = true;
 
@@ -22,7 +28,7 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(address(this), taxRate_, name_, symbol_);
+            registry = new BillboardRegistry(address(this), taxRate_, leaseTerm_, name_, symbol_);
         }
     }
 
@@ -145,7 +151,7 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
 
         // revert if auction is still running
-        require(block.timestamp >= _nextAuction.endAt, "Auction not ended");
+        require(block.number >= _nextAuction.endAt, "Auction not ended");
 
         // reclaim ownership to board creator if no auction
         address _prevOwner = registry.ownerOf(tokenId_);
@@ -196,7 +202,7 @@ contract Billboard is IBillboard {
         registry.setBidWon(tokenId_, nextAuctionId_, _nextAuction.highestBidder, true);
 
         // set auction lease
-        uint64 leaseStartAt = uint64(block.timestamp);
+        uint64 leaseStartAt = uint64(block.number);
         uint64 leaseEndAt = uint64(leaseStartAt + registry.leaseTerm());
         registry.setAuctionLease(tokenId_, nextAuctionId_, leaseStartAt, leaseEndAt);
 
@@ -216,7 +222,7 @@ contract Billboard is IBillboard {
         // create new auction and new bid first,
         // then clear auction and transfer ownership to the bidder immediately.
         if (_nextAuction.startAt == 0) {
-            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp));
+            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, uint64(block.number));
             _clearAuction(tokenId_, _board.creator, _auctionId);
             return;
         }
@@ -224,9 +230,9 @@ contract Billboard is IBillboard {
         // if next auction is ended,
         // clear auction first,
         // then create new auction and new bid
-        if (block.timestamp >= _nextAuction.endAt) {
+        if (block.number >= _nextAuction.endAt) {
             _clearAuction(tokenId_, _board.creator, _nextAuctionId);
-            _newAuctionAndBid(tokenId_, amount_, uint64(block.timestamp + registry.leaseTerm()));
+            _newAuctionAndBid(tokenId_, amount_, uint64(block.number + registry.leaseTerm()));
             return;
         }
         // if next auction is not ended,
@@ -242,7 +248,7 @@ contract Billboard is IBillboard {
     }
 
     function _newAuctionAndBid(uint256 tokenId_, uint256 amount_, uint64 endAt_) private returns (uint256 auctionId) {
-        uint64 _startAt = uint64(block.timestamp);
+        uint64 _startAt = uint64(block.number);
         uint256 _tax = calculateTax(amount_);
 
         auctionId = registry.newAuction(tokenId_, _startAt, endAt_);
@@ -319,7 +325,7 @@ contract Billboard is IBillboard {
     }
 
     function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        tax = (amount_ * registry.taxRate() * registry.leaseTerm()) / 1 days / 100;
+        tax = (amount_ * registry.taxRate()) / 100;
     }
 
     /// @inheritdoc IBillboard
@@ -344,7 +350,7 @@ contract Billboard is IBillboard {
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
         // revert if auction is still running
         IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId_, auctionId_);
-        require(block.timestamp >= _auction.endAt, "Auction not ended");
+        require(block.number >= _auction.endAt, "Auction not ended");
 
         // revert if auction is not cleared
         require(_auction.leaseEndAt != 0, "Auction not cleared");

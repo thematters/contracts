@@ -13,7 +13,7 @@ contract BillboardTest is BillboardTestBase {
         vm.startPrank(ADMIN);
 
         // deploy new operator
-        Billboard newOperator = new Billboard(payable(registry), TAX_RATE, "Billboard2", "BLBD2");
+        Billboard newOperator = new Billboard(payable(registry), TAX_RATE, LEASE_TERM, "Billboard2", "BLBD2");
         assertEq(newOperator.admin(), ADMIN);
         assertEq(registry.name(), "Billboard"); // registry is not changed
         assertEq(registry.symbol(), "BLBD"); // registry is not changed
@@ -368,8 +368,8 @@ contract BillboardTest is BillboardTestBase {
         emit IBillboardRegistry.AuctionCreated(
             _tokenId,
             _prevNextActionId + 1,
-            uint64(block.timestamp),
-            uint64(block.timestamp)
+            uint64(block.number),
+            uint64(block.number)
         );
         vm.expectEmit(true, true, true, true);
         emit IBillboardRegistry.BidCreated(_tokenId, _prevNextActionId + 1, USER_A, _amount, _tax);
@@ -380,8 +380,8 @@ contract BillboardTest is BillboardTestBase {
             _tokenId,
             _prevNextActionId + 1,
             USER_A,
-            uint64(block.timestamp),
-            uint64(block.timestamp + registry.leaseTerm())
+            uint64(block.number),
+            uint64(block.number + registry.leaseTerm())
         );
 
         vm.prank(USER_A);
@@ -398,17 +398,17 @@ contract BillboardTest is BillboardTestBase {
         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
         assertEq(_prevNextActionId, 0);
         assertEq(_nextAuctionId, _prevNextActionId + 1);
-        assertEq(_auction.startAt, block.timestamp);
-        assertEq(_auction.endAt, block.timestamp);
-        assertEq(_auction.leaseStartAt, block.timestamp);
-        assertEq(_auction.leaseEndAt, block.timestamp + registry.leaseTerm());
+        assertEq(_auction.startAt, block.number);
+        assertEq(_auction.endAt, block.number);
+        assertEq(_auction.leaseStartAt, block.number);
+        assertEq(_auction.leaseEndAt, block.number + registry.leaseTerm());
         assertEq(_auction.highestBidder, USER_A);
 
         // check bid
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
         assertEq(_bid.price, _amount);
         assertEq(_bid.tax, _tax);
-        assertEq(_bid.placedAt, block.timestamp);
+        assertEq(_bid.placedAt, block.number);
         assertEq(_bid.isWon, true);
         assertEq(_bid.isWithdrawn, false);
     }
@@ -425,7 +425,7 @@ contract BillboardTest is BillboardTestBase {
         vm.startPrank(USER_B);
         operator.placeBid{value: 0}(_tokenId3, 0);
 
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         uint256[] memory _tokenIds = new uint256[](3);
         _tokenIds[0] = _tokenId;
         _tokenIds[1] = _tokenId2;
@@ -458,10 +458,10 @@ contract BillboardTest is BillboardTestBase {
 
         // check if bids exist
         IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-        assertEq(_bidA.placedAt, block.timestamp);
+        assertEq(_bidA.placedAt, block.number);
         assertEq(_bidA.isWon, false);
         IBillboardRegistry.Bid memory _bidB = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-        assertEq(_bidB.placedAt, block.timestamp);
+        assertEq(_bidB.placedAt, block.number);
         assertEq(_bidB.isWon, false);
 
         // check registry balance
@@ -516,7 +516,7 @@ contract BillboardTest is BillboardTestBase {
 
         // check bid
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, ADMIN);
-        assertEq(_bid.placedAt, block.timestamp);
+        assertEq(_bid.placedAt, block.number);
         assertEq(_bid.isWon, true);
     }
 
@@ -550,10 +550,10 @@ contract BillboardTest is BillboardTestBase {
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
         assertEq(_auction.highestBidder, USER_A);
-        assertEq(_auction.endAt, block.timestamp + registry.leaseTerm());
+        assertEq(_auction.endAt, block.number + registry.leaseTerm());
 
         // make auction ended
-        vm.warp(_auction.endAt + 1 seconds);
+        vm.roll(_auction.endAt + 1);
 
         // place a bid with USER_B
         vm.startPrank(USER_B);
@@ -565,7 +565,7 @@ contract BillboardTest is BillboardTestBase {
         IBillboardRegistry.Auction memory _newAuction = registry.getAuction(_tokenId, _newNextAuctionId);
         assertEq(_newNextAuctionId, _nextAuctionId + 1);
         assertEq(_newAuction.highestBidder, USER_B);
-        assertEq(_newAuction.endAt, block.timestamp + registry.leaseTerm());
+        assertEq(_newAuction.endAt, block.number + registry.leaseTerm());
 
         // USER_A won the previous auction
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
@@ -605,8 +605,8 @@ contract BillboardTest is BillboardTestBase {
 
     function testClearAuctionIfAuctionEnded() public {
         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
-        uint64 _placedAt = uint64(block.timestamp);
-        uint64 _clearedAt = uint64(block.timestamp) + registry.leaseTerm() + 1 minutes;
+        uint64 _placedAt = uint64(block.number);
+        uint64 _clearedAt = uint64(block.number) + registry.leaseTerm() + 1;
 
         // place a bid
         vm.startPrank(USER_A);
@@ -623,7 +623,7 @@ contract BillboardTest is BillboardTestBase {
             _clearedAt + registry.leaseTerm()
         );
 
-        vm.warp(_clearedAt);
+        vm.roll(_clearedAt);
         operator.clearAuction(_tokenId);
 
         // check auction
@@ -648,8 +648,8 @@ contract BillboardTest is BillboardTestBase {
         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
         (uint256 _tokenId2, uint256 _prevAuctionId2) = _mintBoardAndPlaceBid();
 
-        uint64 _placedAt = uint64(block.timestamp);
-        uint64 _clearedAt = uint64(block.timestamp) + registry.leaseTerm() + 1 minutes;
+        uint64 _placedAt = uint64(block.number);
+        uint64 _clearedAt = uint64(block.number) + registry.leaseTerm() + 1;
 
         // place bids
         vm.startPrank(USER_A);
@@ -678,7 +678,7 @@ contract BillboardTest is BillboardTestBase {
             _clearedAt + registry.leaseTerm()
         );
 
-        vm.warp(_clearedAt);
+        vm.roll(_clearedAt);
 
         uint256[] memory _tokenIds = new uint256[](2);
         _tokenIds[0] = _tokenId;
@@ -719,14 +719,14 @@ contract BillboardTest is BillboardTestBase {
     }
 
     function testCannotClearAuctionOnNewBoard() public {
-        uint256 _mintedAt = block.timestamp;
+        uint256 _mintedAt = block.number;
         uint256 _clearedAt = _mintedAt + 1;
         uint256 _tokenId = _mintBoard();
 
         vm.startPrank(ADMIN);
 
         // clear auction
-        vm.warp(_clearedAt);
+        vm.roll(_clearedAt);
         vm.expectRevert("Auction not found");
         operator.clearAuction(_tokenId);
     }
@@ -743,7 +743,7 @@ contract BillboardTest is BillboardTestBase {
         vm.expectRevert("Auction not ended");
         operator.clearAuction(_tokenId);
 
-        vm.warp(block.timestamp + registry.leaseTerm() - 1 seconds);
+        vm.roll(block.number + registry.leaseTerm() - 1);
         vm.expectRevert("Auction not ended");
         operator.clearAuction(_tokenId);
     }
@@ -797,13 +797,13 @@ contract BillboardTest is BillboardTestBase {
 
     function testCalculateTax() public {
         uint256 _amount = 100;
-        uint256 _taxRate = 10; // 10% per day
+        uint256 _taxRate = 10; // 10% per lease term
 
         vm.startPrank(ADMIN);
         operator.setTaxRate(_taxRate);
 
         uint256 _tax = operator.calculateTax(_amount);
-        assertEq(_tax, (_amount * _taxRate * 14) / 100);
+        assertEq(_tax, (_amount * _taxRate) / 100);
     }
 
     function testSetTaxRate() public {
@@ -913,7 +913,7 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: _total}(_tokenId, _amount);
 
         // clear auction
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         operator.clearAuction(_tokenId);
 
         // check auction
@@ -954,7 +954,7 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: _total}(_tokenId, _amount);
 
         // clear auction
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         operator.clearAuction(_tokenId);
 
         // check auction
@@ -986,7 +986,7 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid{value: _total}(_tokenId, _amount);
 
         // clear auction
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 minutes);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         operator.clearAuction(_tokenId);
 
         // check auction
@@ -1018,7 +1018,7 @@ contract BillboardTest is BillboardTestBase {
         operator.withdrawBid(_tokenId, _nextAuctionId);
 
         // auction is ended but not cleared
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         vm.expectRevert("Auction not cleared");
         operator.withdrawBid(_tokenId, _nextAuctionId);
     }
@@ -1042,7 +1042,7 @@ contract BillboardTest is BillboardTestBase {
 
         // auction is ended but not cleared
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-        vm.warp(block.timestamp + registry.leaseTerm() + 1 seconds);
+        vm.roll(block.number + registry.leaseTerm() + 1);
         vm.prank(USER_B);
         vm.expectRevert("Auction not cleared");
         operator.withdrawBid(_tokenId, _nextAuctionId);

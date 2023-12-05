@@ -14,7 +14,8 @@ contract BillboardTestBase is Test {
     Billboard internal operator;
     BillboardRegistry internal registry;
 
-    uint256 constant TAX_RATE = 1; // 1% per day
+    uint256 constant TAX_RATE = 1; // 1% per lease term
+    uint64 constant LEASE_TERM = 100; // 100 blocks
 
     address constant ZERO_ADDRESS = address(0);
     address constant FAKE_CONTRACT = address(1);
@@ -30,7 +31,7 @@ contract BillboardTestBase is Test {
         vm.startPrank(ADMIN);
 
         // deploy operator & registry
-        operator = new Billboard(payable(address(0)), TAX_RATE, "Billboard", "BLBD");
+        operator = new Billboard(payable(address(0)), TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
         registry = operator.registry();
         assertEq(operator.admin(), ADMIN);
         assertEq(registry.operator(), address(operator));
