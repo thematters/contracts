@@ -10,6 +10,8 @@
 | SpaceToken       | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
 | TheSpace         | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)        |
 | TheSpaceRegistry | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)        |
+| Billboard        | Polygon Mumbai  | [0x88EA16c2a69f50B9bc2E8f7684D425f33f29225F](https://mumbai.polygonscan.com/address/0x88EA16c2a69f50B9bc2E8f7684D425f33f29225F) |
+| Billboard        | Polygon Mainnet | /                                                                                                                               |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
@@ -82,6 +84,12 @@ Testing
 
 ```bash
 make test
+```
+
+Static Analyzers
+
+```bash
+make analyze-billboard
 ```
 
 ## Deployment

@@ -19,15 +19,15 @@ contract SpaceToken is ERC20 {
         uint256 lpTokens
     ) ERC20("The Space", "SPACE") {
         // Early Incentives
-        _mint(incentives, incentivesTokens * (10**uint256(decimals())));
+        _mint(incentives, incentivesTokens * (10 ** uint256(decimals())));
 
         // Community Treasury
-        _mint(treasury, treasuryTokens * (10**uint256(decimals())));
+        _mint(treasury, treasuryTokens * (10 ** uint256(decimals())));
 
         // Team
-        _mint(team, teamTokens * (10**uint256(decimals())));
+        _mint(team, teamTokens * (10 ** uint256(decimals())));
 
         // Liquidity Pool
-        _mint(lp, lpTokens * (10**uint256(decimals())));
+        _mint(lp, lpTokens * (10 ** uint256(decimals())));
     }
 }

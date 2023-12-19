@@ -189,11 +189,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
      * @param color_ Color Id.
      * @param owner_ Token owner.
      */
-    function setColor(
-        uint256 tokenId_,
-        uint256 color_,
-        address owner_
-    ) external;
+    function setColor(uint256 tokenId_, uint256 color_, address owner_) external;
 
     //////////////////////////////
     /// Event emission
@@ -202,29 +198,17 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     /**
      * @dev Emit {Tax} event
      */
-    function emitTax(
-        uint256 tokenId_,
-        address taxpayer_,
-        uint256 amount_
-    ) external;
+    function emitTax(uint256 tokenId_, address taxpayer_, uint256 amount_) external;
 
     /**
      * @dev Emit {Price} event
      */
-    function emitPrice(
-        uint256 tokenId_,
-        uint256 price_,
-        address operator_
-    ) external;
+    function emitPrice(uint256 tokenId_, uint256 price_, address operator_) external;
 
     /**
      * @dev Emit {UBI} event
      */
-    function emitUBI(
-        uint256 tokenId_,
-        address recipient_,
-        uint256 amount_
-    ) external;
+    function emitUBI(uint256 tokenId_, address recipient_, uint256 amount_) external;
 
     /**
      * @dev Emit {Treasury} event
@@ -234,12 +218,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     /**
      * @dev Emit {Deal} event
      */
-    function emitDeal(
-        uint256 tokenId_,
-        address from_,
-        address to_,
-        uint256 amount_
-    ) external;
+    function emitDeal(uint256 tokenId_, address from_, address to_, uint256 amount_) external;
 
     //////////////////////////////
     /// ERC721 property related
@@ -258,11 +237,7 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     /**
      * @dev Perform ERC721 token transfer by market contract.
      */
-    function safeTransferByMarket(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) external;
+    function safeTransferByMarket(address from_, address to_, uint256 tokenId_) external;
 
     /**
      * @dev If an ERC721 token has been minted.
@@ -286,9 +261,5 @@ interface ITheSpaceRegistry is IERC721Enumerable {
     /**
      * @dev Perform ERC20 token transferFrom by market contract.
      */
-    function transferCurrencyFrom(
-        address from_,
-        address to_,
-        uint256 amount_
-    ) external;
+    function transferCurrencyFrom(address from_, address to_, uint256 amount_) external;
 }

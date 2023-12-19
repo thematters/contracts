@@ -126,12 +126,7 @@ interface ITheSpace {
      * @param newPrice_ New price to be set.
      * @param color_ Color to be set.
      */
-    function setPixel(
-        uint256 tokenId_,
-        uint256 bidPrice_,
-        uint256 newPrice_,
-        uint256 color_
-    ) external;
+    function setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_) external;
 
     /**
      * @notice Set color for a pixel.
@@ -167,15 +162,7 @@ interface ITheSpace {
         address owner_,
         uint256 limit_,
         uint256 offset_
-    )
-        external
-        view
-        returns (
-            uint256 total,
-            uint256 limit,
-            uint256 offset,
-            ITheSpaceRegistry.Pixel[] memory pixels
-        );
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, ITheSpaceRegistry.Pixel[] memory pixels);
 
     //////////////////////////////
     /// Trading

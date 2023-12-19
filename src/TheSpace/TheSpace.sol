@@ -37,7 +37,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
                 1000000, // total supply
                 12, // taxRate
                 0, // treasuryShare
-                1 * (10**uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
+                1 * (10 ** uint256(ERC20(currencyAddress_).decimals())), // mintTax, 1 $SPACE
                 currencyAddress_
             );
         }
@@ -115,12 +115,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     }
 
     /// @inheritdoc ITheSpace
-    function setPixel(
-        uint256 tokenId_,
-        uint256 bidPrice_,
-        uint256 newPrice_,
-        uint256 color_
-    ) external {
+    function setPixel(uint256 tokenId_, uint256 bidPrice_, uint256 newPrice_, uint256 color_) external {
         bid(tokenId_, bidPrice_);
         setPrice(tokenId_, newPrice_);
         _setColor(tokenId_, color_, msg.sender);
@@ -133,11 +128,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         _setColor(tokenId_, color_, registry.ownerOf(tokenId_));
     }
 
-    function _setColor(
-        uint256 tokenId_,
-        uint256 color_,
-        address owner_
-    ) internal {
+    function _setColor(uint256 tokenId_, uint256 color_, address owner_) internal {
         if (registry.pixelColor(tokenId_) == color_) return;
 
         registry.setColor(tokenId_, color_, owner_);
@@ -153,16 +144,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         address owner_,
         uint256 limit_,
         uint256 offset_
-    )
-        external
-        view
-        returns (
-            uint256 total,
-            uint256 limit,
-            uint256 offset,
-            ITheSpaceRegistry.Pixel[] memory pixels
-        )
-    {
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, ITheSpaceRegistry.Pixel[] memory pixels) {
         uint256 _total = registry.balanceOf(owner_);
         if (limit_ == 0) {
             return (_total, limit_, offset_, new ITheSpaceRegistry.Pixel[](0));
@@ -217,11 +199,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
         _setPrice(tokenId_, price_, registry.ownerOf(tokenId_));
     }
 
-    function _setPrice(
-        uint256 tokenId_,
-        uint256 price_,
-        address operator_
-    ) private {
+    function _setPrice(uint256 tokenId_, uint256 price_, address operator_) private {
         // max price to prevent overflow of `_getTax`
         uint256 maxPrice = registry.currency().totalSupply();
         if (price_ > maxPrice) revert PriceTooHigh(maxPrice);
@@ -363,11 +341,7 @@ contract TheSpace is ITheSpace, Multicall, ReentrancyGuard, ACLManager {
     /**
      * @notice Update tax record and emit Tax event.
      */
-    function _recordTax(
-        uint256 tokenId_,
-        address taxpayer_,
-        uint256 amount_
-    ) private {
+    function _recordTax(uint256 tokenId_, address taxpayer_, uint256 amount_) private {
         // calculate treasury change
         uint256 treasuryShare = registry.taxConfig(ITheSpaceRegistry.ConfigOptions.treasuryShare);
         uint256 treasuryAdded = (amount_ * treasuryShare) / 10000;

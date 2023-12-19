@@ -41,7 +41,7 @@ contract CurationTest is Test {
 
         // deploy ERC-20 token
         usdt = new USDT(CURATOR, 1000);
-        assertEq(usdt.balanceOf(CURATOR), 1000 * (10**uint256(usdt.decimals())));
+        assertEq(usdt.balanceOf(CURATOR), 1000 * (10 ** uint256(usdt.decimals())));
         assertEq(usdt.balanceOf(CREATOR), 0);
         vm.prank(CURATOR);
         usdt.approve(address(curation), type(uint256).max);
@@ -58,7 +58,7 @@ contract CurationTest is Test {
      * Curation: ERC-20 token
      */
     function testERC20Curation() public {
-        uint256 amount = 10 * (10**uint256(usdt.decimals()));
+        uint256 amount = 10 * (10 ** uint256(usdt.decimals()));
         string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
         uint256 curatorBalance = usdt.balanceOf(CURATOR);
 
@@ -73,7 +73,7 @@ contract CurationTest is Test {
     }
 
     function testCannotCurateERC20IfNotApproval() public {
-        uint256 amount = 10 * (10**uint256(usdt.decimals()));
+        uint256 amount = 10 * (10 ** uint256(usdt.decimals()));
         string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
 
         vm.startPrank(CURATOR);
@@ -89,7 +89,7 @@ contract CurationTest is Test {
     }
 
     function testCannotCurateERC20ZeroAddress() public {
-        uint256 amount = 10 * (10**uint256(usdt.decimals()));
+        uint256 amount = 10 * (10 ** uint256(usdt.decimals()));
         string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
 
         vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
@@ -106,7 +106,7 @@ contract CurationTest is Test {
     }
 
     function testCannotCurateERC20EmptyURI() public {
-        uint256 amount = 10 * (10**uint256(usdt.decimals()));
+        uint256 amount = 10 * (10 ** uint256(usdt.decimals()));
         string memory uri = "";
 
         vm.expectRevert(abi.encodeWithSignature("InvalidURI()"));
@@ -115,7 +115,7 @@ contract CurationTest is Test {
     }
 
     function testCannotCurateERC20SelfCuration() public {
-        uint256 amount = 10 * (10**uint256(usdt.decimals()));
+        uint256 amount = 10 * (10 ** uint256(usdt.decimals()));
         string memory uri = "ipfs://Qmaisz6NMhDB51cCvNWa1GMS7LU1pAxdF4Ld6Ft9kZEP2a";
 
         vm.expectRevert(abi.encodeWithSignature("SelfCuration()"));

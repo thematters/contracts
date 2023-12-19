@@ -65,12 +65,7 @@ interface ICuration {
      * @param amount_ Amount of tokens to curate.
      * @param uri_ Content URI.
      */
-    function curate(
-        address to_,
-        IERC20 token_,
-        uint256 amount_,
-        string calldata uri_
-    ) external;
+    function curate(address to_, IERC20 token_, uint256 amount_, string calldata uri_) external;
 
     /**
      * @notice Curate content by native token donation.

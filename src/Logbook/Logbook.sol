@@ -128,11 +128,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function donateWithCommission(
-        uint256 tokenId_,
-        address commission_,
-        uint256 commissionBPS_
-    ) external payable {
+    function donateWithCommission(uint256 tokenId_, address commission_, uint256 commissionBPS_) external payable {
         if (msg.value <= 0) revert ZeroAmount();
         if (!_exists(tokenId_)) revert TokenNotExists();
         if (commissionBPS_ > _ROYALTY_BPS_COMMISSION_MAX) revert InvalidBPS(0, _ROYALTY_BPS_COMMISSION_MAX);
@@ -151,11 +147,9 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
     }
 
     /// @inheritdoc ILogbook
-    function getLogs(uint256 tokenId_)
-        external
-        view
-        returns (bytes32[] memory contentHashes, address[] memory authors)
-    {
+    function getLogs(
+        uint256 tokenId_
+    ) external view returns (bytes32[] memory contentHashes, address[] memory authors) {
         Book memory book = _books[tokenId_];
         uint32 logCount = book.logCount;
 
@@ -398,11 +392,7 @@ contract Logbook is ERC721, Ownable, ILogbook, Royalty {
         }
     }
 
-    function _afterTokenTransfer(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) internal virtual override {
+    function _afterTokenTransfer(address from_, address to_, uint256 tokenId_) internal virtual override {
         super._afterTokenTransfer(from_, to_, tokenId_); // Call parent hook
 
         _books[tokenId_].transferCount++;
