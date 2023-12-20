@@ -20,6 +20,23 @@ interface IDistribution {
     event Claim(bytes32 cid_, address indexed account_, uint256 amount_);
 
     /**
+     * @dev Emitted when admin is changed.
+     *
+     * @param prevAccount_ Address of old admin
+     * @param account_ Address of new admin
+     */
+    event AdminChanged(address indexed prevAccount_, address indexed account_);
+
+    /**
+     * @notice Set admin
+     *
+     * @param account_ Address of new admin
+     *
+     * Emits a {AdminChanged} event on success.
+     */
+    function setAdmin(address account_) external;
+
+    /**
      * @notice Create a new drop
      *
      * @param merkleRoot_ Merkle root of new drop

@@ -13,6 +13,9 @@ contract Distribution is IDistribution, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter public lastTreeId;
 
+    // access control
+    address public admin;
+
     // treeId_ => merkleRoot_
     mapping(uint256 => bytes32) public merkleRoots;
 
@@ -22,8 +25,32 @@ contract Distribution is IDistribution, Ownable {
     // treeId_ => cid_ => account_
     mapping(uint256 => mapping(bytes32 => mapping(address => bool))) public hasClaimed;
 
+    constructor() {
+        admin = msg.sender;
+    }
+
+    //////////////////////////////
+    /// Access control
+    //////////////////////////////
+
+    modifier isFromAdmin() {
+        require(msg.sender == admin, "Admin");
+        _;
+    }
+
     /// @inheritdoc IDistribution
-    function drop(bytes32 merkleRoot_) external payable onlyOwner returns (uint256 treeId_) {
+    function setAdmin(address account_) external onlyOwner {
+        address _prevAdmin = admin;
+        admin = account_;
+        emit AdminChanged(_prevAdmin, admin);
+    }
+
+    //////////////////////////////
+    /// Drop & claim
+    //////////////////////////////
+
+    /// @inheritdoc IDistribution
+    function drop(bytes32 merkleRoot_) external payable isFromAdmin returns (uint256 treeId_) {
         require(msg.value > 0, "no value");
 
         lastTreeId.increment();
@@ -66,7 +93,7 @@ contract Distribution is IDistribution, Ownable {
     }
 
     /// @inheritdoc IDistribution
-    function sweep(uint256 treeId_, address target_) external onlyOwner {
+    function sweep(uint256 treeId_, address target_) external isFromAdmin {
         uint256 _balance = balances[treeId_];
 
         (bool _success, ) = target_.call{value: _balance}("");
