@@ -40,10 +40,11 @@ interface IDistribution {
      * @notice Create a new drop
      *
      * @param merkleRoot_ Merkle root of new drop
+     * @param amount_ Total amount of new drop
      *
      * Emits a {Drop} event on success.
      */
-    function drop(bytes32 merkleRoot_) external payable returns (uint256 treeId_);
+    function drop(bytes32 merkleRoot_, uint256 amount_) external payable returns (uint256 treeId_);
 
     /**
      * @notice Claim and transfer tokens

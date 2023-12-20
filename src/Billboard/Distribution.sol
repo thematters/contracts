@@ -50,8 +50,9 @@ contract Distribution is IDistribution, Ownable {
     //////////////////////////////
 
     /// @inheritdoc IDistribution
-    function drop(bytes32 merkleRoot_) external payable isFromAdmin returns (uint256 treeId_) {
+    function drop(bytes32 merkleRoot_, uint256 amount_) external payable isFromAdmin returns (uint256 treeId_) {
         require(msg.value > 0, "no value");
+        require(amount_ == msg.value, "invalid amount");
 
         lastTreeId.increment();
         treeId_ = lastTreeId.current();

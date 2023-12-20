@@ -33,7 +33,8 @@
     "*.sol": "solhint"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0"
+    "@openzeppelin/contracts": "^5.0.0",
+    "@openzeppelin/merkle-tree": "^1.0.5"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",

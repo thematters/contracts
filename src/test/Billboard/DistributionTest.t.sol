@@ -18,14 +18,28 @@ contract DistributionTest is DistributionTestBase {
 
         vm.prank(ADMIN);
         vm.expectRevert("Ownable: caller is not the owner");
-        distribution.setAdmin(USER);
+        distribution.setAdmin(USER_ALICE);
     }
 
     function testCannotSetAdminByAttacker() public {
         vm.prank(ATTACKER);
         vm.expectRevert("Ownable: caller is not the owner");
-        distribution.setAdmin(USER);
+        distribution.setAdmin(USER_ALICE);
     }
 
-    function testDrop() public {}
+    function testDrop() public {
+        // drop#1
+        uint256 _amount = 1510000000000000000;
+        drop(_amount);
+        assertEq(distribution.lastTreeId(), 1);
+        assertEq(distribution.merkleRoots(1), TREE_1_ROOT);
+        assertEq(distribution.balances(1), _amount);
+
+        // drop#2
+        drop(_amount);
+        assertEq(distribution.lastTreeId(), 2);
+        assertEq(distribution.merkleRoots(2), TREE_1_ROOT);
+        assertEq(distribution.balances(2), _amount);
+        assertEq(address(distribution).balance, _amount * 2);
+    }
 }
