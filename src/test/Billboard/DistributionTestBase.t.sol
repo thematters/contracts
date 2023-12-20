@@ -15,18 +15,17 @@ contract DistributionTestBase is Test {
     address constant FAKE_CONTRACT = address(1);
 
     /// Deployer and admin could be the same one
-    address constant ADMIN = address(100);
-    address constant USER_A = address(101);
-    address constant USER_B = address(102);
-    address constant USER_C = address(103);
+    address constant OWNER = address(100);
+    address constant ADMIN = address(101);
+    address constant USER = address(102);
     address constant ATTACKER = address(200);
 
     function setUp() public {
-        vm.startPrank(ADMIN);
+        vm.startPrank(OWNER);
 
         // deploy
         distribution = new Distribution();
-        assertEq(distribution.admin(), ADMIN);
+        assertEq(distribution.admin(), OWNER);
 
         vm.stopPrank();
     }
