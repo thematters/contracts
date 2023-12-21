@@ -1,8 +1,10 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import "./DistributionTestBase.t.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+import "./DistributionTestBase.t.sol";
 
 contract DistributionTest is DistributionTestBase {
     function testSetAdmin() public {
@@ -34,12 +36,49 @@ contract DistributionTest is DistributionTestBase {
         assertEq(distribution.lastTreeId(), 1);
         assertEq(distribution.merkleRoots(1), TREE_1_ROOT);
         assertEq(distribution.balances(1), _amount);
+        assertEq(usdt.balanceOf(address(distribution)), _amount);
 
         // drop#2
         drop(_amount);
         assertEq(distribution.lastTreeId(), 2);
         assertEq(distribution.merkleRoots(2), TREE_1_ROOT);
         assertEq(distribution.balances(2), _amount);
-        assertEq(address(distribution).balance, _amount * 2);
+        assertEq(usdt.balanceOf(address(distribution)), _amount * 2);
+    }
+
+    function testClaim() public {
+        // drop#1
+        uint256 _amount = 1510000000000000000;
+        drop(_amount);
+
+        // claim#Alice
+        uint256 balanceAlce = address(USER_ALICE).balance;
+        distribution.claim(
+            1,
+            TREE_1_CIDS[USER_ALICE],
+            USER_ALICE,
+            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_PROOFS[USER_ALICE]
+        );
+        assertEq(usdt.balanceOf(address(USER_ALICE)), balanceAlce + TREE_1_AMOUNTS[USER_ALICE]);
+
+        // claim#Bob
+        uint256 balanceBob = address(USER_BOB).balance;
+        distribution.claim(1, TREE_1_CIDS[USER_BOB], USER_BOB, TREE_1_AMOUNTS[USER_BOB], TREE_1_PROOFS[USER_BOB]);
+        assertEq(usdt.balanceOf(address(USER_BOB)), balanceBob + TREE_1_AMOUNTS[USER_BOB]);
+
+        // claim#Charlie
+        uint256 balanceCharlie = address(USER_CHARLIE).balance;
+        distribution.claim(
+            1,
+            TREE_1_CIDS[USER_CHARLIE],
+            USER_CHARLIE,
+            TREE_1_AMOUNTS[USER_CHARLIE],
+            TREE_1_PROOFS[USER_CHARLIE]
+        );
+        assertEq(usdt.balanceOf(address(USER_CHARLIE)), balanceCharlie + TREE_1_AMOUNTS[USER_CHARLIE]);
+
+        // check balance
+        assertEq(address(distribution).balance, 0);
     }
 }

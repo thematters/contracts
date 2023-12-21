@@ -17,7 +17,7 @@ interface IDistribution {
      * @param account_ Address of claim
      * @param amount_ Amount of claim
      */
-    event Claim(bytes32 cid_, address indexed account_, uint256 amount_);
+    event Claim(string cid_, address indexed account_, uint256 amount_);
 
     /**
      * @dev Emitted when admin is changed.
@@ -35,6 +35,14 @@ interface IDistribution {
      * Emits a {AdminChanged} event on success.
      */
     function setAdmin(address account_) external;
+
+    /**
+     * @notice Set ERC-20 token
+     *
+     * @param token_ Address of ERC-20 token
+     *
+     */
+    function setToken(address token_) external;
 
     /**
      * @notice Create a new drop
@@ -59,7 +67,7 @@ interface IDistribution {
      */
     function claim(
         uint256 treeId_,
-        bytes32 cid_,
+        string calldata cid_,
         address account_,
         uint256 amount_,
         bytes32[] calldata proof_

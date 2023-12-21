@@ -7,9 +7,11 @@ import "forge-std/Vm.sol";
 
 import {Distribution} from "../../Billboard/Distribution.sol";
 import {IDistribution} from "../../Billboard/IDistribution.sol";
+import {USDT} from "../utils/USDT.sol";
 
 contract DistributionTestBase is Test {
     Distribution internal distribution;
+    USDT internal usdt;
 
     address constant ZERO_ADDRESS = address(0);
     address constant FAKE_CONTRACT = address(1);
@@ -21,7 +23,7 @@ contract DistributionTestBase is Test {
     address constant USER_CHARLIE = address(104);
     address constant ATTACKER = address(200);
 
-    bytes32 constant TREE_1_ROOT = 0x12c628670e93b44e4305c14af8efd4989e78cd5e9cbfa7f8b792326d08271b89;
+    bytes32 constant TREE_1_ROOT = 0xf2e79881fa5ed7db88877ca21ec885996d6176cf455504472b68f5517203e314;
     mapping(address => bytes32[]) public TREE_1_PROOFS;
     mapping(address => string) public TREE_1_CIDS;
     mapping(address => uint256) public TREE_1_AMOUNTS;
@@ -29,20 +31,27 @@ contract DistributionTestBase is Test {
     function setUp() public {
         vm.startPrank(OWNER);
 
+        // label addresses
+        vm.label(OWNER, "OWNER");
+        vm.label(ADMIN, "ADMIN");
+        vm.label(USER_ALICE, "USER_ALICE");
+        vm.label(USER_BOB, "USER_BOB");
+        vm.label(USER_CHARLIE, "USER_CHARLIE");
+
         // init proofs
         bytes32[] memory proofAlice = new bytes32[](1);
-        proofAlice[0] = 0xf9b6aef995735ac234dd8f82c58b902f63846b2e900756d78ac93f5cab9acdd5;
+        proofAlice[0] = 0x884512338d5de33ee9c6e0a1c2a47ff1c8ca788bbb8b34552e39cb98aaaa5c08;
         TREE_1_PROOFS[USER_ALICE] = proofAlice;
 
         bytes32[] memory proofBob = new bytes32[](2);
-        proofBob[0] = 0xe3908a942209f327ea24b807c861c449d5994b50d152e447c1282fc6190d742d;
-        proofBob[1] = 0xf23837c66d3ebf279f5f0a5ea3ee937887d05da50cb7f57d2009ce5058d4695c;
+        proofBob[0] = 0x685ad0f74cc48ff99f8fa41d3f8d2e3c7672e7afe48a680c9418b7268626fc89;
+        proofBob[1] = 0xfa171588c56e80a41d8e67e9c9a8dc6b25dbdf1e16699c612981ebdf04045c3f;
         TREE_1_PROOFS[USER_BOB] = proofBob;
 
         bytes32[] memory proofCharlie = new bytes32[](2);
-        proofCharlie[0] = 0xa88b11df30bc3ccfee7a51d2e7d0a65ca0a7c5a2272ce4a65c27b65141916fc6;
-        proofCharlie[1] = 0xf23837c66d3ebf279f5f0a5ea3ee937887d05da50cb7f57d2009ce5058d4695c;
-        TREE_1_PROOFS[USER_BOB] = proofCharlie;
+        proofCharlie[0] = 0x27349dbdeb528d38831624696ac843c93d915cbf47db44f6087b3e431152c4de;
+        proofCharlie[1] = 0xfa171588c56e80a41d8e67e9c9a8dc6b25dbdf1e16699c612981ebdf04045c3f;
+        TREE_1_PROOFS[USER_CHARLIE] = proofCharlie;
 
         // init cids
         TREE_1_CIDS[USER_ALICE] = "Qmf5z5DKcwNWYUP9udvnSCTN2Se4A8kpZJY7JuUVFEqdGU";
@@ -54,19 +63,29 @@ contract DistributionTestBase is Test {
         TREE_1_AMOUNTS[USER_BOB] = 500000000000000000;
         TREE_1_AMOUNTS[USER_CHARLIE] = 10000000000000000;
 
-        // deploy
-        distribution = new Distribution();
-        assertEq(distribution.admin(), OWNER);
+        // deploy USDT
+        usdt = new USDT(OWNER, 0);
 
-        // set admin
-        distribution.setAdmin(ADMIN);
+        // deploy Distribution contract
+        distribution = new Distribution(address(usdt), ADMIN);
+        assertEq(distribution.admin(), ADMIN);
 
         vm.stopPrank();
+
+        uint256 MAX_ALLOWANCE = type(uint256).max;
+        vm.prank(ADMIN);
+        usdt.approve(address(distribution), MAX_ALLOWANCE);
+        vm.prank(USER_ALICE);
+        usdt.approve(address(distribution), MAX_ALLOWANCE);
+        vm.prank(USER_BOB);
+        usdt.approve(address(distribution), MAX_ALLOWANCE);
+        vm.prank(USER_CHARLIE);
+        usdt.approve(address(distribution), MAX_ALLOWANCE);
     }
 
     function drop(uint256 amount_) public {
+        deal(address(usdt), ADMIN, amount_);
         vm.prank(ADMIN);
-        vm.deal(ADMIN, amount_);
-        distribution.drop{value: amount_}(TREE_1_ROOT, amount_);
+        distribution.drop(TREE_1_ROOT, amount_);
     }
 }
