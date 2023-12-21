@@ -420,26 +420,6 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.isWithdrawn, false);
     }
 
-    function testSomethin() public {
-        (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-        (uint256 _tokenId2, ) = _mintBoardAndPlaceBid();
-        (uint256 _tokenId3, ) = _mintBoardAndPlaceBid();
-
-        vm.startPrank(USER_A);
-        operator.placeBid(_tokenId, 0);
-        operator.placeBid(_tokenId2, 0);
-
-        vm.startPrank(USER_B);
-        operator.placeBid(_tokenId3, 0);
-
-        vm.roll(block.number + registry.leaseTerm() + 1);
-        uint256[] memory _tokenIds = new uint256[](3);
-        _tokenIds[0] = _tokenId;
-        _tokenIds[1] = _tokenId2;
-        _tokenIds[2] = _tokenId3;
-        operator.clearAuctions(_tokenIds);
-    }
-
     function testPlaceBidWithSamePrices(uint96 _amount) public {
         (uint256 _tokenId, uint256 _prevNextAuctionId) = _mintBoardAndPlaceBid();
         uint256 _tax = operator.calculateTax(_amount);

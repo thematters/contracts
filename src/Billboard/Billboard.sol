@@ -331,11 +331,12 @@ contract Billboard is IBillboard {
 
         require(amount > 0, "Zero amount");
 
+        // set taxTreasury.withdrawn to taxTreasury.accumulated first
+        // to prevent reentrancy
+        registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
+
         // transfer tax to the owner
         registry.transferAmount(msg.sender, amount);
-
-        // set taxTreasury.withdrawn to taxTreasury.accumulated
-        registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
 
         // emit TaxWithdrawn
         registry.emitTaxWithdrawn(msg.sender, amount);
@@ -358,11 +359,11 @@ contract Billboard is IBillboard {
         require(!_bid.isWon, "Bid already won");
         require(amount > 0, "Zero amount");
 
+        // set bid.isWithdrawn to true first to prevent reentrancy
+        registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
+
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);
-
-        // set bid.isWithdrawn to true
-        registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
 
         // emit BidWithdrawn
         registry.emitBidWithdrawn(tokenId_, auctionId_, msg.sender, _bid.price, _bid.tax);
