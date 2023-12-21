@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./BillboardRegistry.sol";
 import "./IBillboard.sol";
 import "./IBillboardRegistry.sol";
@@ -13,6 +15,7 @@ contract Billboard is IBillboard {
     bool public isOpened = false;
 
     constructor(
+        address token_,
         address payable registry_,
         uint256 taxRate_,
         uint64 leaseTerm_,
@@ -28,7 +31,7 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(address(this), taxRate_, leaseTerm_, name_, symbol_);
+            registry = new BillboardRegistry(token_, address(this), taxRate_, leaseTerm_, name_, symbol_);
         }
     }
 
@@ -260,15 +263,7 @@ contract Billboard is IBillboard {
 
     function _lockBidPriceAndTax(uint256 amount_) private {
         // transfer bid price and tax to the registry
-        (bool _success, ) = address(registry).call{value: amount_}("");
-        require(_success, "Transfer failed");
-
-        // refund if overpaid
-        uint256 _overpaid = msg.value - amount_;
-        if (_overpaid > 0) {
-            (bool _refundSuccess, ) = msg.sender.call{value: _overpaid}("");
-            require(_refundSuccess, "Transfer failed");
-        }
+        SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), amount_);
     }
 
     /// @inheritdoc IBillboard

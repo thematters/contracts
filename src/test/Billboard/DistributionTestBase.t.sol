@@ -72,6 +72,7 @@ contract DistributionTestBase is Test {
 
         vm.stopPrank();
 
+        // approve USDT
         uint256 MAX_ALLOWANCE = type(uint256).max;
         vm.prank(ADMIN);
         usdt.approve(address(distribution), MAX_ALLOWANCE);

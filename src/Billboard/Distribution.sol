@@ -99,6 +99,8 @@ contract Distribution is IDistribution, Ownable {
     function sweep(uint256 treeId_, address target_) external isFromAdmin {
         uint256 _balance = balances[treeId_];
 
+        require(_balance > 0, "zero balance");
+
         // Transfer
         require(IERC20(token).transfer(target_, _balance), "failed token transfer");
 
