@@ -15,7 +15,7 @@ contract Distribution is IDistribution, Ownable {
     Counters.Counter public lastTreeId;
 
     address public admin;
-    address public token;
+    address public immutable token;
 
     // treeId_ => merkleRoot_
     mapping(uint256 => bytes32) public merkleRoots;
@@ -52,11 +52,6 @@ contract Distribution is IDistribution, Ownable {
     //////////////////////////////
     /// Drop & claim
     //////////////////////////////
-
-    /// @inheritdoc IDistribution
-    function setToken(address token_) external isFromAdmin {
-        token = token_;
-    }
 
     /// @inheritdoc IDistribution
     function drop(bytes32 merkleRoot_, uint256 amount_) external payable isFromAdmin returns (uint256 treeId_) {

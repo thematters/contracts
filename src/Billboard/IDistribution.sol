@@ -37,14 +37,6 @@ interface IDistribution {
     function setAdmin(address account_) external;
 
     /**
-     * @notice Set ERC-20 token
-     *
-     * @param token_ Address of ERC-20 token
-     *
-     */
-    function setToken(address token_) external;
-
-    /**
      * @notice Create a new drop
      *
      * @param merkleRoot_ Merkle root of new drop

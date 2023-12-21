@@ -46,6 +46,29 @@ contract DistributionTest is DistributionTestBase {
         assertEq(usdt.balanceOf(address(distribution)), _amount * 2);
     }
 
+    function testCannotDropIfInsufficientAllowance(uint256 amount_) public {
+        vm.assume(amount_ > 0);
+        deal(address(usdt), ADMIN, amount_);
+
+        vm.startPrank(ADMIN);
+        usdt.approve(address(distribution), amount_ - 1);
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        distribution.drop(TREE_1_ROOT, amount_);
+    }
+
+    function testCannotDropIfInsufficientBalance(uint256 amount_) public {
+        vm.assume(amount_ > 0);
+        vm.assume(amount_ < type(uint256).max);
+        deal(address(usdt), ADMIN, amount_);
+
+        vm.startPrank(ADMIN);
+        usdt.approve(address(distribution), amount_ + 1);
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        distribution.drop(TREE_1_ROOT, amount_ + 1);
+    }
+
     function testClaim() public {
         // drop#1
         uint256 _amount = 1510000000000000000;
