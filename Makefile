@@ -14,7 +14,7 @@ build: clean
 test:
 	forge test -vvv
 trace: clean
-	forge test -vvvvv 
+	forge test -vvvvv
 
 # Static Analyzers
 analyze-logbook   :; slither src/Logbook/Logbook.sol
@@ -46,4 +46,4 @@ deploy-curation: clean
 
 ## Billboard
 deploy-billboard: clean
-	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_REGISTRY_ADDRESS} 7 ${BILLBOARD_LEASE_TERM} "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
+	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_ERC20_TOKEN} ${BILLBOARD_REGISTRY_ADDRESS} 7 ${BILLBOARD_LEASE_TERM} "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
