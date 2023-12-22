@@ -13,7 +13,7 @@ import "./IBillboardRegistry.sol";
  * - Tenant of a billboard can set the AD data of a billboard: call `setBoardContentURI` and `setBoardRedirectURI`.
  *
  * ## Auction
- * - User needs to call `approve` on currency contract before starting.
+ * - User needs to call `approve` on currency (USDT) contract before starting.
  * - User can place a bid on a billboard: call `placeBid`.
  * - User can clear auction on a billboard: call `clearAuction`.
  * - User can withdraw bid from a billboard: call `withdrawBid`.
