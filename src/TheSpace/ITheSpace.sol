@@ -19,7 +19,6 @@ import "./ITheSpaceRegistry.sol";
  * @dev This contract holds the logic of market place, while read from and write into {TheSpaceRegistry}, which is the storage contact.
  * @dev This contract owns a {TheSpaceRegistry} contract for storage, and can be updated by transfering ownership to a new implementation contract.
  */
-
 interface ITheSpace {
     //////////////////////////////
     /// Error types
