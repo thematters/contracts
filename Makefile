@@ -21,6 +21,7 @@ analyze-logbook   :; slither src/Logbook/Logbook.sol
 analyze-the-space :; slither src/TheSpace/TheSpace.sol
 analyze-curation  :; slither src/Curation/Curation.sol
 analyze-billboard :; slither src/Billboard/Billboard.sol
+analyze-billboard-distribution :; slither src/Billboard/Distribution.sol
 
 # Deployments
 ## Logbook

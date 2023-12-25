@@ -28,6 +28,7 @@ contract Distribution is IDistribution, Ownable {
 
     constructor(address token_, address admin_) {
         require(token_ != address(0), "Zero address");
+        require(admin_ != address(0), "Zero address");
 
         admin = admin_;
         token = token_;
@@ -44,6 +45,8 @@ contract Distribution is IDistribution, Ownable {
 
     /// @inheritdoc IDistribution
     function setAdmin(address account_) external onlyOwner {
+        require(account_ != address(0), "Zero address");
+
         address _prevAdmin = admin;
         admin = account_;
         emit AdminChanged(_prevAdmin, admin);
@@ -57,18 +60,18 @@ contract Distribution is IDistribution, Ownable {
     function drop(bytes32 merkleRoot_, uint256 amount_) external payable isFromAdmin returns (uint256 treeId_) {
         require(amount_ > 0, "Zero amount");
 
-        // Transfer
-        SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount_);
-
         // Set the merkle root
         lastTreeId.increment();
         treeId_ = lastTreeId.current();
         merkleRoots[treeId_] = merkleRoot_;
 
+        emit Drop(treeId_, amount_);
+
         // Set the balance for the tree
         balances[treeId_] = amount_;
 
-        emit Drop(treeId_, amount_);
+        // Transfer
+        SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount_);
     }
 
     /// @inheritdoc IDistribution
@@ -91,13 +94,13 @@ contract Distribution is IDistribution, Ownable {
         // Mark it as claimed first for to prevent reentrancy
         hasClaimed[treeId_][cid_][account_] = true;
 
-        // Transfer
-        require(IERC20(token).transfer(account_, amount_), "Failed token transfer");
+        emit Claim(cid_, account_, amount_);
 
         // Update the balance for the tree
         balances[treeId_] -= amount_;
 
-        emit Claim(cid_, account_, amount_);
+        // Transfer
+        require(IERC20(token).transfer(account_, amount_), "Failed token transfer");
     }
 
     /// @inheritdoc IDistribution
@@ -106,10 +109,10 @@ contract Distribution is IDistribution, Ownable {
 
         require(_balance > 0, "Zero balance");
 
-        // Transfer
-        require(IERC20(token).transfer(target_, _balance), "Failed token transfer");
-
         // Update the balance for the tree
         balances[treeId_] = 0;
+
+        // Transfer
+        require(IERC20(token).transfer(target_, _balance), "Failed token transfer");
     }
 }
