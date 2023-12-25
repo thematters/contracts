@@ -17,7 +17,7 @@ interface IDistribution {
      * @param account_ Address of claim
      * @param amount_ Amount of claim
      */
-    event Claim(string cid_, address indexed account_, uint256 amount_);
+    event Claim(string indexed cid_, address indexed account_, uint256 amount_);
 
     /**
      * @dev Emitted when admin is changed.

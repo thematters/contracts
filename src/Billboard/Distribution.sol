@@ -27,7 +27,7 @@ contract Distribution is IDistribution, Ownable {
     mapping(uint256 => mapping(string => mapping(address => bool))) public hasClaimed;
 
     constructor(address token_, address admin_) {
-        require(token_ != address(0), "zero address");
+        require(token_ != address(0), "Zero address");
 
         admin = admin_;
         token = token_;
@@ -55,6 +55,8 @@ contract Distribution is IDistribution, Ownable {
 
     /// @inheritdoc IDistribution
     function drop(bytes32 merkleRoot_, uint256 amount_) external payable isFromAdmin returns (uint256 treeId_) {
+        require(amount_ > 0, "Zero amount");
+
         // Transfer
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount_);
 
@@ -77,17 +79,20 @@ contract Distribution is IDistribution, Ownable {
         uint256 amount_,
         bytes32[] calldata merkleProof_
     ) external {
-        require(!hasClaimed[treeId_][cid_][account_], "already claimed.");
+        require(!hasClaimed[treeId_][cid_][account_], "Already claimed");
+
+        bytes32 _root = merkleRoots[treeId_];
+        require(_root != bytes32(0), "Invalid tree ID");
 
         // Verify the merkle proof
         bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(cid_, account_, amount_))));
-        require(MerkleProof.verify(merkleProof_, merkleRoots[treeId_], _leaf), "invalid proof");
+        require(MerkleProof.verify(merkleProof_, _root, _leaf), "Invalid proof");
 
         // Mark it as claimed first for to prevent reentrancy
         hasClaimed[treeId_][cid_][account_] = true;
 
         // Transfer
-        require(IERC20(token).transfer(account_, amount_), "failed token transfer");
+        require(IERC20(token).transfer(account_, amount_), "Failed token transfer");
 
         // Update the balance for the tree
         balances[treeId_] -= amount_;
@@ -99,10 +104,10 @@ contract Distribution is IDistribution, Ownable {
     function sweep(uint256 treeId_, address target_) external isFromAdmin {
         uint256 _balance = balances[treeId_];
 
-        require(_balance > 0, "zero balance");
+        require(_balance > 0, "Zero balance");
 
         // Transfer
-        require(IERC20(token).transfer(target_, _balance), "failed token transfer");
+        require(IERC20(token).transfer(target_, _balance), "Failed token transfer");
 
         // Update the balance for the tree
         balances[treeId_] = 0;
