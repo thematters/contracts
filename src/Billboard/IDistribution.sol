@@ -44,7 +44,7 @@ interface IDistribution {
      *
      * Emits a {Drop} event on success.
      */
-    function drop(bytes32 merkleRoot_, uint256 amount_) external payable returns (uint256 treeId_);
+    function drop(bytes32 merkleRoot_, uint256 amount_) external returns (uint256 treeId_);
 
     /**
      * @notice Claim and transfer tokens
@@ -52,8 +52,8 @@ interface IDistribution {
      * @param treeId_ Tree ID
      * @param cid_ Content ID
      * @param account_ Address of claim
-     * @param amount_ Amount of claim
-     * @param proof_ Merkle proof for (treeId_, cid_, account_, amount_)
+     * @param share_ Share (percentage with two decimal places to an integer representation, 0-10000) of total amount
+     * @param proof_ Merkle proof for (treeId_, cid_, account_, share_)
      *
      * Emits a {Claim} event on success.
      */
@@ -61,7 +61,7 @@ interface IDistribution {
         uint256 treeId_,
         string calldata cid_,
         address account_,
-        uint256 amount_,
+        uint256 share_,
         bytes32[] calldata proof_
     ) external;
 

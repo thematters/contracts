@@ -23,6 +23,9 @@ contract Distribution is IDistribution, Ownable {
     // treeId_ => balance_
     mapping(uint256 => uint256) public balances;
 
+    // treeId_ => totalAmount_
+    mapping(uint256 => uint256) public totalAmounts;
+
     // treeId_ => cid_ => account_
     mapping(uint256 => mapping(string => mapping(address => bool))) public hasClaimed;
 
@@ -57,7 +60,7 @@ contract Distribution is IDistribution, Ownable {
     //////////////////////////////
 
     /// @inheritdoc IDistribution
-    function drop(bytes32 merkleRoot_, uint256 amount_) external payable isFromAdmin returns (uint256 treeId_) {
+    function drop(bytes32 merkleRoot_, uint256 amount_) external isFromAdmin returns (uint256 treeId_) {
         require(amount_ > 0, "Zero amount");
 
         // Set the merkle root
@@ -67,8 +70,9 @@ contract Distribution is IDistribution, Ownable {
 
         emit Drop(treeId_, amount_);
 
-        // Set the balance for the tree
+        // Set the balance & total amount for the tree
         balances[treeId_] = amount_;
+        totalAmounts[treeId_] = amount_;
 
         // Transfer
         SafeERC20.safeTransferFrom(IERC20(token), msg.sender, address(this), amount_);
@@ -79,7 +83,7 @@ contract Distribution is IDistribution, Ownable {
         uint256 treeId_,
         string calldata cid_,
         address account_,
-        uint256 amount_,
+        uint256 share_,
         bytes32[] calldata merkleProof_
     ) external {
         require(!hasClaimed[treeId_][cid_][account_], "Already claimed");
@@ -88,11 +92,13 @@ contract Distribution is IDistribution, Ownable {
         require(_root != bytes32(0), "Invalid tree ID");
 
         // Verify the merkle proof
-        bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(cid_, account_, amount_))));
+        bytes32 _leaf = keccak256(bytes.concat(keccak256(abi.encode(cid_, account_, share_))));
         require(MerkleProof.verify(merkleProof_, _root, _leaf), "Invalid proof");
 
         // Mark it as claimed first for to prevent reentrancy
         hasClaimed[treeId_][cid_][account_] = true;
+
+        uint256 amount_ = calculateAmount(share_, totalAmounts[treeId_]);
 
         emit Claim(cid_, account_, amount_);
 
@@ -114,5 +120,9 @@ contract Distribution is IDistribution, Ownable {
 
         // Transfer
         require(IERC20(token).transfer(target_, _balance), "Failed token transfer");
+    }
+
+    function calculateAmount(uint256 share_, uint256 totalAmount_) public pure returns (uint256 amount) {
+        amount = (totalAmount_ * share_) / 10000;
     }
 }

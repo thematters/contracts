@@ -23,10 +23,10 @@ contract DistributionTestBase is Test {
     address constant USER_CHARLIE = address(104);
     address constant ATTACKER = address(200);
 
-    bytes32 constant TREE_1_ROOT = 0xf2e79881fa5ed7db88877ca21ec885996d6176cf455504472b68f5517203e314;
+    bytes32 constant TREE_1_ROOT = 0xa0e4f659b6a70bfb30ef428b512e6823594648161125e32b8460a0ee3d52c463;
     mapping(address => bytes32[]) public TREE_1_PROOFS;
     mapping(address => string) public TREE_1_CIDS;
-    mapping(address => uint256) public TREE_1_AMOUNTS;
+    mapping(address => uint256) public TREE_1_SHARES;
 
     function setUp() public {
         vm.startPrank(OWNER);
@@ -40,17 +40,17 @@ contract DistributionTestBase is Test {
 
         // init proofs
         bytes32[] memory proofAlice = new bytes32[](1);
-        proofAlice[0] = 0x884512338d5de33ee9c6e0a1c2a47ff1c8ca788bbb8b34552e39cb98aaaa5c08;
+        proofAlice[0] = 0x44a23deeb3c7344ffa2627f200604092e44f07b09fbdb89d362ebc26ff8381db;
         TREE_1_PROOFS[USER_ALICE] = proofAlice;
 
         bytes32[] memory proofBob = new bytes32[](2);
-        proofBob[0] = 0x685ad0f74cc48ff99f8fa41d3f8d2e3c7672e7afe48a680c9418b7268626fc89;
-        proofBob[1] = 0xfa171588c56e80a41d8e67e9c9a8dc6b25dbdf1e16699c612981ebdf04045c3f;
+        proofBob[0] = 0xa4a3eab5591f158e75b072a89e222cb6c926f47bc51347964573d924d5444b21;
+        proofBob[1] = 0xcf0cc73dbba283908c5e905525f496c985e12f28d7424e9785d13955154126b8;
         TREE_1_PROOFS[USER_BOB] = proofBob;
 
         bytes32[] memory proofCharlie = new bytes32[](2);
-        proofCharlie[0] = 0x27349dbdeb528d38831624696ac843c93d915cbf47db44f6087b3e431152c4de;
-        proofCharlie[1] = 0xfa171588c56e80a41d8e67e9c9a8dc6b25dbdf1e16699c612981ebdf04045c3f;
+        proofCharlie[0] = 0x70450d038737bb5828f2bbe807154a96b9f8fd1a3bf030a998d69b1d5e6e0d5f;
+        proofCharlie[1] = 0xcf0cc73dbba283908c5e905525f496c985e12f28d7424e9785d13955154126b8;
         TREE_1_PROOFS[USER_CHARLIE] = proofCharlie;
 
         // init cids
@@ -58,10 +58,10 @@ contract DistributionTestBase is Test {
         TREE_1_CIDS[USER_BOB] = "QmSAwncsWGXeqwrL5USBzQXvjqfH1nFfARLGM91sfd4NZe";
         TREE_1_CIDS[USER_CHARLIE] = "QmUQQSeWxcqoNLKroGtz137c7QBWpzbNr9RcqDtVzZxJ3x";
 
-        // init amounts
-        TREE_1_AMOUNTS[USER_ALICE] = 1000000000000000000;
-        TREE_1_AMOUNTS[USER_BOB] = 500000000000000000;
-        TREE_1_AMOUNTS[USER_CHARLIE] = 10000000000000000;
+        // init shares
+        TREE_1_SHARES[USER_ALICE] = 1000;
+        TREE_1_SHARES[USER_BOB] = 2055;
+        TREE_1_SHARES[USER_CHARLIE] = 6945;
 
         // deploy USDT
         usdt = new USDT(OWNER, 0);

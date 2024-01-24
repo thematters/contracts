@@ -43,19 +43,19 @@ contract DistributionTest is DistributionTestBase {
 
     function testDrop() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
         assertEq(distribution.lastTreeId(), 1);
         assertEq(distribution.merkleRoots(1), TREE_1_ROOT);
-        assertEq(distribution.balances(1), _amount);
-        assertEq(usdt.balanceOf(address(distribution)), _amount);
+        assertEq(distribution.balances(1), _totalAmount);
+        assertEq(usdt.balanceOf(address(distribution)), _totalAmount);
 
         // drop#2
-        drop(_amount);
+        drop(_totalAmount);
         assertEq(distribution.lastTreeId(), 2);
         assertEq(distribution.merkleRoots(2), TREE_1_ROOT);
-        assertEq(distribution.balances(2), _amount);
-        assertEq(usdt.balanceOf(address(distribution)), _amount * 2);
+        assertEq(distribution.balances(2), _totalAmount);
+        assertEq(usdt.balanceOf(address(distribution)), _totalAmount * 2);
     }
 
     function testCannotDropByAttacker() public {
@@ -99,42 +99,45 @@ contract DistributionTest is DistributionTestBase {
     //////////////////////////////
     function testClaim() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // claim#Alice
+        uint256 _amount = distribution.calculateAmount(TREE_1_SHARES[USER_ALICE], _totalAmount);
         vm.expectEmit(true, true, false, false);
-        emit IDistribution.Claim(TREE_1_CIDS[USER_ALICE], USER_ALICE, TREE_1_AMOUNTS[USER_ALICE]);
+        emit IDistribution.Claim(TREE_1_CIDS[USER_ALICE], USER_ALICE, _amount);
         uint256 balanceAlce = address(USER_ALICE).balance;
         distribution.claim(
             1,
             TREE_1_CIDS[USER_ALICE],
             USER_ALICE,
-            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_SHARES[USER_ALICE],
             TREE_1_PROOFS[USER_ALICE]
         );
-        assertEq(usdt.balanceOf(address(USER_ALICE)), balanceAlce + TREE_1_AMOUNTS[USER_ALICE]);
-        assertEq(usdt.balanceOf(address(distribution)), _amount - TREE_1_AMOUNTS[USER_ALICE]);
+        assertEq(usdt.balanceOf(address(USER_ALICE)), balanceAlce + _amount);
+        assertEq(usdt.balanceOf(address(distribution)), _totalAmount - _amount);
 
         // claim#Bob
+        uint256 _amountBob = distribution.calculateAmount(TREE_1_SHARES[USER_BOB], _totalAmount);
         vm.expectEmit(true, true, false, false);
-        emit IDistribution.Claim(TREE_1_CIDS[USER_BOB], USER_BOB, TREE_1_AMOUNTS[USER_BOB]);
+        emit IDistribution.Claim(TREE_1_CIDS[USER_BOB], USER_BOB, _amountBob);
         uint256 balanceBob = address(USER_BOB).balance;
-        distribution.claim(1, TREE_1_CIDS[USER_BOB], USER_BOB, TREE_1_AMOUNTS[USER_BOB], TREE_1_PROOFS[USER_BOB]);
-        assertEq(usdt.balanceOf(address(USER_BOB)), balanceBob + TREE_1_AMOUNTS[USER_BOB]);
+        distribution.claim(1, TREE_1_CIDS[USER_BOB], USER_BOB, TREE_1_SHARES[USER_BOB], TREE_1_PROOFS[USER_BOB]);
+        assertEq(usdt.balanceOf(address(USER_BOB)), balanceBob + _amountBob);
 
         // claim#Charlie
+        uint256 _amountCharlie = distribution.calculateAmount(TREE_1_SHARES[USER_CHARLIE], _totalAmount);
         vm.expectEmit(true, true, false, false);
-        emit IDistribution.Claim(TREE_1_CIDS[USER_CHARLIE], USER_CHARLIE, TREE_1_AMOUNTS[USER_CHARLIE]);
+        emit IDistribution.Claim(TREE_1_CIDS[USER_CHARLIE], USER_CHARLIE, _amountCharlie);
         uint256 balanceCharlie = address(USER_CHARLIE).balance;
         distribution.claim(
             1,
             TREE_1_CIDS[USER_CHARLIE],
             USER_CHARLIE,
-            TREE_1_AMOUNTS[USER_CHARLIE],
+            TREE_1_SHARES[USER_CHARLIE],
             TREE_1_PROOFS[USER_CHARLIE]
         );
-        assertEq(usdt.balanceOf(address(USER_CHARLIE)), balanceCharlie + TREE_1_AMOUNTS[USER_CHARLIE]);
+        assertEq(usdt.balanceOf(address(USER_CHARLIE)), balanceCharlie + _amountCharlie);
 
         // check balance
         assertEq(address(distribution).balance, 0);
@@ -142,15 +145,15 @@ contract DistributionTest is DistributionTestBase {
 
     function testCannotClaimIfAlreadyClaimed() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // claim#Alice
         distribution.claim(
             1,
             TREE_1_CIDS[USER_ALICE],
             USER_ALICE,
-            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_SHARES[USER_ALICE],
             TREE_1_PROOFS[USER_ALICE]
         );
 
@@ -160,25 +163,26 @@ contract DistributionTest is DistributionTestBase {
             1,
             TREE_1_CIDS[USER_ALICE],
             USER_ALICE,
-            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_SHARES[USER_ALICE],
             TREE_1_PROOFS[USER_ALICE]
         );
     }
 
     function testCannotClaimIfInvalidProof() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // claim#Alice
+        uint256 _amount = distribution.calculateAmount(TREE_1_SHARES[USER_ALICE], _totalAmount);
         vm.expectRevert("Invalid proof");
-        distribution.claim(1, TREE_1_CIDS[USER_ALICE], USER_ALICE, TREE_1_AMOUNTS[USER_ALICE], TREE_1_PROOFS[USER_BOB]);
+        distribution.claim(1, TREE_1_CIDS[USER_ALICE], USER_ALICE, _amount, TREE_1_PROOFS[USER_BOB]);
     }
 
     function testCannotClaimIfInvalidTreeId() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // claim#Alice
         vm.expectRevert("Invalid tree ID");
@@ -186,15 +190,15 @@ contract DistributionTest is DistributionTestBase {
             2,
             TREE_1_CIDS[USER_ALICE],
             USER_ALICE,
-            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_SHARES[USER_ALICE],
             TREE_1_PROOFS[USER_ALICE]
         );
     }
 
     function testCannotClaimIfInsufficientBalance() public {
         // drop#1
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
         deal(address(usdt), address(distribution), 0);
         assertEq(usdt.balanceOf(address(distribution)), 0);
 
@@ -204,7 +208,7 @@ contract DistributionTest is DistributionTestBase {
             1,
             TREE_1_CIDS[USER_ALICE],
             USER_ALICE,
-            TREE_1_AMOUNTS[USER_ALICE],
+            TREE_1_SHARES[USER_ALICE],
             TREE_1_PROOFS[USER_ALICE]
         );
     }
@@ -214,22 +218,22 @@ contract DistributionTest is DistributionTestBase {
     //////////////////////////////
     function testSweep() public {
         // drop
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // sweep
         uint256 prevBalance = usdt.balanceOf(ADMIN);
         vm.prank(ADMIN);
         distribution.sweep(1, ADMIN);
-        assertEq(usdt.balanceOf(ADMIN), prevBalance + _amount);
+        assertEq(usdt.balanceOf(ADMIN), prevBalance + _totalAmount);
         assertEq(usdt.balanceOf(address(distribution)), 0);
         assertEq(distribution.balances(1), 0);
     }
 
     function testCannotSweepByAttacker() public {
         // drop
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // sweep
         vm.prank(ATTACKER);
@@ -239,8 +243,8 @@ contract DistributionTest is DistributionTestBase {
 
     function testCannotSweepIfZeroBalance() public {
         // drop
-        uint256 _amount = 1510000000000000000;
-        drop(_amount);
+        uint256 _totalAmount = 1510000000000000000;
+        drop(_totalAmount);
 
         // sweep
         vm.prank(ADMIN);
