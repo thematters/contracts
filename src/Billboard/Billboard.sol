@@ -142,7 +142,7 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function clearAuction(uint256 tokenId_) public {
+    function clearAuction(uint256 tokenId_) public returns (uint256 price, uint256 tax) {
         // revert if board not found
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
@@ -160,25 +160,37 @@ contract Billboard is IBillboard {
         address _prevOwner = registry.ownerOf(tokenId_);
         if (_nextAuction.startAt == 0 && _prevOwner != _board.creator) {
             registry.safeTransferByOperator(_prevOwner, _board.creator, tokenId_);
-            return;
+            return (0, 0);
         }
 
-        _clearAuction(tokenId_, _board.creator, _nextAuctionId);
+        return _clearAuction(tokenId_, _board.creator, _nextAuctionId);
     }
 
     /// @inheritdoc IBillboard
-    function clearAuctions(uint256[] calldata tokenIds_) external {
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            clearAuction(tokenIds_[i]);
+    function clearAuctions(
+        uint256[] calldata tokenIds_
+    ) external returns (uint256[] memory prices, uint256[] memory taxes) {
+        uint256 _size = tokenIds_.length;
+        uint256[] memory _prices = new uint256[](_size);
+        uint256[] memory _taxes = new uint256[](_size);
+
+        for (uint256 i = 0; i < _size; i++) {
+            (_prices[i], _taxes[i]) = clearAuction(tokenIds_[i]);
         }
+
+        return (_prices, _taxes);
     }
 
-    function _clearAuction(uint256 tokenId_, address boardCreator_, uint256 nextAuctionId_) private {
+    function _clearAuction(
+        uint256 tokenId_,
+        address boardCreator_,
+        uint256 nextAuctionId_
+    ) private returns (uint256 price, uint256 tax) {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
 
         // skip if auction is already cleared
         if (_nextAuction.leaseEndAt != 0) {
-            return;
+            return (0, 0);
         }
 
         address _prevOwner = registry.ownerOf(tokenId_);
@@ -211,6 +223,8 @@ contract Billboard is IBillboard {
 
         // emit AuctionCleared
         registry.emitAuctionCleared(tokenId_, nextAuctionId_, _nextAuction.highestBidder, leaseStartAt, leaseEndAt);
+
+        return (_highestBid.price, _highestBid.tax);
     }
 
     /// @inheritdoc IBillboard

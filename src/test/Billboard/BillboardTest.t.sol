@@ -590,15 +590,20 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid(_tokenId, _amount);
     }
 
-    function testClearAuctionIfAuctionEnded() public {
+    function testClearAuctionIfAuctionEnded(uint96 _amount) public {
+        vm.assume(_amount > 0.001 ether);
+
+        uint256 _tax = operator.calculateTax(_amount);
+        uint256 _total = _amount + _tax;
+
         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
         uint64 _placedAt = uint64(block.number);
         uint64 _clearedAt = uint64(block.number) + registry.leaseTerm() + 1;
 
         // place a bid
         vm.startPrank(USER_A);
-        deal(address(usdt), USER_A, 0);
-        operator.placeBid(_tokenId, 0);
+        deal(address(usdt), USER_A, _total);
+        operator.placeBid(_tokenId, _amount);
 
         // clear auction
         vm.expectEmit(true, true, true, true);
@@ -611,7 +616,9 @@ contract BillboardTest is BillboardTestBase {
         );
 
         vm.roll(_clearedAt);
-        operator.clearAuction(_tokenId);
+        (uint256 _price1, uint256 _tax1) = operator.clearAuction(_tokenId);
+        assertEq(_price1, _amount);
+        assertEq(_tax1, _tax);
 
         // check auction
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
@@ -624,8 +631,8 @@ contract BillboardTest is BillboardTestBase {
 
         // check bid
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-        assertEq(_bid.price, 0);
-        assertEq(_bid.tax, 0);
+        assertEq(_bid.price, _amount);
+        assertEq(_bid.tax, _tax);
         assertEq(_bid.placedAt, _placedAt);
         assertEq(_bid.isWon, true);
         assertEq(_bid.isWithdrawn, false);
@@ -670,7 +677,11 @@ contract BillboardTest is BillboardTestBase {
         uint256[] memory _tokenIds = new uint256[](2);
         _tokenIds[0] = _tokenId;
         _tokenIds[1] = _tokenId2;
-        operator.clearAuctions(_tokenIds);
+        (uint256[] memory prices, uint256[] memory taxes) = operator.clearAuctions(_tokenIds);
+        assertEq(prices[0], 0);
+        assertEq(prices[1], 0);
+        assertEq(taxes[0], 0);
+        assertEq(taxes[1], 0);
 
         // check auction
         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
