@@ -8,7 +8,7 @@ interface IDistribution {
      * @param treeId_ Tree ID of the drop
      * @param amount_ Total amount of the drop
      */
-    event Drop(uint256 indexed treeId_, uint256 amount_);
+    event Drop(string indexed treeId_, uint256 amount_);
 
     /**
      * @dev Emitted when an claim is made.
@@ -39,12 +39,13 @@ interface IDistribution {
     /**
      * @notice Create a new drop
      *
+     * @param treeId_ Tree ID of new drop
      * @param merkleRoot_ Merkle root of new drop
      * @param amount_ Total amount of new drop
      *
      * Emits a {Drop} event on success.
      */
-    function drop(bytes32 merkleRoot_, uint256 amount_) external returns (uint256 treeId_);
+    function drop(string calldata treeId_, bytes32 merkleRoot_, uint256 amount_) external;
 
     /**
      * @notice Claim and transfer tokens
@@ -58,7 +59,7 @@ interface IDistribution {
      * Emits a {Claim} event on success.
      */
     function claim(
-        uint256 treeId_,
+        string calldata treeId_,
         string calldata cid_,
         address account_,
         uint256 share_,
@@ -73,5 +74,5 @@ interface IDistribution {
      * @param treeId_ Tree ID
      * @param target_ Address that should receive the unclaimed funds
      */
-    function sweep(uint256 treeId_, address target_) external;
+    function sweep(string calldata treeId_, address target_) external;
 }

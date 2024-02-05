@@ -5,29 +5,25 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "./IDistribution.sol";
 
 // https://github.com/Uniswap/merkle-distributor
 contract Distribution is IDistribution, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter public lastTreeId;
-
     address public admin;
     address public immutable token;
 
     // treeId_ => merkleRoot_
-    mapping(uint256 => bytes32) public merkleRoots;
+    mapping(string => bytes32) public merkleRoots;
 
     // treeId_ => balance_
-    mapping(uint256 => uint256) public balances;
+    mapping(string => uint256) public balances;
 
     // treeId_ => totalAmount_
-    mapping(uint256 => uint256) public totalAmounts;
+    mapping(string => uint256) public totalAmounts;
 
     // treeId_ => cid_ => account_
-    mapping(uint256 => mapping(string => mapping(address => bool))) public hasClaimed;
+    mapping(string => mapping(string => mapping(address => bool))) public hasClaimed;
 
     constructor(address token_, address admin_) {
         require(token_ != address(0), "Zero address");
@@ -60,12 +56,11 @@ contract Distribution is IDistribution, Ownable {
     //////////////////////////////
 
     /// @inheritdoc IDistribution
-    function drop(bytes32 merkleRoot_, uint256 amount_) external isFromAdmin returns (uint256 treeId_) {
+    function drop(string calldata treeId_, bytes32 merkleRoot_, uint256 amount_) external isFromAdmin {
         require(amount_ > 0, "Zero amount");
 
         // Set the merkle root
-        lastTreeId.increment();
-        treeId_ = lastTreeId.current();
+        require(merkleRoots[treeId_] == bytes32(0), "Existing tree");
         merkleRoots[treeId_] = merkleRoot_;
 
         emit Drop(treeId_, amount_);
@@ -80,7 +75,7 @@ contract Distribution is IDistribution, Ownable {
 
     /// @inheritdoc IDistribution
     function claim(
-        uint256 treeId_,
+        string calldata treeId_,
         string calldata cid_,
         address account_,
         uint256 share_,
@@ -110,7 +105,7 @@ contract Distribution is IDistribution, Ownable {
     }
 
     /// @inheritdoc IDistribution
-    function sweep(uint256 treeId_, address target_) external isFromAdmin {
+    function sweep(string calldata treeId_, address target_) external isFromAdmin {
         uint256 _balance = balances[treeId_];
 
         require(_balance > 0, "Zero balance");

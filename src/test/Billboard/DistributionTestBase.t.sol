@@ -84,9 +84,9 @@ contract DistributionTestBase is Test {
         usdt.approve(address(distribution), MAX_ALLOWANCE);
     }
 
-    function drop(uint256 amount_) public {
+    function drop(string memory treeId_, uint256 amount_) public {
         deal(address(usdt), ADMIN, amount_);
         vm.prank(ADMIN);
-        distribution.drop(TREE_1_ROOT, amount_);
+        distribution.drop(treeId_, TREE_1_ROOT, amount_);
     }
 }
