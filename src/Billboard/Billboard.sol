@@ -338,7 +338,7 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function withdrawTax() external {
+    function withdrawTax() external returns (uint256 tax) {
         (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(msg.sender);
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
@@ -354,6 +354,8 @@ contract Billboard is IBillboard {
 
         // emit TaxWithdrawn
         registry.emitTaxWithdrawn(msg.sender, amount);
+
+        return amount;
     }
 
     /// @inheritdoc IBillboard

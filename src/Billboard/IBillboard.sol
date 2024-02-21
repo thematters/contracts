@@ -225,7 +225,7 @@ interface IBillboard {
      * @notice Withdraw accumulated taxation of a board.
      *
      */
-    function withdrawTax() external;
+    function withdrawTax() external returns (uint256 tax);
 
     /**
      * @notice Withdraw bid that were not won by auction id;
