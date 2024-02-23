@@ -2,17 +2,20 @@
 
 ## Contracts
 
-| Name                     | Network         | Address                                                                                                                         |
-| ------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Logbook                  | Polygon Mumbai  | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
-| Logbook                  | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)        |
-| SpaceToken               | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8) |
-| SpaceToken               | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
-| TheSpace                 | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)        |
-| TheSpaceRegistry         | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)        |
-| Billboard (Operator)     | Polygon Mumbai  | [0xF2C5a1db8A5759d046f707453823Ea5899912a9F](https://mumbai.polygonscan.com/address/0xF2C5a1db8A5759d046f707453823Ea5899912a9F) |
-| Billboard (Registry)     | Polygon Mumbai  | [0x92899B5B73384b1696E8b893Dda9E09205e59125](https://mumbai.polygonscan.com/address/0x92899B5B73384b1696E8b893Dda9E09205e59125) |
-| Billboard (Distribution) | Polygon Mumbai  | [0x4d45cD8A56768387410b6Da08D978269df1152Fe](https://mumbai.polygonscan.com/address/0x4d45cD8A56768387410b6Da08D978269df1152Fe) |
+| Name                     | Network         | Address                                                                                                                                |
+| ------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook                  | Polygon Mumbai  | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1)        |
+| Logbook                  | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)               |
+| SpaceToken               | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8)        |
+| SpaceToken               | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)               |
+| TheSpace                 | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)               |
+| TheSpaceRegistry         | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)               |
+| Curation                 | Polygon Mainnet | [0x5edebbdae7B5C79a69AaCF7873796bb1Ec664DB8](https://polygonscan.com/address/0x5edebbdae7b5c79a69aacf7873796bb1ec664db8)               |
+| Curation                 | Polygon Mumbai  | [0xa219C6722008aa22828B31A13ab9Ba93bB91222c](https://mumbai.polygonscan.com/address/0xa219c6722008aa22828b31a13ab9ba93bb91222c)        |
+| Curation                 | OP Sepolia      | [0x92a117aea74963cd0cedf9c50f99435451a291f7](https://sepolia-optimism.etherscan.io/address/0x92a117aea74963cd0cedf9c50f99435451a291f7) |
+| Billboard (Operator)     | OP Sepolia      | [0x7564f3bfabbb7bf50bef52a08a69297289b64164](https://sepolia-optimism.etherscan.io/address/0x7564f3bfabbb7bf50bef52a08a69297289b64164) |
+| Billboard (Registry)     | OP Sepolia      | [0x0e1d6452C9bEcC984fc4eE72b6012aeE0bac0CE7](https://sepolia-optimism.etherscan.io/address/0x0e1d6452C9bEcC984fc4eE72b6012aeE0bac0CE7) |
+| Billboard (Distribution) | OP Sepolia      | [0xbc4bd6f101e128b4b403f8d3a7a4f2976fbf8a1c](https://sepolia-optimism.etherscan.io/address/0xbc4bd6f101e128b4b403f8d3a7a4f2976fbf8a1c) |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
