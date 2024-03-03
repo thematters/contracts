@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
@@ -14,6 +15,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     Counters.Counter public lastTokenId;
 
+    IERC20 public immutable token;
     uint256 public taxRate;
     uint64 public leaseTerm;
 
@@ -36,6 +38,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     mapping(address => TaxTreasury) public taxTreasury;
 
     constructor(
+        address token_,
         address operator_,
         uint256 taxRate_,
         uint64 leaseTerm_,
@@ -43,6 +46,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string memory symbol_
     ) ERC721(name_, symbol_) {
         require(operator_ != address(0), "Zero address");
+        require(token_ != address(0), "Zero address");
+
+        token = IERC20(token_);
         operator = operator_;
         taxRate = taxRate_;
         leaseTerm = leaseTerm_;
@@ -229,8 +235,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     /// @inheritdoc IBillboardRegistry
     function transferAmount(address to_, uint256 amount_) external isFromOperator {
         require(to_ != address(0), "Zero address");
-        (bool _success, ) = to_.call{value: amount_}("");
-        require(_success, "transfer failed");
+
+        require(token.transfer(to_, amount_), "Failed token transfer");
     }
 
     //////////////////////////////

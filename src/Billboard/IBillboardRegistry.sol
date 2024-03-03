@@ -3,6 +3,11 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+/**
+ * @title The interface for `BillboardRegistry` (registry) contract.
+ * @notice Storage contract for `Billboard` (operator) contract.
+ * @dev It stores all states, and is controlled by the operator contract.
+ */
 interface IBillboardRegistry is IERC721 {
     //////////////////////////////
     /// Event

@@ -5,6 +5,7 @@ import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import "forge-std/Vm.sol";
 
+import {USDT} from "../utils/USDT.sol";
 import {Billboard} from "../../Billboard/Billboard.sol";
 import {BillboardRegistry} from "../../Billboard/BillboardRegistry.sol";
 import {IBillboard} from "../../Billboard/IBillboard.sol";
@@ -13,6 +14,7 @@ import {IBillboardRegistry} from "../../Billboard/IBillboardRegistry.sol";
 contract BillboardTestBase is Test {
     Billboard internal operator;
     BillboardRegistry internal registry;
+    USDT internal usdt;
 
     uint256 constant TAX_RATE = 1; // 1% per lease term
     uint64 constant LEASE_TERM = 100; // 100 blocks
@@ -30,8 +32,11 @@ contract BillboardTestBase is Test {
     function setUp() public {
         vm.startPrank(ADMIN);
 
+        // deploy USDT
+        usdt = new USDT(ADMIN, 0);
+
         // deploy operator & registry
-        operator = new Billboard(payable(address(0)), TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
+        operator = new Billboard(address(usdt), payable(address(0)), TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
         registry = operator.registry();
         assertEq(operator.admin(), ADMIN);
         assertEq(registry.operator(), address(operator));
@@ -39,6 +44,17 @@ contract BillboardTestBase is Test {
         assertEq(registry.symbol(), "BLBD");
 
         vm.stopPrank();
+
+        // approve USDT
+        uint256 MAX_ALLOWANCE = type(uint256).max;
+        vm.prank(ADMIN);
+        usdt.approve(address(operator), MAX_ALLOWANCE);
+        vm.prank(USER_A);
+        usdt.approve(address(operator), MAX_ALLOWANCE);
+        vm.prank(USER_B);
+        usdt.approve(address(operator), MAX_ALLOWANCE);
+        vm.prank(USER_C);
+        usdt.approve(address(operator), MAX_ALLOWANCE);
     }
 
     function _mintBoard() public returns (uint256 tokenId) {
@@ -51,7 +67,7 @@ contract BillboardTestBase is Test {
 
         // (new board) ADMIN places first bid and takes the ownership
         vm.startPrank(ADMIN);
-        operator.placeBid{value: 0}(tokenId, 0);
+        operator.placeBid(tokenId, 0);
         _nextAuctionId = registry.nextBoardAuctionId(tokenId);
         IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId, _nextAuctionId);
         assertEq(_nextAuctionId, 1);

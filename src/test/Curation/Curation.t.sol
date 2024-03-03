@@ -7,7 +7,7 @@ import "forge-std/console2.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {USDT} from "./USDT.sol";
+import {USDT} from "../utils/USDT.sol";
 import {Acceptor, Rejector} from "./Receivers.sol";
 import {Curation as CurationContract} from "../../Curation/Curation.sol";
 

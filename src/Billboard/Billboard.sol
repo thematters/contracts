@@ -1,6 +1,8 @@
 //SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import "./BillboardRegistry.sol";
 import "./IBillboard.sol";
 import "./IBillboardRegistry.sol";
@@ -13,6 +15,7 @@ contract Billboard is IBillboard {
     bool public isOpened = false;
 
     constructor(
+        address token_,
         address payable registry_,
         uint256 taxRate_,
         uint64 leaseTerm_,
@@ -28,7 +31,7 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(address(this), taxRate_, leaseTerm_, name_, symbol_);
+            registry = new BillboardRegistry(token_, address(this), taxRate_, leaseTerm_, name_, symbol_);
         }
     }
 
@@ -139,7 +142,7 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function clearAuction(uint256 tokenId_) public {
+    function clearAuction(uint256 tokenId_) public returns (uint256 price, uint256 tax) {
         // revert if board not found
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
@@ -157,25 +160,37 @@ contract Billboard is IBillboard {
         address _prevOwner = registry.ownerOf(tokenId_);
         if (_nextAuction.startAt == 0 && _prevOwner != _board.creator) {
             registry.safeTransferByOperator(_prevOwner, _board.creator, tokenId_);
-            return;
+            return (0, 0);
         }
 
-        _clearAuction(tokenId_, _board.creator, _nextAuctionId);
+        return _clearAuction(tokenId_, _board.creator, _nextAuctionId);
     }
 
     /// @inheritdoc IBillboard
-    function clearAuctions(uint256[] calldata tokenIds_) external {
-        for (uint256 i = 0; i < tokenIds_.length; i++) {
-            clearAuction(tokenIds_[i]);
+    function clearAuctions(
+        uint256[] calldata tokenIds_
+    ) external returns (uint256[] memory prices, uint256[] memory taxes) {
+        uint256 _size = tokenIds_.length;
+        uint256[] memory _prices = new uint256[](_size);
+        uint256[] memory _taxes = new uint256[](_size);
+
+        for (uint256 i = 0; i < _size; i++) {
+            (_prices[i], _taxes[i]) = clearAuction(tokenIds_[i]);
         }
+
+        return (_prices, _taxes);
     }
 
-    function _clearAuction(uint256 tokenId_, address boardCreator_, uint256 nextAuctionId_) private {
+    function _clearAuction(
+        uint256 tokenId_,
+        address boardCreator_,
+        uint256 nextAuctionId_
+    ) private returns (uint256 price, uint256 tax) {
         IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
 
         // skip if auction is already cleared
         if (_nextAuction.leaseEndAt != 0) {
-            return;
+            return (0, 0);
         }
 
         address _prevOwner = registry.ownerOf(tokenId_);
@@ -208,6 +223,8 @@ contract Billboard is IBillboard {
 
         // emit AuctionCleared
         registry.emitAuctionCleared(tokenId_, nextAuctionId_, _nextAuction.highestBidder, leaseStartAt, leaseEndAt);
+
+        return (_highestBid.price, _highestBid.tax);
     }
 
     /// @inheritdoc IBillboard
@@ -260,15 +277,7 @@ contract Billboard is IBillboard {
 
     function _lockBidPriceAndTax(uint256 amount_) private {
         // transfer bid price and tax to the registry
-        (bool _success, ) = address(registry).call{value: amount_}("");
-        require(_success, "Transfer failed");
-
-        // refund if overpaid
-        uint256 _overpaid = msg.value - amount_;
-        if (_overpaid > 0) {
-            (bool _refundSuccess, ) = msg.sender.call{value: _overpaid}("");
-            require(_refundSuccess, "Transfer failed");
-        }
+        SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), amount_);
     }
 
     /// @inheritdoc IBillboard
@@ -329,21 +338,24 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function withdrawTax() external {
+    function withdrawTax() external returns (uint256 tax) {
         (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(msg.sender);
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
 
         require(amount > 0, "Zero amount");
 
+        // set taxTreasury.withdrawn to taxTreasury.accumulated first
+        // to prevent reentrancy
+        registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
+
         // transfer tax to the owner
         registry.transferAmount(msg.sender, amount);
 
-        // set taxTreasury.withdrawn to taxTreasury.accumulated
-        registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
-
         // emit TaxWithdrawn
         registry.emitTaxWithdrawn(msg.sender, amount);
+
+        return amount;
     }
 
     /// @inheritdoc IBillboard
@@ -363,11 +375,11 @@ contract Billboard is IBillboard {
         require(!_bid.isWon, "Bid already won");
         require(amount > 0, "Zero amount");
 
+        // set bid.isWithdrawn to true first to prevent reentrancy
+        registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
+
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);
-
-        // set bid.isWithdrawn to true
-        registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
 
         // emit BidWithdrawn
         registry.emitBidWithdrawn(tokenId_, auctionId_, msg.sender, _bid.price, _bid.tax);

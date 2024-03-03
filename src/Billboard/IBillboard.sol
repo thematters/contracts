@@ -3,6 +3,28 @@ pragma solidity ^0.8.20;
 
 import "./IBillboardRegistry.sol";
 
+/**
+ * @title The interface for `Billboard` contract
+ * @notice The on-chain billboard system transforms platform attention into NFT billboards based on Harberger tax auctions. Empowering creators with a fair share of tax revenue through quadratic voting.
+ *
+ * ## Billboard
+ * - User (whitelisted) can mint a billboard: call `mintBoard`.
+ * - Owner of a billboard can set the AD data of a billboard: call `setBoardName`, `setBoardDescription` and `setBoardLocation`.
+ * - Tenant of a billboard can set the AD data of a billboard: call `setBoardContentURI` and `setBoardRedirectURI`.
+ *
+ * ## Auction
+ * - User needs to call `approve` on currency (USDT) contract before starting.
+ * - User can place a bid on a billboard: call `placeBid`.
+ * - User can clear auction on a billboard: call `clearAuction`.
+ * - User can withdraw bid from a billboard: call `withdrawBid`.
+ *
+ * ## Tax
+ * - Admin of this contract can set global tax rate: call `setTaxRate`.
+ * - Owner of a billbaord can withdraw tax: call `withdrawTax`.
+ *
+ * @dev This contract holds the logic, while read from and write into {BillboardRegistry}, which is the storage contact.
+ * @dev This contract use the {BillboardRegistry} contract for storage, and can be updated by transfering ownership to a new implementation contract.
+ */
 interface IBillboard {
     //////////////////////////////
     /// Upgradability
@@ -120,14 +142,16 @@ interface IBillboard {
      *
      * @param tokenId_ Token ID of a board.
      */
-    function clearAuction(uint256 tokenId_) external;
+    function clearAuction(uint256 tokenId_) external returns (uint256 price, uint256 tax);
 
     /**
      * @notice Clear the next auction of mutiple boards.
      *
      * @param tokenIds_ Token IDs of boards.
      */
-    function clearAuctions(uint256[] calldata tokenIds_) external;
+    function clearAuctions(
+        uint256[] calldata tokenIds_
+    ) external returns (uint256[] memory prices, uint256[] memory taxes);
 
     /**
      * @notice Place bid for the next auction of a board.
@@ -201,7 +225,7 @@ interface IBillboard {
      * @notice Withdraw accumulated taxation of a board.
      *
      */
-    function withdrawTax() external;
+    function withdrawTax() external returns (uint256 tax);
 
     /**
      * @notice Withdraw bid that were not won by auction id;
