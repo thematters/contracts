@@ -16,6 +16,8 @@ The on-chain billboard system transforms platform attention into NFT billboards 
 
 See [Billboard website](https://matters.town) for more details.
 
+![auction](./auction.png)
+
 ### Tax distribution with QF (quadratic funding) algorithm
 
 ![distribution](./workflow.png)
