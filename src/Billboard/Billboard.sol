@@ -17,13 +17,15 @@ contract Billboard is IBillboard {
     constructor(
         address token_,
         address payable registry_,
+        address admin_,
         uint256 taxRate_,
         uint64 leaseTerm_,
         string memory name_,
         string memory symbol_
     ) {
-        admin = msg.sender;
-        whitelist[msg.sender] = true;
+        require(admin_ != address(0), "Zero address");
+        admin = admin_;
+        whitelist[admin_] = true;
 
         // deploy operator only
         if (registry_ != address(0)) {

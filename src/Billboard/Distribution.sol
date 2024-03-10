@@ -43,11 +43,11 @@ contract Distribution is IDistribution, Ownable {
     }
 
     /// @inheritdoc IDistribution
-    function setAdmin(address account_) external onlyOwner {
-        require(account_ != address(0), "Zero address");
+    function setAdmin(address newAdmin_) external onlyOwner {
+        require(newAdmin_ != address(0), "Zero address");
 
         address _prevAdmin = admin;
-        admin = account_;
+        admin = newAdmin_;
         emit AdminChanged(_prevAdmin, admin);
     }
 
@@ -56,7 +56,7 @@ contract Distribution is IDistribution, Ownable {
     //////////////////////////////
 
     /// @inheritdoc IDistribution
-    function drop(string calldata treeId_, bytes32 merkleRoot_, uint256 amount_) external isFromAdmin {
+    function drop(string calldata treeId_, bytes32 merkleRoot_, uint256 amount_) public {
         require(amount_ > 0, "Zero amount");
 
         // Set the merkle root

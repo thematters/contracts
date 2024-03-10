@@ -16,6 +16,7 @@ contract BillboardTest is BillboardTestBase {
         Billboard newOperator = new Billboard(
             address(usdt),
             payable(registry),
+            ADMIN,
             TAX_RATE,
             LEASE_TERM,
             "Billboard2",

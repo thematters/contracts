@@ -36,7 +36,7 @@ contract BillboardTestBase is Test {
         usdt = new USDT(ADMIN, 0);
 
         // deploy operator & registry
-        operator = new Billboard(address(usdt), payable(address(0)), TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
+        operator = new Billboard(address(usdt), payable(address(0)), ADMIN, TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
         registry = operator.registry();
         assertEq(operator.admin(), ADMIN);
         assertEq(registry.operator(), address(operator));
