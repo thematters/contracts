@@ -56,6 +56,11 @@ contract DistributionTest is DistributionTestBase {
         assertEq(distribution.merkleRoots(_treeId2), TREE_1_ROOT);
         assertEq(distribution.balances(_treeId2), _totalAmount);
         assertEq(usdt.balanceOf(address(distribution)), _totalAmount * 2);
+
+        // drop by any address
+        deal(address(usdt), USER_ALICE, 1);
+        vm.prank(USER_ALICE);
+        distribution.drop("3", TREE_1_ROOT, 1);
     }
 
     function testCannotDropTwiceWithSameTreeId() public {
@@ -69,12 +74,6 @@ contract DistributionTest is DistributionTestBase {
         vm.prank(ADMIN);
         vm.expectRevert("Existing tree");
         distribution.drop(_treeId, TREE_1_ROOT, _totalAmount);
-    }
-
-    function testCannotDropByAttacker() public {
-        vm.prank(ATTACKER);
-        vm.expectRevert("Admin");
-        distribution.drop("1", TREE_1_ROOT, 1);
     }
 
     function testCannotDropIfZeroAmount() public {
