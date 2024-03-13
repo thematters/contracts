@@ -73,10 +73,10 @@ contract BaseTheSpaceTest is Test {
             LP,
             LP_TOKENS
         );
-        assertEq(currency.balanceOf(TREASURY), TREASURY_TOKENS * (10**uint256(currency.decimals())));
-        assertEq(currency.balanceOf(TEAM), TEAM_TOKENS * (10**uint256(currency.decimals())));
+        assertEq(currency.balanceOf(TREASURY), TREASURY_TOKENS * (10 ** uint256(currency.decimals())));
+        assertEq(currency.balanceOf(TEAM), TEAM_TOKENS * (10 ** uint256(currency.decimals())));
 
-        PIXEL_PRICE = 1000 * (10**uint256(currency.decimals()));
+        PIXEL_PRICE = 1000 * (10 ** uint256(currency.decimals()));
 
         // deploy the space
         vm.expectEmit(true, false, false, false);
@@ -138,11 +138,7 @@ contract BaseTheSpaceTest is Test {
         thespace.bid(PIXEL_ID, bidPrice);
     }
 
-    function _bidAs(
-        address bidder,
-        uint256 bidPrice,
-        uint256 newPrice
-    ) internal {
+    function _bidAs(address bidder, uint256 bidPrice, uint256 newPrice) internal {
         vm.prank(bidder);
         thespace.bid(PIXEL_ID, bidPrice);
 

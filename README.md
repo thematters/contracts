@@ -2,65 +2,30 @@
 
 ## Contracts
 
-| Name             | Network         | Address                                                                                                                         |
-| ---------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Logbook          | Polygon Mumbai  | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1) |
-| Logbook          | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)        |
-| SpaceToken       | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8) |
-| SpaceToken       | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)        |
-| TheSpace         | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)        |
-| TheSpaceRegistry | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)        |
+| Name                     | Network         | Address                                                                                                                                |
+| ------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook                  | Polygon Mumbai  | [0x203197e074b7a2f4ff6890815e4657a9c47c68b1](https://mumbai.polygonscan.com/address/0x203197e074b7a2f4ff6890815e4657a9c47c68b1)        |
+| Logbook                  | Polygon Mainnet | [0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0](https://polygonscan.com/address/0xcdf8D568EC808de5fCBb35849B5bAFB5d444D4c0)               |
+| SpaceToken               | Polygon Mumbai  | [0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8](https://mumbai.polygonscan.com/address/0xeb6814043dc2184b0b321f6de995bf11bdbcc5b8)        |
+| SpaceToken               | Polygon Mainnet | [0x264808855b0a6a5a318d238c6ee9f299179f27fc](https://polygonscan.com/address/0x264808855b0a6a5a318d238c6ee9f299179f27fc)               |
+| TheSpace                 | Polygon Mainnet | [0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1](https://polygonscan.com/address/0x9b71045ac2a1563dc5ff8e0c537413a6aae16cd1)               |
+| TheSpaceRegistry         | Polygon Mainnet | [0x8da7a7a48ebbd870358f2fd824e52e5142f44257](https://polygonscan.com/address/0x8da7a7a48ebbd870358f2fd824e52e5142f44257)               |
+| Curation                 | Polygon Mainnet | [0x5edebbdae7B5C79a69AaCF7873796bb1Ec664DB8](https://polygonscan.com/address/0x5edebbdae7b5c79a69aacf7873796bb1ec664db8)               |
+| Curation                 | Polygon Mumbai  | [0xa219C6722008aa22828B31A13ab9Ba93bB91222c](https://mumbai.polygonscan.com/address/0xa219c6722008aa22828b31a13ab9ba93bb91222c)        |
+| Curation                 | OP Sepolia      | [0x92a117aea74963cd0cedf9c50f99435451a291f7](https://sepolia-optimism.etherscan.io/address/0x92a117aea74963cd0cedf9c50f99435451a291f7) |
+| Curation                 | OP Mainnet      | [0x5edebbdae7B5C79a69AaCF7873796bb1Ec664DB8](https://optimistic.etherscan.io/address/0x5edebbdae7b5c79a69aacf7873796bb1ec664db8#code)  |
+| Billboard (Operator)     | OP Sepolia      | [0x06BC4a90887daAA148aE98BD2dF3FBac6635e702](https://sepolia-optimism.etherscan.io/address/0x06BC4a90887daAA148aE98BD2dF3FBac6635e702) |
+| Billboard (Registry)     | OP Sepolia      | [0x050E2682DEc12E239be82117007bEd0Bac2Ea746](https://sepolia-optimism.etherscan.io/address/0x050E2682DEc12E239be82117007bEd0Bac2Ea746) |
+| Billboard (Distribution) | OP Sepolia      | [0x606FeB1753d642ae1E3632Fb66baee042a201C00](https://sepolia-optimism.etherscan.io/address/0x606FeB1753d642ae1E3632Fb66baee042a201C00) |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
 ### ABI
 
-See [Docs](./docs/) for Contract ABI.
+To get the contract ABI,
 
-### Usages
-
-```ts
-import { ethers } from "ethers";
-
-/**
- * Instantiate contract
- */
-const address = "0x203197e074b7a2f4ff6890815e4657a9c47c68b1";
-const abi = '[{"inputs":[{"internalType":"string","name":"name_","type":"string"}...]';
-const alchemyAPIKey = "...";
-const provider = new ethers.providers.AlchemyProvider("maticmum", alchemyAPIKey);
-const contract = new ethers.Contract(address, abi, provider);
-
-/**
- * Interact with contract
- */
-// mint a logbook
-const publicSalePrice = await contract.publicSalePrice();
-const tokenId = await contract.publicSaleMint({ value: publicSalePrice });
-
-// set title, description & fork price in one transaction
-const title = "Ut cupidatat";
-const description = "Ut cupidatat amet ea et veniam amet aute aute eu.";
-const forkPrice = ethers.utils.parseEther("0.1"); // 0.1 Ether to Wei
-const iface = new ethers.utils.Interface(abi);
-const calldata = [
-  // title
-  iface.encodeFunctionData("setTitle", [tokenId, title]),
-  // description
-  iface.encodeFunctionData("setDescription", [tokenId, title]),
-  // fork price
-  iface.encodeFunctionData("setForkPrice", [tokenId, forkPrice]),
-];
-await contract.multicall(calldata);
-
-// donate
-const donationAmount = ethers.utils.parseEther("0.02");
-await contract.donate(tokenId, { value: donationAmount });
-```
-
-Ethers.js also supports [Human-Readable ABI](https://docs.ethers.io/v5/api/utils/abi/formats/), it's recommended to use, for smaller client bundle size.
-
-To query the contract data, please checkout [thematters/subgraphs](https://github.com/thematters/subgraphs).
+1. Run `make build`;
+2. Find on `abi` field of `out/YOUR_CONTRACT.sol/YOUR_CONTRACT.json`;
 
 ## Development
 
@@ -84,6 +49,12 @@ Testing
 make test
 ```
 
+Static Analyzers
+
+```bash
+make analyze-billboard
+```
+
 ## Deployment
 
 ### Deploy on Local Node:
@@ -91,32 +62,24 @@ make test
 ```bash
 # Preprare environment
 cp .env.local.example .env.local
-cp .env.polygon-mainnet.example .env.polygon-mainnet
-cp .env.polygon-mumbai.example .env.polygon-mumbai
 
 # Deploy Logbook contract (defaults to local node)
 make deploy-logbook
-
-# Deploy currency first, then add the contract address to THESPACE_CURRENCY_ADDRESS env variable
-make deploy-the-space-currency
-# Deploy the space contract
-make deploy-the-space
-
-# Deploy the snapper contract
-make deploy-snapper
 ```
 
 ### Deploy & Verify on testnet or mainnet:
 
 ```bash
-# Deploy The Space contract
+# Deploy to local node
 make deploy-the-space
 
-# Deploy to Poygon Mainnet
-make deploy-the-space NETWORK=polygon-mainnet
-
-# Deploy to Polygon Mumbai
+# Deploy to testnet
+cp .env.polygon-mumbai.example .env.polygon-mumbai
 make deploy-the-space NETWORK=polygon-mumbai
+
+# Deploy to mainnet
+cp .env.op-mainnet.example .env.op-mainnet
+make deploy-the-space NETWORK=op-mainnet
 ```
 
 ## Verify Contract Manually

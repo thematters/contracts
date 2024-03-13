@@ -47,11 +47,7 @@ contract LogbookNFTSVGTest is Test {
         vm.label(DEPLOYER, "DEPLOYER");
     }
 
-    function testTokenURI(
-        uint8 transfers,
-        uint8 logsPerTransfer,
-        uint16 tokenId
-    ) public {
+    function testTokenURI(uint8 transfers, uint8 logsPerTransfer, uint16 tokenId) public {
         vm.assume(transfers < 64 && transfers > 0);
         vm.assume(logsPerTransfer < 3 && logsPerTransfer > 0);
         vm.assume(tokenId <= CLAIM_TOKEN_END_ID && tokenId >= CLAIM_TOKEN_START_ID);

@@ -155,7 +155,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
     function testSetMintTax() public {
         // set mint tax
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         vm.expectEmit(true, true, false, false);
         emit Config(CONFIG_MINT_TAX, mintTax);
         _setMintTax(mintTax);
@@ -198,7 +198,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
      * @dev Pixel
      */
     function testGetNonExistingPixel() public {
-        uint256 mintTax = 10 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 10 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
 
         ITheSpaceRegistry.Pixel memory pixel = thespace.getPixel(PIXEL_ID);
@@ -569,7 +569,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertLt(currency.balanceOf(PIXEL_OWNER_1), tax);
 
         // set mint tax
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
 
         // bid and token will be defaulted
@@ -617,7 +617,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         _bidAs(PIXEL_OWNER_1, PIXEL_PRICE - 1);
 
         // price too low to bid a non-existing token
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
 
         vm.expectRevert(abi.encodeWithSignature("PriceTooLow()"));
@@ -626,7 +626,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
 
     function testCannotBidExceedAllowance() public {
         // set mint tax
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
 
         // revoke currency approval
@@ -694,7 +694,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(registry.balanceOf(PIXEL_OWNER), 0);
 
         // price was reset
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
         assertEq(thespace.getPrice(PIXEL_ID), mintTax);
 
@@ -850,7 +850,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getOwner(PIXEL_ID), address(0));
 
         // price was reset to mint tax since it was burned
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
         assertEq(thespace.getPrice(PIXEL_ID), mintTax);
 
@@ -875,7 +875,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getTax(PIXEL_ID), 0);
 
         // price was reset to zero
-        uint256 mintTax = 50 * (10**uint256(currency.decimals()));
+        uint256 mintTax = 50 * (10 ** uint256(currency.decimals()));
         _setMintTax(mintTax);
         assertEq(thespace.getPrice(PIXEL_ID), 0);
     }

@@ -1,6 +1,7 @@
 {
   "tabWidth": 2,
   "printWidth": 120,
+  "plugins": ["prettier-plugin-solidity"],
   "overrides": [
     {
       "files": "*.sol",

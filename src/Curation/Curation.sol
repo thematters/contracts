@@ -14,12 +14,7 @@ contract Curation is ICuration {
     }
 
     /// @inheritdoc ICuration
-    function curate(
-        address to_,
-        IERC20 token_,
-        uint256 amount_,
-        string calldata uri_
-    ) public {
+    function curate(address to_, IERC20 token_, uint256 amount_, string calldata uri_) public {
         if (to_ == address(0)) revert ZeroAddress();
         if (amount_ <= 0) revert ZeroAmount();
         if (bytes(uri_).length == 0) revert InvalidURI();
