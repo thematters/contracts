@@ -234,4 +234,22 @@ interface IBillboard {
      * @param auctionId_ Auction ID of a board.
      */
     function withdrawBid(uint256 tokenId_, uint256 auctionId_) external;
+
+    //////////////////////////////
+    /// Block
+    //////////////////////////////
+
+    /**
+     * @notice Get the global block number per day.
+     *
+     * @return blocksPerDay Block number per day.
+     */
+    function getBlocksPerDay() external view returns (uint64 blocksPerDay);
+
+    /**
+     * @notice Set the global block number per day.
+     *
+     * @param blocksPerDay_ Block number per day.
+     */
+    function setBlocksPerDay(uint64 blocksPerDay_) external;
 }

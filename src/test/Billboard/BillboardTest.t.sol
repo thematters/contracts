@@ -19,6 +19,7 @@ contract BillboardTest is BillboardTestBase {
             ADMIN,
             TAX_RATE,
             LEASE_TERM,
+            BLOCKS_PER_DAY,
             "Billboard2",
             "BLBD2"
         );
@@ -799,12 +800,14 @@ contract BillboardTest is BillboardTestBase {
     function testCalculateTax() public {
         uint256 _amount = 100;
         uint256 _taxRate = 10; // 10% per lease term
+        uint64 _leaseTerm = registry.leaseTerm();
+        uint64 _blocksPerDay = registry.blocksPerDay();
 
         vm.startPrank(ADMIN);
         operator.setTaxRate(_taxRate);
 
         uint256 _tax = operator.calculateTax(_amount);
-        assertEq(_tax, (_amount * _taxRate) / 100);
+        assertEq(_tax, (_amount * _taxRate * (_leaseTerm / _blocksPerDay)) / 100);
     }
 
     function testSetTaxRate() public {
@@ -1056,5 +1059,26 @@ contract BillboardTest is BillboardTestBase {
         vm.prank(USER_A);
         vm.expectRevert("Bid not found");
         operator.withdrawBid(_tokenId, _nextAuctionId);
+    }
+
+    //////////////////////////////
+    /// Block
+    //////////////////////////////
+
+    function testSetBlocksPerDay() public {
+        vm.startPrank(ADMIN);
+
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.BlocksPerDayUpdated(200);
+
+        operator.setBlocksPerDay(200);
+        assertEq(operator.getBlocksPerDay(), 200);
+    }
+
+    function testCannotSetBlocksPerDayByAttacker() public {
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert("Admin");
+        operator.setBlocksPerDay(100);
     }
 }

@@ -20,6 +20,7 @@ contract Billboard is IBillboard {
         address admin_,
         uint256 taxRate_,
         uint64 leaseTerm_,
+        uint64 blocksPerDay_,
         string memory name_,
         string memory symbol_
     ) {
@@ -33,7 +34,15 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(token_, address(this), taxRate_, leaseTerm_, name_, symbol_);
+            registry = new BillboardRegistry(
+                token_,
+                address(this),
+                taxRate_,
+                leaseTerm_,
+                blocksPerDay_,
+                name_,
+                symbol_
+            );
         }
     }
 
@@ -336,7 +345,7 @@ contract Billboard is IBillboard {
     }
 
     function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        tax = (amount_ * registry.taxRate()) / 100;
+        tax = (amount_ * registry.taxRate() * (registry.leaseTerm() / registry.blocksPerDay())) / 100;
     }
 
     /// @inheritdoc IBillboard
@@ -385,5 +394,19 @@ contract Billboard is IBillboard {
 
         // emit BidWithdrawn
         registry.emitBidWithdrawn(tokenId_, auctionId_, msg.sender, _bid.price, _bid.tax);
+    }
+
+    //////////////////////////////
+    /// Block
+    //////////////////////////////
+
+    /// @inheritdoc IBillboard
+    function getBlocksPerDay() external view returns (uint64 blocksPerDay) {
+        return registry.blocksPerDay();
+    }
+
+    /// @inheritdoc IBillboard
+    function setBlocksPerDay(uint64 blocksPerDay_) external isFromAdmin {
+        registry.setBlocksPerDay(blocksPerDay_);
     }
 }

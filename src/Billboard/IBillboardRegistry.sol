@@ -66,6 +66,13 @@ interface IBillboardRegistry is IERC721 {
     event TaxRateUpdated(uint256 taxRate);
 
     /**
+     * @notice Global block number per day is updated.
+     *
+     * @param blocksPerDay New block number per day.
+     */
+    event BlocksPerDayUpdated(uint64 blocksPerDay);
+
+    /**
      * @notice Auction is created.
      *
      * @param tokenId Token ID of the board.
@@ -365,6 +372,17 @@ interface IBillboardRegistry is IERC721 {
      * @param withdrawn_ Withdrawn tax.
      */
     function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external;
+
+    //////////////////////////////
+    /// Block
+    //////////////////////////////
+
+    /**
+     * @notice Set the global block number per day.
+     *
+     * @param blocksPerDay_ Block number per day.
+     */
+    function setBlocksPerDay(uint64 blocksPerDay_) external;
 
     //////////////////////////////
     /// Event emission

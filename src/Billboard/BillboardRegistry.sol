@@ -18,6 +18,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     IERC20 public immutable token;
     uint256 public taxRate;
     uint64 public leaseTerm;
+    uint64 public blocksPerDay;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -42,6 +43,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address operator_,
         uint256 taxRate_,
         uint64 leaseTerm_,
+        uint64 blocksPerDay_,
         string memory name_,
         string memory symbol_
     ) ERC721(name_, symbol_) {
@@ -52,6 +54,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         operator = operator_;
         taxRate = taxRate_;
         leaseTerm = leaseTerm_;
+        blocksPerDay = blocksPerDay_;
     }
 
     //////////////////////////////
@@ -254,6 +257,17 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external isFromOperator {
         taxTreasury[owner_].accumulated = accumulated_;
         taxTreasury[owner_].withdrawn = withdrawn_;
+    }
+
+    //////////////////////////////
+    /// Block
+    //////////////////////////////
+
+    /// @inheritdoc IBillboardRegistry
+    function setBlocksPerDay(uint64 blocksPerDay_) external isFromOperator {
+        blocksPerDay = blocksPerDay_;
+
+        emit BlocksPerDayUpdated(blocksPerDay_);
     }
 
     //////////////////////////////
