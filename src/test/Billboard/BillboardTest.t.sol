@@ -804,7 +804,7 @@ contract BillboardTest is BillboardTestBase {
         operator.setTaxRate(_taxRate);
 
         uint256 _tax = operator.calculateTax(_amount);
-        assertEq(_tax, (_amount * _taxRate) / 100);
+        assertEq(_tax, (_amount * _taxRate) / 1000);
     }
 
     function testSetTaxRate() public {
