@@ -336,7 +336,7 @@ contract Billboard is IBillboard {
     }
 
     function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        tax = (amount_ * registry.taxRate()) / 100;
+        tax = (amount_ * registry.taxRate()) / 1000;
     }
 
     /// @inheritdoc IBillboard
