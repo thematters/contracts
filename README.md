@@ -14,9 +14,12 @@
 | Curation                 | Polygon Mumbai  | [0xa219C6722008aa22828B31A13ab9Ba93bB91222c](https://mumbai.polygonscan.com/address/0xa219c6722008aa22828b31a13ab9ba93bb91222c)        |
 | Curation                 | OP Sepolia      | [0x92a117aea74963cd0cedf9c50f99435451a291f7](https://sepolia-optimism.etherscan.io/address/0x92a117aea74963cd0cedf9c50f99435451a291f7) |
 | Curation                 | OP Mainnet      | [0x5edebbdae7B5C79a69AaCF7873796bb1Ec664DB8](https://optimistic.etherscan.io/address/0x5edebbdae7b5c79a69aacf7873796bb1ec664db8#code)  |
-| Billboard (Operator)     | OP Sepolia      | [0x06BC4a90887daAA148aE98BD2dF3FBac6635e702](https://sepolia-optimism.etherscan.io/address/0x06BC4a90887daAA148aE98BD2dF3FBac6635e702) |
-| Billboard (Registry)     | OP Sepolia      | [0x050E2682DEc12E239be82117007bEd0Bac2Ea746](https://sepolia-optimism.etherscan.io/address/0x050E2682DEc12E239be82117007bEd0Bac2Ea746) |
-| Billboard (Distribution) | OP Sepolia      | [0x606FeB1753d642ae1E3632Fb66baee042a201C00](https://sepolia-optimism.etherscan.io/address/0x606FeB1753d642ae1E3632Fb66baee042a201C00) |
+| Billboard (Operator)     | OP Mainnet      | [0x88ea16c2a69f50b9bc2e8f7684d425f33f29225f](https://optimistic.etherscan.io/address/0x88ea16c2a69f50b9bc2e8f7684d425f33f29225f)       |
+| Billboard (Registry)     | OP Mainnet      | [0x031Dc7C68D4A7057D28814dCc8c61e6f83c7DF25](https://optimistic.etherscan.io/address/0x031Dc7C68D4A7057D28814dCc8c61e6f83c7DF25)       |
+| Billboard (Distribution) | OP Mainnet      | [0xad5caac6910f5a737ec53847000c13122b09eada](https://optimistic.etherscan.io/address/0xad5caac6910f5a737ec53847000c13122b09eada)       |
+| Billboard (Operator)     | OP Sepolia      | [0x6a72820E1CCCba1B1FE02E37881cEa3F9Aa6375C](https://sepolia-optimism.etherscan.io/address/0x6a72820E1CCCba1B1FE02E37881cEa3F9Aa6375C) |
+| Billboard (Registry)     | OP Sepolia      | [0x29822FDFC36247A5C3b5E92a8E26991DC4D74a2a](https://sepolia-optimism.etherscan.io/address/0x29822FDFC36247A5C3b5E92a8E26991DC4D74a2a) |
+| Billboard (Distribution) | OP Sepolia      | [0x32C838d74f8b8f49a5B27c74E71797dEd3CCE8A3](https://sepolia-optimism.etherscan.io/address/0x32C838d74f8b8f49a5B27c74E71797dEd3CCE8A3) |
 
 In the "Contract" tab of Polygonscan/Etherscan, you can see the contract code and ABI.
 
