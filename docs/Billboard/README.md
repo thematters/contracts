@@ -61,7 +61,7 @@ make deploy-billboard NETWORK=op-mainnet
 Deploy Distribution:
 
 ```bash
-make deploy-billboard-billboard NETWORK=op-mainnet
+make deploy-billboard-distribution NETWORK=op-mainnet
 ```
 
 ## Upgrade contract
