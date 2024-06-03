@@ -222,4 +222,166 @@ contract VaultTest is Test {
         vm.prank(CREATOR);
         vault.claim(_vaultId, CREATOR, _expiredAt, _v, _r, _s);
     }
+
+    /**
+     * Claim: ERC-20 Token
+     */
+    function testErc20TokenClaim() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+        uint256 _creatorBalance = usdt.balanceOf(CREATOR);
+
+        uint256 _expiredAt = block.timestamp + 1 days;
+        bytes32 _digest = keccak256(
+            abi.encodePacked(_vaultId, address(usdt), CREATOR, _expiredAt, block.chainid, address(vault))
+        ).toEthSignedMessageHash();
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.Claimed(_vaultId, address(usdt), CREATOR, _amount);
+
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
+
+        assertEq(usdt.balanceOf(CREATOR), _creatorBalance + _amount);
+        assertEq(vault.erc20Balances(_vaultId, address(usdt)), _amount);
+        assertEq(vault.erc20Claimed(_vaultId, address(usdt)), _amount);
+        assertEq(vault.available(_vaultId, address(usdt)), 0);
+    }
+
+    function testCannotErc20TokenClaimZeroBalance() public {
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+        uint256 _expiredAt = block.timestamp + 1 days;
+        bytes32 _digest = keccak256(
+            abi.encodePacked(_vaultId, address(usdt), CREATOR, _expiredAt, block.chainid, address(vault))
+        ).toEthSignedMessageHash();
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        vm.expectRevert(abi.encodeWithSignature("ZeroBalance()"));
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
+    }
+
+    function testCannotErc20TokenClaimExpired() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+
+        uint256 _expiredAt = block.timestamp - 1;
+        bytes32 _digest = keccak256(
+            abi.encodePacked(_vaultId, address(usdt), CREATOR, _expiredAt, block.chainid, address(vault))
+        ).toEthSignedMessageHash();
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectRevert(abi.encodeWithSignature("ClaimExpired()"));
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
+    }
+
+    function testCannotErc20TokenClaimInvalidSignature() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+
+        uint256 _expiredAt = block.timestamp + 1 days;
+        bytes32 _digest = keccak256(
+            abi.encodePacked(_vaultId, address(usdt), CREATOR, _expiredAt, block.chainid, address(vault))
+        ).toEthSignedMessageHash();
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidSignature()"));
+        vm.prank(ATTACKER);
+        vault.claim(_vaultId, address(usdt), ATTACKER, _expiredAt, _v, _r, _s);
+    }
+
+    function testCannotErc20TokenClaimAlreadyClaimed() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+
+        uint256 _expiredAt = block.timestamp + 1 days;
+        bytes32 _digest = keccak256(
+            abi.encodePacked(_vaultId, address(usdt), CREATOR, _expiredAt, block.chainid, address(vault))
+        ).toEthSignedMessageHash();
+        (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.Claimed(_vaultId, address(usdt), CREATOR, _amount);
+
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectRevert(abi.encodeWithSignature("AlreadyClaimed()"));
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
+    }
+
+    /**
+     * Sweep
+     */
+    function testNativeTokenSweep() public {
+        uint256 _amount = 1 ether;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+        uint256 _ownerBalance = OWNER.balance;
+
+        depositETH(_amount, _vaultId);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.Swept(OWNER, _amount);
+
+        vm.prank(OWNER);
+        vault.sweep(OWNER);
+
+        assertEq(OWNER.balance, _ownerBalance + _amount);
+        assertEq(vault.balances(_vaultId), _amount);
+        assertEq(vault.claimed(_vaultId), 0);
+        assertEq(vault.available(_vaultId), _amount);
+    }
+
+    function testErc20TokenSweep() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+        uint256 _ownerBalance = usdt.balanceOf(OWNER);
+
+        depositERC20(_amount, _vaultId);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.Swept(address(usdt), OWNER, _amount);
+
+        vm.prank(OWNER);
+        vault.sweep(address(usdt), OWNER);
+
+        assertEq(usdt.balanceOf(OWNER), _ownerBalance + _amount);
+        assertEq(vault.erc20Balances(_vaultId, address(usdt)), _amount);
+        assertEq(vault.erc20Claimed(_vaultId, address(usdt)), 0);
+        assertEq(vault.available(_vaultId, address(usdt)), _amount);
+    }
+
+    function testSetSigner() public {
+        address _signer = address(0x1234567890123456789012345678901234567890);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.SignerChanged(_signer);
+
+        vm.prank(OWNER);
+        vault.setSigner(_signer);
+
+        assertEq(vault.signer(), _signer);
+    }
+
+    function testCannotSetSignerByAttacker() public {
+        address _signer = address(0x1234567890123456789012345678901234567890);
+
+        vm.expectRevert("Ownable: caller is not the owner");
+
+        vm.prank(ATTACKER);
+        vault.setSigner(_signer);
+    }
 }
