@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./IVault.sol";
@@ -37,14 +38,31 @@ contract Vault is IVault, Ownable {
     }
 
     /// @inheritdoc IVault
-    function claim(
-        bytes32 vaultId_,
-        address target_,
-        uint256 expiredAt_,
-        uint8 v_,
-        bytes32 r_,
-        bytes32 s_
-    ) external returns (bool success) {
+    function deposit(bytes32 vaultId_) public payable {
+        if (msg.value <= 0) {
+            revert ZeroAmount();
+        }
+
+        balances[vaultId_] += msg.value;
+
+        emit Deposited(vaultId_, msg.value);
+    }
+
+    /// @inheritdoc IVault
+    function deposit(bytes32 vaultId_, address token_, uint256 amount_) public {
+        if (amount_ <= 0) {
+            revert ZeroAmount();
+        }
+
+        SafeERC20.safeTransferFrom(IERC20(token_), msg.sender, address(this), amount_);
+
+        erc20Balances[vaultId_][token_] += amount_;
+
+        emit Deposited(vaultId_, token_, amount_);
+    }
+
+    /// @inheritdoc IVault
+    function claim(bytes32 vaultId_, address target_, uint256 expiredAt_, uint8 v_, bytes32 r_, bytes32 s_) public {
         // Check if the claim is expired
         if (expiredAt_ < block.timestamp) {
             revert ClaimExpired();
@@ -54,7 +72,7 @@ contract Vault is IVault, Ownable {
         uint256 _claimed = claimed[vaultId_];
         uint256 _available = _balance - _claimed;
         if (_available <= 0) {
-            revert NotEnoughBalance();
+            revert ZeroBalance();
         }
 
         // Verify the signature
@@ -74,8 +92,6 @@ contract Vault is IVault, Ownable {
         emit Claimed(vaultId_, target_, _available);
 
         require(payable(target_).send(_balance), "Failed ETH transfer");
-
-        return true;
     }
 
     /// @inheritdoc IVault
@@ -87,7 +103,7 @@ contract Vault is IVault, Ownable {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external returns (bool success) {
+    ) public {
         // Check if the claim is expired
         if (expiredAt_ < block.timestamp) {
             revert ClaimExpired();
@@ -98,7 +114,7 @@ contract Vault is IVault, Ownable {
         uint256 _claimed = erc20Claimed[vaultId_][token_];
         uint256 _available = _balance - _claimed;
         if (_available <= 0) {
-            revert NotEnoughBalance();
+            revert ZeroBalance();
         }
 
         // Verify the signature
@@ -118,12 +134,10 @@ contract Vault is IVault, Ownable {
         emit Claimed(vaultId_, token_, target_, _available);
 
         require(IERC20(token_).transfer(target_, _balance), "Failed token transfer");
-
-        return true;
     }
 
     /// @inheritdoc IVault
-    function sweep(address target_) external onlyOwner {
+    function sweep(address target_) public onlyOwner {
         uint256 _balance = address(this).balance;
 
         emit Swept(target_, _balance);
@@ -132,7 +146,7 @@ contract Vault is IVault, Ownable {
     }
 
     /// @inheritdoc IVault
-    function sweep(address token_, address target_) external onlyOwner {
+    function sweep(address token_, address target_) public onlyOwner {
         uint256 _balance = IERC20(token_).balanceOf(address(this));
 
         emit Swept(token_, target_, _balance);
@@ -141,7 +155,7 @@ contract Vault is IVault, Ownable {
     }
 
     /// @inheritdoc IVault
-    function setSigner(address signer_) external onlyOwner {
+    function setSigner(address signer_) public onlyOwner {
         if (signer_ == address(0)) {
             revert ZeroAddress();
         }

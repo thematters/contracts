@@ -8,36 +8,51 @@ interface IVault {
 
     error ZeroAddress();
 
-    error ClaimExpired();
+    error ZeroAmount();
 
-    error NotEnoughBalance();
+    error ZeroBalance();
+
+    error ClaimExpired();
 
     error InvalidSignature();
 
     error AlreadyClaimed();
-
-    error TransferFailed(address token_, address account_, uint256 amount_);
 
     //////////////////////////////
     /// Event types
     //////////////////////////////
 
     /**
+     * @notice ETH deposited.
+     * @param vaultId_ Vault ID to receive the ETH.
+     * @param amount_ Amount of tokens that were deposited.
+     */
+    event Deposited(bytes32 indexed vaultId_, uint256 amount_);
+
+    /**
+     * @notice Tokens deposited.
+     * @param vaultId_ Vault ID to receive the tokens.
+     * @param token_ Token address.
+     * @param amount_ Amount of tokens that were deposited.
+     */
+    event Deposited(bytes32 indexed vaultId_, address indexed token_, uint256 amount_);
+
+    /**
      * @notice ETH claimed.
-     * @param id_ Unique ID of the claim.
+     * @param vaultId_ Vault ID of the claim.
      * @param target_ Address to receive the tokens.
      * @param amount_ Amount of tokens that were claimed.
      */
-    event Claimed(bytes32 indexed id_, address indexed target_, uint256 amount_);
+    event Claimed(bytes32 indexed vaultId_, address indexed target_, uint256 amount_);
 
     /**
      * @notice Tokens claimed.
-     * @param id_ Unique ID of the claim.
+     * @param vaultId_ Vault ID of the claim.
      * @param token_ Token address.
      * @param target_ Address to receive the tokens.
      * @param amount_ Amount of tokens that were claimed.
      */
-    event Claimed(bytes32 indexed id_, address indexed token_, address indexed target_, uint256 amount_);
+    event Claimed(bytes32 indexed vaultId_, address indexed token_, address indexed target_, uint256 amount_);
 
     /**
      * @notice Unclaimed ETH were swept.
@@ -65,9 +80,31 @@ interface IVault {
     //////////////////////////////
 
     /**
+     * @notice Deposit ETH.
+     *
+     * @dev Throws: `ZeroAmount` error
+     * @dev Emits: `Deposited` events.
+     *
+     * @param vaultId_ Vault ID of the claim.
+     */
+    function deposit(bytes32 vaultId_) external payable;
+
+    /**
+     * @notice Deposit tokens.
+     *
+     * @dev Throws: `ZeroAmount` error
+     * @dev Emits: `Deposited` events.
+     *
+     * @param vaultId_ Vault ID of the claim.
+     * @param token_ Token address.
+     * @param amount_ Amount of tokens to deposit.
+     */
+    function deposit(bytes32 vaultId_, address token_, uint256 amount_) external;
+
+    /**
      * @notice Claim ETH.
      *
-     * @dev Throws: `NotEnoughBalance`, `ClaimExpired`, `InvalidSignature`,
+     * @dev Throws: `ZeroBalance`, `ClaimExpired`, `InvalidSignature`,
      * or `AlreadyClaimed` error.
      * @dev Emits: `Claimed` events.
      *
@@ -77,21 +114,13 @@ interface IVault {
      * @param v_ Signature field.
      * @param r_ Signature field.
      * @param s_ Signature field.
-     * @return success Whether the claim was successful.
      */
-    function claim(
-        bytes32 vaultId_,
-        address target_,
-        uint256 expiredAt_,
-        uint8 v_,
-        bytes32 r_,
-        bytes32 s_
-    ) external returns (bool success);
+    function claim(bytes32 vaultId_, address target_, uint256 expiredAt_, uint8 v_, bytes32 r_, bytes32 s_) external;
 
     /**
      * @notice Claim tokens.
      *
-     * @dev Throws: `NotEnoughBalance`, `ClaimExpired`, `InvalidSignature`
+     * @dev Throws: `ZeroBalance`, `ClaimExpired`, `InvalidSignature`
      * or `AlreadyClaimed` error.
      * @dev Emits: `Claimed` events.
      *
@@ -102,7 +131,6 @@ interface IVault {
      * @param v_ Signature field.
      * @param r_ Signature field.
      * @param s_ Signature field.
-     * @return success Whether the claim was successful.
      */
     function claim(
         bytes32 vaultId_,
@@ -112,7 +140,7 @@ interface IVault {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external returns (bool success);
+    ) external;
 
     //////////////////////////////
     /// Sweep
