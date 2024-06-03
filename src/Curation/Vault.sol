@@ -45,7 +45,7 @@ contract Vault is IVault, Ownable {
 
         balances[vaultId_] += msg.value;
 
-        emit Deposited(vaultId_, msg.value);
+        emit Deposited(vaultId_, msg.value, msg.sender);
     }
 
     /// @inheritdoc IVault
@@ -58,7 +58,17 @@ contract Vault is IVault, Ownable {
 
         erc20Balances[vaultId_][token_] += amount_;
 
-        emit Deposited(vaultId_, token_, amount_);
+        emit Deposited(vaultId_, token_, amount_, msg.sender);
+    }
+
+    /// @inheritdoc IVault
+    function available(bytes32 vaultId_) public view returns (uint256) {
+        return balances[vaultId_] - claimed[vaultId_];
+    }
+
+    /// @inheritdoc IVault
+    function available(bytes32 vaultId_, address token_) public view returns (uint256) {
+        return erc20Balances[vaultId_][token_] - erc20Claimed[vaultId_][token_];
     }
 
     /// @inheritdoc IVault
@@ -70,8 +80,8 @@ contract Vault is IVault, Ownable {
 
         uint256 _balance = balances[vaultId_];
         uint256 _claimed = claimed[vaultId_];
-        uint256 _available = _balance - _claimed;
-        if (_available <= 0) {
+        uint256 _amount = _balance - _claimed;
+        if (_amount <= 0) {
             revert ZeroBalance();
         }
 
@@ -83,15 +93,17 @@ contract Vault is IVault, Ownable {
         }
         if (executed[_hash]) {
             revert AlreadyClaimed();
+        } else {
+            executed[_hash] = true;
         }
 
         // Claim ETH
-        claimed[vaultId_] = 0;
+        claimed[vaultId_] = _balance;
 
         // Transfer tokens
-        emit Claimed(vaultId_, target_, _available);
+        emit Claimed(vaultId_, target_, _amount);
 
-        require(payable(target_).send(_balance), "Failed ETH transfer");
+        require(payable(target_).send(_amount), "Failed ETH transfer");
     }
 
     /// @inheritdoc IVault
@@ -112,8 +124,8 @@ contract Vault is IVault, Ownable {
         // Check available balance
         uint256 _balance = erc20Balances[vaultId_][token_];
         uint256 _claimed = erc20Claimed[vaultId_][token_];
-        uint256 _available = _balance - _claimed;
-        if (_available <= 0) {
+        uint256 _amount = _balance - _claimed;
+        if (_amount <= 0) {
             revert ZeroBalance();
         }
 
@@ -125,15 +137,17 @@ contract Vault is IVault, Ownable {
         }
         if (executed[_hash]) {
             revert AlreadyClaimed();
+        } else {
+            executed[_hash] = true;
         }
 
         // Claim the given tokens
-        erc20Claimed[vaultId_][token_] = 0;
+        erc20Claimed[vaultId_][token_] = _balance;
 
         // Transfer tokens
-        emit Claimed(vaultId_, token_, target_, _available);
+        emit Claimed(vaultId_, token_, target_, _amount);
 
-        require(IERC20(token_).transfer(target_, _balance), "Failed token transfer");
+        require(IERC20(token_).transfer(target_, _amount), "Failed token transfer");
     }
 
     /// @inheritdoc IVault

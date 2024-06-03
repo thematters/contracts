@@ -26,16 +26,18 @@ interface IVault {
      * @notice ETH deposited.
      * @param vaultId_ Vault ID to receive the ETH.
      * @param amount_ Amount of tokens that were deposited.
+     * @param sender_ Address that deposited the ETH.
      */
-    event Deposited(bytes32 indexed vaultId_, uint256 amount_);
+    event Deposited(bytes32 indexed vaultId_, uint256 amount_, address indexed sender_);
 
     /**
      * @notice Tokens deposited.
      * @param vaultId_ Vault ID to receive the tokens.
      * @param token_ Token address.
      * @param amount_ Amount of tokens that were deposited.
+     * @param sender_ Address that deposited the tokens.
      */
-    event Deposited(bytes32 indexed vaultId_, address indexed token_, uint256 amount_);
+    event Deposited(bytes32 indexed vaultId_, address indexed token_, uint256 amount_, address indexed sender_);
 
     /**
      * @notice ETH claimed.
@@ -76,7 +78,7 @@ interface IVault {
     event SignerChanged(address indexed signer_);
 
     //////////////////////////////
-    /// Claim
+    /// Deposit
     //////////////////////////////
 
     /**
@@ -100,6 +102,29 @@ interface IVault {
      * @param amount_ Amount of tokens to deposit.
      */
     function deposit(bytes32 vaultId_, address token_, uint256 amount_) external;
+
+    //////////////////////////////
+    /// Claim
+    //////////////////////////////
+
+    /**
+     * Get the available ETH to claim of a vault.
+     *
+     * @param vaultId_ Vault ID of the claim.
+     *
+     * @return Amount of ETH available for the claim.
+     */
+    function available(bytes32 vaultId_) external view returns (uint256);
+
+    /**
+     * Get the available tokens to claim of a vault.
+     *
+     * @param vaultId_ Vault ID of the claim.
+     * @param token_ Token address.
+     *
+     * @return Amount of tokens available for the claim.
+     */
+    function available(bytes32 vaultId_, address token_) external view returns (uint256);
 
     /**
      * @notice Claim ETH.

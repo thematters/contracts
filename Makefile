@@ -45,6 +45,9 @@ deploy-snapper: clean
 deploy-curation: clean
 	@forge create Curation --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
 
+deploy-curation-vault: clean
+	@forge create Vault --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
+
 ## Billboard
 deploy-billboard: clean
 	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_ERC20_TOKEN} ${BILLBOARD_REGISTRY_ADDRESS} ${BILLBOARD_ADMIN_ADDRESS} 504 ${BILLBOARD_LEASE_TERM} "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
