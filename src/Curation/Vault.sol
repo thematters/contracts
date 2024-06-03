@@ -12,9 +12,16 @@ using ECDSA for bytes32;
 contract Vault is IVault, Ownable {
     address public signer;
 
-    // id => token => amount
-    mapping(bytes32 => mapping(address => uint256)) public balances;
-    mapping(bytes32 => mapping(address => uint256)) public claimed;
+    // vault id => balance / claimed
+    mapping(bytes32 => uint256) public balances;
+    mapping(bytes32 => uint256) public claimed;
+
+    // vault id => token => balance / claimed
+    mapping(bytes32 => mapping(address => uint256)) public erc20Balances;
+    mapping(bytes32 => mapping(address => uint256)) public erc20Claimed;
+
+    // hash => executed
+    mapping(bytes32 => bool) public executed;
 
     constructor(address signer_, address owner_) {
         if (signer_ == address(0) || owner_ == address(0)) {
@@ -31,7 +38,49 @@ contract Vault is IVault, Ownable {
 
     /// @inheritdoc IVault
     function claim(
-        bytes32 id_,
+        bytes32 vaultId_,
+        address target_,
+        uint256 expiredAt_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external returns (bool success) {
+        // Check if the claim is expired
+        if (expiredAt_ < block.timestamp) {
+            revert ClaimExpired();
+        }
+
+        uint256 _balance = balances[vaultId_];
+        uint256 _claimed = claimed[vaultId_];
+        uint256 _available = _balance - _claimed;
+        if (_available <= 0) {
+            revert NotEnoughBalance();
+        }
+
+        // Verify the signature
+        bytes32 _hash = keccak256(abi.encodePacked(vaultId_, target_, expiredAt_, block.chainid, address(this)))
+            .toEthSignedMessageHash();
+        if (!_verify(_hash, v_, r_, s_)) {
+            revert InvalidSignature();
+        }
+        if (executed[_hash]) {
+            revert AlreadyClaimed();
+        }
+
+        // Claim ETH
+        claimed[vaultId_] = 0;
+
+        // Transfer tokens
+        emit Claimed(vaultId_, target_, _available);
+
+        require(payable(target_).send(_balance), "Failed ETH transfer");
+
+        return true;
+    }
+
+    /// @inheritdoc IVault
+    function claim(
+        bytes32 vaultId_,
         address token_,
         address target_,
         uint256 expiredAt_,
@@ -45,29 +94,41 @@ contract Vault is IVault, Ownable {
         }
 
         // Check available balance
-        uint256 _balance = balances[id_][token_];
-        uint256 _claimed = claimed[id_][token_];
+        uint256 _balance = erc20Balances[vaultId_][token_];
+        uint256 _claimed = erc20Claimed[vaultId_][token_];
         uint256 _available = _balance - _claimed;
         if (_available <= 0) {
             revert NotEnoughBalance();
         }
 
         // Verify the signature
-        bytes32 hash = keccak256(abi.encodePacked(id_, token_, target_, expiredAt_, address(this)))
+        bytes32 _hash = keccak256(abi.encodePacked(vaultId_, token_, target_, expiredAt_, block.chainid, address(this)))
             .toEthSignedMessageHash();
-        if (!_verify(hash, v_, r_, s_)) {
+        if (!_verify(_hash, v_, r_, s_)) {
             revert InvalidSignature();
         }
+        if (executed[_hash]) {
+            revert AlreadyClaimed();
+        }
 
-        // Claim all available tokens
-        claimed[id_][token_] = 0;
+        // Claim the given tokens
+        erc20Claimed[vaultId_][token_] = 0;
 
         // Transfer tokens
-        emit Claimed(id_, token_, target_, _available);
+        emit Claimed(vaultId_, token_, target_, _available);
 
         require(IERC20(token_).transfer(target_, _balance), "Failed token transfer");
 
         return true;
+    }
+
+    /// @inheritdoc IVault
+    function sweep(address target_) external onlyOwner {
+        uint256 _balance = address(this).balance;
+
+        emit Swept(target_, _balance);
+
+        require(payable(target_).send(_balance), "Failed ETH transfer");
     }
 
     /// @inheritdoc IVault
