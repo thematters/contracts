@@ -82,14 +82,17 @@ contract VaultTest is Test {
         vm.prank(CURATOR);
         vault.deposit{value: _amount}(_vaultId);
 
+        // will affect ETH balances
         assertEq(CURATOR.balance, _curatorBalance - _amount);
         assertEq(vault.balances(_vaultId), _amount);
         assertEq(vault.claimed(_vaultId), 0);
+
+        // wont affect ERC-20 balances
         assertEq(vault.erc20Balances(_vaultId, address(0)), 0);
         assertEq(vault.erc20Claimed(_vaultId, address(0)), 0);
     }
 
-    function testCannotNativeTokenDepositZeroAmount() public {
+    function testCannotNativeTokenDepositIfZeroAmount() public {
         uint256 _amount = 0;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -113,18 +116,29 @@ contract VaultTest is Test {
         vault.deposit(_vaultId, address(usdt), _amount);
 
         assertEq(usdt.balanceOf(CURATOR), _curatorBalance - _amount);
-        assertEq(vault.balances(_vaultId), 0);
-        assertEq(vault.claimed(_vaultId), 0);
         assertEq(vault.erc20Balances(_vaultId, address(usdt)), _amount);
         assertEq(vault.erc20Claimed(_vaultId, address(usdt)), 0);
+
+        // wont affect ETH balances
+        assertEq(vault.balances(_vaultId), 0);
+        assertEq(vault.claimed(_vaultId), 0);
     }
 
-    function testCannotErc20TokenDepositZeroAmount() public {
+    function testCannotErc20TokenDepositIfZeroAmount() public {
         uint256 _amount = 0;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
         vm.expectRevert(abi.encodeWithSignature("ZeroAmount()"));
         vm.prank(CURATOR);
+        vault.deposit(_vaultId, address(usdt), _amount);
+    }
+
+    function testCannotErc20TokenDepositIfNotApproval() public {
+        uint256 _amount = 100;
+        bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
+
+        vm.expectRevert("ERC20: insufficient allowance");
+        vm.prank(ATTACKER);
         vault.deposit(_vaultId, address(usdt), _amount);
     }
 
@@ -137,6 +151,8 @@ contract VaultTest is Test {
         uint256 _creatorBalance = CREATOR.balance;
 
         uint256 _expiredAt = block.timestamp + 1 days;
+
+        // first claim
         bytes32 _digest = keccak256(abi.encodePacked(_vaultId, CREATOR, _expiredAt, block.chainid, address(vault)))
             .toEthSignedMessageHash();
         (uint8 _v, bytes32 _r, bytes32 _s) = vm.sign(DEPLOYER_PK, _digest);
@@ -153,9 +169,28 @@ contract VaultTest is Test {
         assertEq(vault.balances(_vaultId), _amount);
         assertEq(vault.claimed(_vaultId), _amount);
         assertEq(vault.available(_vaultId), 0);
+
+        // second claim
+        _expiredAt = block.timestamp + 2 days;
+        _digest = keccak256(abi.encodePacked(_vaultId, CREATOR, _expiredAt, block.chainid, address(vault)))
+            .toEthSignedMessageHash();
+        (_v, _r, _s) = vm.sign(DEPLOYER_PK, _digest);
+
+        depositETH(_amount, _vaultId);
+
+        vm.expectEmit(true, true, true, true);
+        emit IVault.Claimed(_vaultId, CREATOR, _amount);
+
+        vm.prank(CREATOR);
+        vault.claim(_vaultId, CREATOR, _expiredAt, _v, _r, _s);
+
+        assertEq(CREATOR.balance, _creatorBalance + _amount * 2);
+        assertEq(vault.balances(_vaultId), _amount * 2);
+        assertEq(vault.claimed(_vaultId), _amount * 2);
+        assertEq(vault.available(_vaultId), 0);
     }
 
-    function testCannotNativeTokenClaimZeroBalance() public {
+    function testCannotNativeTokenClaimIfZeroBalance() public {
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
         uint256 _expiredAt = block.timestamp + 1 days;
         bytes32 _digest = keccak256(abi.encodePacked(_vaultId, CREATOR, _expiredAt, block.chainid, address(vault)))
@@ -167,7 +202,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, CREATOR, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotNativeTokenClaimExpired() public {
+    function testCannotNativeTokenClaimIfExpired() public {
         uint256 _amount = 1 ether;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -183,7 +218,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, CREATOR, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotNativeTokenClaimInvalidSignature() public {
+    function testCannotNativeTokenClaimIfInvalidSignature() public {
         uint256 _amount = 1 ether;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -199,7 +234,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, ATTACKER, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotNativeTokenClaimAlreadyClaimed() public {
+    function testCannotNativeTokenClaimIfAlreadyClaimed() public {
         uint256 _amount = 1 ether;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -251,7 +286,7 @@ contract VaultTest is Test {
         assertEq(vault.available(_vaultId, address(usdt)), 0);
     }
 
-    function testCannotErc20TokenClaimZeroBalance() public {
+    function testCannotErc20TokenClaimIfZeroBalance() public {
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
         uint256 _expiredAt = block.timestamp + 1 days;
         bytes32 _digest = keccak256(
@@ -264,7 +299,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotErc20TokenClaimExpired() public {
+    function testCannotErc20TokenClaimIfExpired() public {
         uint256 _amount = 100;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -281,7 +316,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, address(usdt), CREATOR, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotErc20TokenClaimInvalidSignature() public {
+    function testCannotErc20TokenClaimIfInvalidSignature() public {
         uint256 _amount = 100;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -298,7 +333,7 @@ contract VaultTest is Test {
         vault.claim(_vaultId, address(usdt), ATTACKER, _expiredAt, _v, _r, _s);
     }
 
-    function testCannotErc20TokenClaimAlreadyClaimed() public {
+    function testCannotErc20TokenClaimIfAlreadyClaimed() public {
         uint256 _amount = 100;
         bytes32 _vaultId = keccak256(abi.encodePacked(CREATOR));
 
@@ -382,6 +417,15 @@ contract VaultTest is Test {
         vm.expectRevert("Ownable: caller is not the owner");
 
         vm.prank(ATTACKER);
+        vault.setSigner(_signer);
+    }
+
+    function testCannotSetSignerIfZeroAddress() public {
+        address _signer = address(0);
+
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+
+        vm.prank(OWNER);
         vault.setSigner(_signer);
     }
 }
