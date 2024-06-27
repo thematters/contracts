@@ -19,121 +19,73 @@ interface IBillboardRegistry is IERC721 {
     event OperatorUpdated(address indexed operator);
 
     /**
-     * @notice Board name is updated.
+     * @notice Board is created.
      *
-     * @param tokenId Token ID of the board.
-     * @param name New name of the board.
+     * @param tokenId Token ID of the board
+     * @param to Address of the board owner.
+     * @param taxRate Tax rate of the board.
+     * @param epochInterval Epoch interval of the board.
      */
-    event BoardNameUpdated(uint256 indexed tokenId, string name);
+    event BoardCreated(uint256 indexed tokenId, address indexed to, uint256 taxRate, uint256 epochInterval);
 
     /**
-     * @notice Board description is updated.
+     * @notice Board data is updated.
      *
      * @param tokenId Token ID of the board.
-     * @param description New description of the board.
+     * @param name Name of the board.
+     * @param description Description of the board.
+     * @param imageURI Image URI of the board.
+     * @param location Location of the board.
      */
-    event BoardDescriptionUpdated(uint256 indexed tokenId, string description);
-
-    /**
-     * @notice Board location is updated.
-     *
-     * @param tokenId Token ID of the board.
-     * @param location New location of the board.
-     */
-    event BoardLocationUpdated(uint256 indexed tokenId, string location);
-
-    /**
-     * @notice Board content URI is updated.
-     *
-     * @param tokenId Token ID of the board.
-     * @param contentURI New content URI of the board.
-     */
-    event BoardContentURIUpdated(uint256 indexed tokenId, string contentURI);
-
-    /**
-     * @notice Board redirect URI is updated.
-     *
-     * @param tokenId Token ID of the board.
-     * @param redirectURI New redirect URI of the board.
-     */
-    event BoardRedirectURIUpdated(uint256 indexed tokenId, string redirectURI);
-
-    /**
-     * @notice Global tax rate is updated.
-     *
-     * @param taxRate New tax rate.
-     */
-    event TaxRateUpdated(uint256 taxRate);
-
-    /**
-     * @notice Auction is created.
-     *
-     * @param tokenId Token ID of the board.
-     * @param auctionId Auction ID of the auction.
-     * @param startAt Start time of the auction.
-     * @param endAt End time of the auction.
-     */
-    event AuctionCreated(uint256 indexed tokenId, uint256 indexed auctionId, uint64 startAt, uint64 endAt);
+    event BoardUpdated(uint256 indexed tokenId, string name, string description, string imageURI, string location);
 
     /**
      * @notice Auction is cleared.
      *
      * @param tokenId Token ID of the board.
-     * @param auctionId Auction ID of the auction.
+     * @param epoch Epoch of the auction.
      * @param highestBidder Highest bidder of the auction.
-     * @param leaseStartAt Start time of the lease.
-     * @param leaseEndAt End time of the lease.
      */
-    event AuctionCleared(
-        uint256 indexed tokenId,
-        uint256 indexed auctionId,
-        address indexed highestBidder,
-        uint64 leaseStartAt,
-        uint64 leaseEndAt
-    );
+    event AuctionCleared(uint256 indexed tokenId, uint256 indexed epoch, address indexed highestBidder);
 
     /**
-     * @notice Bid is created.
+     * @notice Bid is created or updated.
      *
      * @param tokenId Token ID of the board.
-     * @param auctionId Auction ID of the auction.
+     * @param epoch Epoch of the auction.
      * @param bidder Bidder of the auction.
      * @param price Price of the bid.
      * @param tax Tax of the bid.
+     * @param contentURI Content URI of the bid.
+     * @param redirectURI Redirect URI of the bid.
      */
-    event BidCreated(
+    event BidUpdated(
         uint256 indexed tokenId,
-        uint256 indexed auctionId,
+        uint256 indexed epoch,
         address indexed bidder,
         uint256 price,
-        uint256 tax
+        uint256 tax,
+        string contentURI,
+        string redirectURI
     );
 
     /**
      * @notice Bid is won.
      *
      * @param tokenId Token ID of the board.
-     * @param auctionId Auction ID of the auction.
+     * @param epoch Epoch of the auction.
      * @param bidder Bidder of the auction.
      */
-    event BidWon(uint256 indexed tokenId, uint256 indexed auctionId, address indexed bidder);
+    event BidWon(uint256 indexed tokenId, uint256 indexed epoch, address indexed bidder);
 
     /**
      * @notice Bid is withdrawn.
      *
      * @param tokenId Token ID of the board.
-     * @param auctionId Auction ID of the auction.
+     * @param epoch Epoch of the auction.
      * @param bidder Bidder of the auction.
-     * @param price Price of the bid.
-     * @param tax Tax of the bid.
      */
-    event BidWithdrawn(
-        uint256 indexed tokenId,
-        uint256 indexed auctionId,
-        address indexed bidder,
-        uint256 price,
-        uint256 tax
-    );
+    event BidWithdrawn(uint256 indexed tokenId, uint256 indexed epoch, address indexed bidder);
 
     /**
      * @notice Tax is withdrawn.
@@ -148,26 +100,25 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
 
     struct Board {
+        // immutable data
         address creator;
+        uint256 taxRate;
+        uint256 epochInterval; // in blocks
+        uint256 createdAt; // gensis epoch, block number
+        // mutable data
         string name;
         string description;
+        string imageURI;
         string location;
-        string contentURI;
-        string redirectURI;
-    }
-
-    struct Auction {
-        uint64 startAt; // block number
-        uint64 endAt; // block number
-        uint64 leaseStartAt; // block number
-        uint64 leaseEndAt; // block number
-        address highestBidder;
     }
 
     struct Bid {
         uint256 price;
         uint256 tax;
-        uint256 placedAt; // block number
+        string contentURI;
+        string redirectURI;
+        uint256 createdAt; // block number
+        uint256 updatedAt; // block number
         bool isWon;
         bool isWithdrawn;
     }
@@ -191,171 +142,114 @@ interface IBillboardRegistry is IERC721 {
     /**
      * @notice Mint a new board (NFT).
      *
-     * @param to_ Address of the new board receiver.
+     * @param to_ Address of the board owner.
+     * @param taxRate_ Tax rate of the new board.
+     * @param epochInterval_ Epoch interval of the new board.
      *
      * @return tokenId Token ID of the new board.
      */
-    function mintBoard(address to_) external returns (uint256 tokenId);
+    function newBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
 
     /**
-     * @notice Transfer a board (NFT) by the operator.
-     *
-     * @param from_ Address of the board sender.
-     * @param to_ Address of the board receiver.
-     * @param tokenId_ Token ID of the board.
-     */
-    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external;
-
-    /**
-     * @notice Get a board
-     *
-     * @param tokenId_ Token ID of a board.
-     */
-    function getBoard(uint256 tokenId_) external view returns (Board memory board);
-
-    /**
-     * @notice Set the name of a board by board creator.
+     * @notice Set metadata of a board.
      *
      * @param tokenId_ Token ID of a board.
      * @param name_ Board name.
-     */
-    function setBoardName(uint256 tokenId_, string calldata name_) external;
-
-    /**
-     * @notice Set the name of a board by board creator.
-     *
-     * @param tokenId_ Token ID of a board.
      * @param description_ Board description.
+     * @param imageURI_ Image URI of a board.
+     * @param location_ Location of a board.
      */
-    function setBoardDescription(uint256 tokenId_, string calldata description_) external;
-
-    /**
-     * @notice Set the location of a board by board creator.
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param location_ Digital address where a board located.
-     */
-    function setBoardLocation(uint256 tokenId_, string calldata location_) external;
-
-    /**
-     * @notice Set the content URI and redirect URI of a board by the tenant
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param contentURI_ Content URI of a board.
-     */
-    function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external;
-
-    /**
-     * @notice Set the redirect URI and redirect URI of a board by the tenant
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param redirectURI_ Redirect URI when users clicking.
-     */
-    function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external;
+    function setBoard(
+        uint256 tokenId_,
+        string calldata name_,
+        string calldata description_,
+        string calldata imageURI_,
+        string calldata location_
+    ) external;
 
     //////////////////////////////
-    /// Auction
+    /// Auction & Bid
     //////////////////////////////
-
-    /**
-     * @notice Get an auction
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Token ID of a board.
-     */
-    function getAuction(uint256 tokenId_, uint256 auctionId_) external view returns (Auction memory auction);
-
-    /**
-     * @notice Create new auction
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param startAt_ Start time of an auction.
-     * @param endAt_ End time of an auction.
-     */
-    function newAuction(uint256 tokenId_, uint64 startAt_, uint64 endAt_) external returns (uint256 auctionId);
-
-    /**
-     * @notice Set the data of an auction
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Token ID of a board.
-     * @param leaseStartAt_ Start time of an board lease.
-     * @param leaseEndAt_ End time of an board lease.
-     */
-    function setAuctionLease(uint256 tokenId_, uint256 auctionId_, uint64 leaseStartAt_, uint64 leaseEndAt_) external;
-
     /**
      * @notice Get bid count of an auction
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
+     * @param epoch_ Epoch.
+     *
+     * @return count Count of bids.
      */
-    function getBidCount(uint256 tokenId_, uint256 auctionId_) external view returns (uint256 count);
+    function getBidCount(uint256 tokenId_, uint256 epoch_) external view returns (uint256 count);
 
     /**
-     * @notice Get a bid of an auction
+     * @notice Create or update a bid
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
-     * @param bidder_ Bidder of an auction.
-     */
-    function getBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external view returns (Bid memory bid);
-
-    /**
-     * @notice Create new bid and add it to auction
-     *
-     * 1. Create new bid: `new Bid()`
-     * 2. Add bid to auction:
-     *     - `auction.bids[bidder] = bid`
-     *     - `auction.bidders.push(bidder)`
-     *     - if any `auction.highestBidder = bidder`
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
+     * @param epoch_ Epoch of an auction.
      * @param bidder_ Bidder of an auction.
      * @param price_ Price of a bid.
      * @param tax_ Tax of a bid.
      */
-    function newBid(uint256 tokenId_, uint256 auctionId_, address bidder_, uint256 price_, uint256 tax_) external;
+    function setBid(uint256 tokenId_, uint256 epoch_, address bidder_, uint256 price_, uint256 tax_) external;
+
+    /**
+     * @notice Create or update a bid
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param epoch_ Epoch of an auction.
+     * @param bidder_ Bidder of an auction.
+     * @param price_ Price of a bid.
+     * @param tax_ Tax of a bid.
+     * @param contentURI_ Content URI of a bid.
+     * @param redirectURI_ Redirect URI of a bid.
+     */
+    function setBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        address bidder_,
+        uint256 price_,
+        uint256 tax_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external;
+
+    /**
+     * @notice Set the content URI and redirect URI of a board.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param epoch_ Epoch.
+     * @param contentURI_ Content URI of a board.
+     * @param redirectURI_ Redirect URI of a board.
+     */
+    function setBidURIs(
+        uint256 tokenId_,
+        uint256 epoch_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external;
 
     /**
      * @notice Set isWon of a bid
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
+     * @param epoch_ Epoch of an auction.
      * @param bidder_ Bidder of an auction.
      * @param isWon_ Whether a bid is won.
      */
-    function setBidWon(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWon_) external;
+    function setBidWon(uint256 tokenId_, uint256 epoch_, address bidder_, bool isWon_) external;
 
     /**
      * @notice Set isWithdrawn of a bid
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
+     * @param epoch_ Epoch of an auction.
      * @param bidder_ Bidder of an auction.
      * @param isWithdrawn_ Whether a bid is won.
      */
-    function setBidWithdrawn(uint256 tokenId_, uint256 auctionId_, address bidder_, bool isWithdrawn_) external;
-
-    /**
-     * @notice Transfer amount to a receiver.
-     *
-     * @param to_ Address of a receiver.
-     * @param amount_ Amount.
-     */
-    function transferAmount(address to_, uint256 amount_) external;
+    function setBidWithdrawn(uint256 tokenId_, uint256 epoch_, address bidder_, bool isWithdrawn_) external;
 
     //////////////////////////////
     /// Tax & Withdraw
     //////////////////////////////
-
-    /**
-     * @notice Set the global tax rate.
-     *
-     * @param taxRate_ Tax rate.
-     */
-    function setTaxRate(uint256 taxRate_) external;
 
     /**
      * @notice Set the tax treasury.
@@ -367,6 +261,27 @@ interface IBillboardRegistry is IERC721 {
     function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external;
 
     //////////////////////////////
+    /// Transfer
+    //////////////////////////////
+
+    /**
+     * @notice Transfer a board (NFT).
+     *
+     * @param from_ Address of the board sender.
+     * @param to_ Address of the board receiver.
+     * @param tokenId_ Token ID of the board.
+     */
+    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external;
+
+    /**
+     * @notice Transfer amount of token to a receiver.
+     *
+     * @param to_ Address of a receiver.
+     * @param amount_ Amount.
+     */
+    function transferTokenByOperator(address to_, uint256 amount_) external;
+
+    //////////////////////////////
     /// Event emission
     //////////////////////////////
 
@@ -374,35 +289,10 @@ interface IBillboardRegistry is IERC721 {
      * @notice Emit `AuctionCleared` event.
      *
      * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
+     * @param epoch_ Epoch of an auction.
      * @param highestBidder_ Highest bidder of an auction.
-     * @param leaseStartAt_ Start time of an board lease.
-     * @param leaseEndAt_ End time of an board lease.
      */
-    function emitAuctionCleared(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address highestBidder_,
-        uint64 leaseStartAt_,
-        uint64 leaseEndAt_
-    ) external;
-
-    /**
-     * @notice Emit `BidWithdrawn` event.
-     *
-     * @param tokenId_ Token ID of a board.
-     * @param auctionId_ Auction ID of an auction.
-     * @param bidder_ Bidder of an auction.
-     * @param price_ Price of a bid.
-     * @param tax_ Tax of a bid.
-     */
-    function emitBidWithdrawn(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_,
-        uint256 price_,
-        uint256 tax_
-    ) external;
+    function emitAuctionCleared(uint256 tokenId_, uint256 epoch_, address highestBidder_) external;
 
     /**
      * @notice Emit `TaxWithdrawn` event.

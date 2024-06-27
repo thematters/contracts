@@ -382,8 +382,5 @@ contract Billboard is IBillboard {
 
         // transfer bid price and tax back to the bidder
         registry.transferAmount(msg.sender, amount);
-
-        // emit BidWithdrawn
-        registry.emitBidWithdrawn(tokenId_, auctionId_, msg.sender, _bid.price, _bid.tax);
     }
 }
