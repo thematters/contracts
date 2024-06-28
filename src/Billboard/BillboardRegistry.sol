@@ -184,6 +184,22 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
+    function setBidURIs(
+        uint256 tokenId_,
+        uint256 epoch_,
+        address bidder_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external isFromOperator {
+        Bid memory _bid = auctionBids[tokenId_][epoch_][bidder_];
+
+        _bid.contentURI = contentURI_;
+        _bid.redirectURI = redirectURI_;
+
+        emit BidUpdated(tokenId_, epoch_, bidder_, _bid.price, _bid.tax, contentURI_, redirectURI_);
+    }
+
+    /// @inheritdoc IBillboardRegistry
     function setBidWon(uint256 tokenId_, uint256 epoch_, address bidder_, bool isWon_) external isFromOperator {
         auctionBids[tokenId_][epoch_][bidder_].isWon = isWon_;
         emit BidWon(tokenId_, epoch_, bidder_);
@@ -215,14 +231,14 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
 
     /// @inheritdoc IBillboardRegistry
-    function transferTokenByOperator(address to_, uint256 amount_) external isFromOperator {
-        require(to_ != address(0), "Zero address");
-        require(token.transfer(to_, amount_), "Failed token transfer");
+    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external isFromOperator {
+        _safeTransfer(from_, to_, tokenId_, "");
     }
 
     /// @inheritdoc IBillboardRegistry
-    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external isFromOperator {
-        _safeTransfer(from_, to_, tokenId_, "");
+    function transferTokenByOperator(address to_, uint256 amount_) external isFromOperator {
+        require(to_ != address(0), "Zero address");
+        require(token.transfer(to_, amount_), "Failed token transfer");
     }
 
     //////////////////////////////

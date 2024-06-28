@@ -181,18 +181,28 @@ interface IBillboardRegistry is IERC721 {
     function getBidCount(uint256 tokenId_, uint256 epoch_) external view returns (uint256 count);
 
     /**
-     * @notice Create or update a bid
+     * @notice Create a bid
      *
      * @param tokenId_ Token ID of a board.
      * @param epoch_ Epoch of an auction.
      * @param bidder_ Bidder of an auction.
      * @param price_ Price of a bid.
      * @param tax_ Tax of a bid.
+     * @param contentURI_ Content URI of a bid.
+     * @param redirectURI_ Redirect URI of a bid.
      */
-    function setBid(uint256 tokenId_, uint256 epoch_, address bidder_, uint256 price_, uint256 tax_) external;
+    function newBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        address bidder_,
+        uint256 price_,
+        uint256 tax_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external;
 
     /**
-     * @notice Create or update a bid
+     * @notice Update a bid
      *
      * @param tokenId_ Token ID of a board.
      * @param epoch_ Epoch of an auction.
@@ -217,12 +227,14 @@ interface IBillboardRegistry is IERC721 {
      *
      * @param tokenId_ Token ID of a board.
      * @param epoch_ Epoch.
+     * @param bidder_ Bidder of an auction.
      * @param contentURI_ Content URI of a board.
      * @param redirectURI_ Redirect URI of a board.
      */
     function setBidURIs(
         uint256 tokenId_,
         uint256 epoch_,
+        address bidder_,
         string calldata contentURI_,
         string calldata redirectURI_
     ) external;

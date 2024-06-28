@@ -136,14 +136,6 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function getAuction(
-        uint256 tokenId_,
-        uint256 auctionId_
-    ) external view returns (IBillboardRegistry.Auction memory auction) {
-        auction = registry.getAuction(tokenId_, auctionId_);
-    }
-
-    /// @inheritdoc IBillboard
     function clearAuction(uint256 tokenId_) public returns (uint256 price, uint256 tax) {
         // revert if board not found
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);

@@ -12,7 +12,7 @@ import "./IBillboardRegistry.sol";
  * - Owner of a billboard can set the AD data of a billboard: call `setBoardName`, `setBoardDescription` and `setBoardLocation`.
  * - Tenant of a billboard can set the AD data of a billboard: call `setBoardContentURI` and `setBoardRedirectURI`.
  *
- * ## Auction
+ * ## Auction & Bid
  * - User needs to call `approve` on currency (USDT) contract before starting.
  * - User can place a bid on a billboard: call `placeBid`.
  * - User can clear auction on a billboard: call `clearAuction`.
@@ -42,7 +42,7 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Add address to white list.
+     * @notice Add address to whitelist.
      *
      * @param tokenId_ Token ID.
      * @param address_ Address of user will be added into whitelist.
@@ -50,7 +50,7 @@ interface IBillboard {
     function addToWhitelist(uint256 tokenId_, address address_) external;
 
     /**
-     * @notice Remove address from white list.
+     * @notice Remove address from whitelist.
      *
      * @param tokenId_ Token ID.
      * @param address_ Address of user will be removed from whitelist.
@@ -64,71 +64,33 @@ interface IBillboard {
     /**
      * @notice Mint a new board (NFT).
      *
-     * @param to_ Address of the new board receiver.
+     * @param to_ Address of the board owner.
+     * @param taxRate_ Tax rate of the new board.
+     * @param epochInterval_ Epoch interval of the new board.
+     *
+     * @return tokenId Token ID of the new board.
      */
-    function newBoard(address to_) external returns (uint256 tokenId);
+    function newBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
 
     /**
-     * @notice Get a board data.
+     * @notice Set metadata of a board by creator.
      *
-     * @param tokenId_ Token ID.
-     *
-     * @return board Board data.
-     */
-    function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board);
-
-    /**
-     * @notice Set the name of a board by board creator.
-     *
-     * @param tokenId_ Token ID.
+     * @param tokenId_ Token ID of a board.
      * @param name_ Board name.
-     */
-    function setBoardName(uint256 tokenId_, string calldata name_) external;
-
-    /**
-     * @notice Set the name of a board by board creator.
-     *
-     * @param tokenId_ Token ID.
      * @param description_ Board description.
+     * @param imageURI_ Image URI of a board.
+     * @param location_ Location of a board.
      */
-    function setBoardDescription(uint256 tokenId_, string calldata description_) external;
-
-    /**
-     * @notice Set the location of a board by board creator.
-     *
-     * @param tokenId_ Token ID.
-     * @param location_ Digital address where a board located.
-     */
-    function setBoardLocation(uint256 tokenId_, string calldata location_) external;
-
-    /**
-     * @notice Set the image of a board by board creator.
-     *
-     * @param tokenId_ Token ID.
-     * @param uri_ URI of the image.
-     */
-    function setBoardImage(uint256 tokenId_, string calldata uri_) external;
-
-    /**
-     * @notice Set the (AD) content URI of a board by the tenant
-     *
-     * @param tokenId_ Token ID.
-     * @param epoch_ Epoch.
-     * @param contentURI_ Content URI.
-     */
-    function setBoardContentURI(uint256 tokenId_, uint256 epoch_, string calldata contentURI_) external;
-
-    /**
-     * @notice Set the (AD) redirect URI of a board by the tenant
-     *
-     * @param tokenId_ Token ID.
-     * @param epoch_ Epoch.
-     * @param redirectURI_ Redirect URI when users clicking.
-     */
-    function setBoardRedirectURI(uint256 tokenId_, uint256 epoch_, string calldata redirectURI_) external;
+    function setBoard(
+        uint256 tokenId_,
+        string calldata name_,
+        string calldata description_,
+        string calldata imageURI_,
+        string calldata location_
+    ) external;
 
     //////////////////////////////
-    /// Auction
+    /// Auction & Bid
     //////////////////////////////
 
     /**
@@ -136,46 +98,45 @@ interface IBillboard {
      *
      * @param tokenId_ Token ID.
      * @param epoch_ Epoch.
+     *
+     * @return highestBidder Address of the highest bidder.
+     * @return price Price of the highest bid.
+     * @return tax Tax of the highest bid.
      */
-    function clearAuction(uint256 tokenId_, uint256 epoch_) external returns (uint256 price, uint256 tax);
+    function clearAuction(
+        uint256 tokenId_,
+        uint256 epoch_
+    ) external returns (address highestBidder, uint256 price, uint256 tax);
 
     /**
      * @notice Clear the next auction of mutiple boards.
      *
      * @param tokenIds_ Token IDs of boards.
+     * @param epochs_ Epochs of auctions.
+     *
+     * @return highestBidders Addresses of the highest bidders.
+     * @return prices Prices of the highest bids.
+     * @return taxes Taxes of the highest bids.
      */
     function clearAuctions(
-        uint256[] calldata tokenIds_
-    ) external returns (uint256[] memory prices, uint256[] memory taxes);
+        uint256[] calldata tokenIds_,
+        uint256[] calldata epochs_
+    ) external returns (address[] memory highestBidders, uint256[] memory prices, uint256[] memory taxes);
 
     /**
-     * @notice Place bid for the next auction.
+     * @notice Place bid on a board auction.
      *
      * @param tokenId_ Token ID.
+     * @param epoch_ Epoch.
      * @param amount_ Amount of a bid.
      */
-    function placeBid(uint256 tokenId_, uint256 amount_) external payable;
+    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 amount_) external payable;
 
     /**
-     * @notice Get bid of a board auction by auction ID.
+     * @notice Get bids of a board auction.
      *
      * @param tokenId_ Token ID.
-     * @param auctionId_ Auction ID.
-     * @param bidder_ Address of a bidder.
-     *
-     * @return bid Bid.
-     */
-    function getBid(
-        uint256 tokenId_,
-        uint256 auctionId_,
-        address bidder_
-    ) external view returns (IBillboardRegistry.Bid memory bid);
-
-    /**
-     * @notice Get bids of a board auction by auction ID.
-     *
-     * @param tokenId_ Token ID.
-     * @param auctionId_ Auction ID.
+     * @param epoch_ Epoch.
      * @param limit_ Limit of returned bids.
      * @param offset_ Offset of returned bids.
      *
@@ -186,7 +147,7 @@ interface IBillboard {
      */
     function getBids(
         uint256 tokenId_,
-        uint256 auctionId_,
+        uint256 epoch_,
         uint256 limit_,
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
@@ -196,25 +157,14 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Get the global tax rate.
-     *
-     * @return taxRate Tax rate.
-     */
-    function getTaxRate() external view returns (uint256 taxRate);
-
-    /**
-     * @notice Set the global tax rate.
-     *
-     * @param taxRate_ Tax rate.
-     */
-    function setTaxRate(uint256 taxRate_) external;
-
-    /**
      * @notice Calculate tax of a bid.
      *
+     * @param tokenId_ Token ID.
      * @param amount_ Amount of a bid.
+     *
+     * @return tax Tax of a bid.
      */
-    function calculateTax(uint256 amount_) external returns (uint256 tax);
+    function calculateTax(uint256 tokenId_, uint256 amount_) external returns (uint256 tax);
 
     /**
      * @notice Withdraw accumulated taxation.
@@ -226,7 +176,7 @@ interface IBillboard {
      * @notice Withdraw bid that were not won by auction id;
      *
      * @param tokenId_ Token ID.
-     * @param auctionId_ Auction ID.
+     * @param epoch_ Epoch.
      */
-    function withdrawBid(uint256 tokenId_, uint256 auctionId_) external;
+    function withdrawBid(uint256 tokenId_, uint256 epoch_) external;
 }
