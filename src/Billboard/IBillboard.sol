@@ -70,7 +70,16 @@ interface IBillboard {
      *
      * @return tokenId Token ID of the new board.
      */
-    function newBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
+    function mintBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
+
+    /**
+     * @notice Get metadata of a board .
+     *
+     * @param tokenId_ Token ID of a board.
+     *
+     * @return board Board metadata.
+     */
+    function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board);
 
     /**
      * @notice Set metadata of a board by creator.
@@ -133,6 +142,21 @@ interface IBillboard {
     function placeBid(uint256 tokenId_, uint256 epoch_, uint256 amount_) external payable;
 
     /**
+     * @notice Get bid of a board auction.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param epoch_ Epoch of an auction.
+     * @param bidder_ Address of a bidder.
+     *
+     * @return bid Bid of a board.
+     */
+    function getBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        address bidder_
+    ) external view returns (IBillboardRegistry.Bid memory bid);
+
+    /**
      * @notice Get bids of a board auction.
      *
      * @param tokenId_ Token ID.
@@ -155,6 +179,15 @@ interface IBillboard {
     //////////////////////////////
     /// Tax & Withdraw
     //////////////////////////////
+
+    /**
+     * @notice Get the global tax rate.
+     *
+     * @param tokenId_ Token ID.
+     *
+     * @return taxRate Tax rate.
+     */
+    function getTaxRate(uint256 tokenId_) external view returns (uint256 taxRate);
 
     /**
      * @notice Calculate tax of a bid.

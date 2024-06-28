@@ -19,9 +19,6 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // tokenId => Board
     mapping(uint256 => Board) public boards;
 
-    // tokenId => address => whitelisted
-    mapping(uint256 => mapping(address => bool)) public boardWhitelists;
-
     // tokenId => epoch => bidder
     mapping(uint256 => mapping(uint256 => address)) public auctionHiggestBidder;
 

@@ -11,21 +11,13 @@ contract Billboard is IBillboard {
     // access control
     BillboardRegistry public immutable registry;
     address public immutable admin;
-    mapping(address => bool) public whitelist;
-    bool public isOpened = false;
 
-    constructor(
-        address token_,
-        address payable registry_,
-        address admin_,
-        uint256 taxRate_,
-        uint64 leaseTerm_,
-        string memory name_,
-        string memory symbol_
-    ) {
+    // tokenId => address => whitelisted
+    mapping(uint256 => mapping(address => bool)) public boardWhitelists;
+
+    constructor(address token_, address payable registry_, address admin_, string memory name_, string memory symbol_) {
         require(admin_ != address(0), "Zero address");
         admin = admin_;
-        whitelist[admin_] = true;
 
         // deploy operator only
         if (registry_ != address(0)) {
@@ -33,7 +25,7 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(token_, address(this), taxRate_, leaseTerm_, name_, symbol_);
+            registry = new BillboardRegistry(token_, address(this), name_, symbol_);
         }
     }
 
@@ -46,8 +38,8 @@ contract Billboard is IBillboard {
         _;
     }
 
-    modifier isFromWhitelist() {
-        require(whitelist[msg.sender], "Whitelist");
+    modifier isFromWhitelist(uint256 tokenId_) {
+        require(boardWhitelists[tokenId_][msg.sender], "Whitelist");
         _;
     }
 
@@ -76,18 +68,13 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function setIsOpened(bool value_) external isFromAdmin {
-        isOpened = value_;
+    function addToWhitelist(uint256 tokenId_, address value_) external isFromAdmin {
+        boardWhitelists[tokenId_][value_] = true;
     }
 
     /// @inheritdoc IBillboard
-    function addToWhitelist(address value_) external isFromAdmin {
-        whitelist[value_] = true;
-    }
-
-    /// @inheritdoc IBillboard
-    function removeFromWhitelist(address value_) external isFromAdmin {
-        whitelist[value_] = false;
+    function removeFromWhitelist(uint256 tokenId_, address value_) external isFromAdmin {
+        boardWhitelists[tokenId_][value_] = false;
     }
 
     //////////////////////////////
@@ -95,44 +82,29 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function mintBoard(address to_) external returns (uint256 tokenId) {
-        require(isOpened || whitelist[msg.sender], "Whitelist");
-
-        tokenId = registry.mintBoard(to_);
+    function mintBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId) {
+        tokenId = registry.newBoard(to_, taxRate_, epochInterval_);
     }
 
     /// @inheritdoc IBillboard
     function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board) {
-        return registry.getBoard(tokenId_);
+        return registry.boards(tokenId_);
     }
 
     /// @inheritdoc IBillboard
-    function setBoardName(uint256 tokenId_, string calldata name_) external isFromBoardCreator(tokenId_) {
-        registry.setBoardName(tokenId_, name_);
-    }
 
-    /// @inheritdoc IBillboard
-    function setBoardDescription(uint256 tokenId_, string calldata description_) external isFromBoardCreator(tokenId_) {
-        registry.setBoardDescription(tokenId_, description_);
-    }
-
-    /// @inheritdoc IBillboard
-    function setBoardLocation(uint256 tokenId_, string calldata location_) external isFromBoardCreator(tokenId_) {
-        registry.setBoardLocation(tokenId_, location_);
-    }
-
-    /// @inheritdoc IBillboard
-    function setBoardContentURI(uint256 tokenId_, string calldata contentURI_) external isFromBoardTenant(tokenId_) {
-        registry.setBoardContentURI(tokenId_, contentURI_);
-    }
-
-    /// @inheritdoc IBillboard
-    function setBoardRedirectURI(uint256 tokenId_, string calldata redirectURI_) external isFromBoardTenant(tokenId_) {
-        registry.setBoardRedirectURI(tokenId_, redirectURI_);
+    function setBoard(
+        uint256 tokenId_,
+        string calldata name_,
+        string calldata description_,
+        string calldata imageURI_,
+        string calldata location_
+    ) external isFromBoardCreator(tokenId_) {
+        registry.setBoard(tokenId_, name_, description_, imageURI_, location_);
     }
 
     //////////////////////////////
-    /// Auction
+    /// Auction & Bid
     //////////////////////////////
 
     /// @inheritdoc IBillboard
@@ -222,7 +194,7 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist {
+    function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist(tokenId_) {
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
 
@@ -277,20 +249,20 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function getBid(
         uint256 tokenId_,
-        uint256 auctionId_,
+        uint256 epoch_,
         address bidder_
     ) external view returns (IBillboardRegistry.Bid memory bid) {
-        return registry.getBid(tokenId_, auctionId_, bidder_);
+        return registry.auctionBids(tokenId_, epoch_, bidder_);
     }
 
     /// @inheritdoc IBillboard
     function getBids(
         uint256 tokenId_,
-        uint256 auctionId_,
+        uint256 epoch_,
         uint256 limit_,
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
-        uint256 _total = registry.getBidCount(tokenId_, auctionId_);
+        uint256 _total = registry.getBidCount(tokenId_, epoch_);
 
         if (limit_ == 0) {
             return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
@@ -306,8 +278,8 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Bid[] memory _bids = new IBillboardRegistry.Bid[](_size);
 
         for (uint256 i = 0; i < _size; i++) {
-            address _bidder = registry.auctionBidders(tokenId_, auctionId_, offset_ + i);
-            _bids[i] = registry.getBid(tokenId_, auctionId_, _bidder);
+            address _bidder = registry.auctionBidders(tokenId_, epoch_, offset_ + i);
+            _bids[i] = registry.auctionBids(tokenId_, epoch_, bidder_);
         }
 
         return (_total, limit_, offset_, _bids);
@@ -318,17 +290,12 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function getTaxRate() external view returns (uint256 taxRate) {
-        return registry.taxRate();
+    function getTaxRate(uint256 tokenId_) external view returns (uint256 taxRate) {
+        return registry.boards(tokenId_).taxRate;
     }
 
-    /// @inheritdoc IBillboard
-    function setTaxRate(uint256 taxRate_) external isFromAdmin {
-        registry.setTaxRate(taxRate_);
-    }
-
-    function calculateTax(uint256 amount_) public view returns (uint256 tax) {
-        tax = (amount_ * registry.taxRate()) / 1000;
+    function calculateTax(uint256 tokenId_, uint256 amount_) public view returns (uint256 tax) {
+        tax = (amount_ * this.getTaxRate(tokenId_)) / 1000;
     }
 
     /// @inheritdoc IBillboard
