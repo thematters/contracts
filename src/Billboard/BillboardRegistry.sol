@@ -20,13 +20,13 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     mapping(uint256 => Board) public boards;
 
     // tokenId => epoch => bidder
-    mapping(uint256 => mapping(uint256 => address)) public auctionHiggestBidder;
+    mapping(uint256 => mapping(uint256 => address)) public higgestBidder;
 
     // tokenId => epoch => bidders
-    mapping(uint256 => mapping(uint256 => address[])) public auctionBidders;
+    mapping(uint256 => mapping(uint256 => address[])) public bidders;
 
     // tokenId => epoch => bidder => Bid
-    mapping(uint256 => mapping(uint256 => mapping(address => Bid))) public auctionBids;
+    mapping(uint256 => mapping(uint256 => mapping(address => Bid))) public bids;
 
     // board creator => TaxTreasury
     mapping(address => TaxTreasury) public taxTreasury;
@@ -64,6 +64,12 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
     /// Board
     //////////////////////////////
+
+    /// @inheritdoc IBillboardRegistry
+    function getBoard(uint256 tokenId_) external view returns (Board memory board) {
+        board = boards[tokenId_];
+    }
+
     /// @inheritdoc IBillboardRegistry
     function newBoard(
         address to_,
@@ -107,9 +113,15 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
     /// Auction & Bid
     //////////////////////////////
+
+    /// @inheritdoc IBillboardRegistry
+    function getBid(uint256 tokenId_, uint256 auctionId_, address bidder_) external view returns (Bid memory bid) {
+        bid = bids[tokenId_][auctionId_][bidder_];
+    }
+
     /// @inheritdoc IBillboardRegistry
     function getBidCount(uint256 tokenId_, uint256 epoch_) external view returns (uint256 count) {
-        count = auctionBidders[tokenId_][epoch_].length;
+        count = bidders[tokenId_][epoch_].length;
     }
 
     /// @inheritdoc IBillboardRegistry
@@ -134,10 +146,10 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         });
 
         // add to auction bids
-        auctionBids[tokenId_][epoch_][bidder_] = _bid;
+        bids[tokenId_][epoch_][bidder_] = _bid;
 
         // add to auction bidders if new bid
-        auctionBidders[tokenId_][epoch_].push(bidder_);
+        bidders[tokenId_][epoch_].push(bidder_);
 
         _setHiggestBidder(tokenId_, epoch_, price_, bidder_);
 
@@ -152,16 +164,20 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         uint256 price_,
         uint256 tax_,
         string calldata contentURI_,
-        string calldata redirectURI_
+        string calldata redirectURI_,
+        bool hasURIs
     ) external isFromOperator {
-        Bid memory _bid = auctionBids[tokenId_][epoch_][bidder_];
+        Bid memory _bid = bids[tokenId_][epoch_][bidder_];
         require(_bid.createdAt != 0, "Bid not found");
 
         _bid.price = price_;
         _bid.tax = tax_;
-        _bid.contentURI = contentURI_;
-        _bid.redirectURI = redirectURI_;
         _bid.updatedAt = block.number;
+
+        if (hasURIs) {
+            _bid.contentURI = contentURI_;
+            _bid.redirectURI = redirectURI_;
+        }
 
         _setHiggestBidder(tokenId_, epoch_, price_, bidder_);
 
@@ -173,10 +189,10 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // Note: for same price, the first bidder will always be
     // the highest bidder since the block.number is always greater.
     function _setHiggestBidder(uint256 tokenId_, uint256 epoch_, uint256 price_, address bidder_) internal {
-        address highestBidder = auctionHiggestBidder[tokenId_][epoch_];
-        Bid memory highestBid = auctionBids[tokenId_][epoch_][highestBidder];
+        address highestBidder = higgestBidder[tokenId_][epoch_];
+        Bid memory highestBid = bids[tokenId_][epoch_][highestBidder];
         if (highestBidder == address(0) || price_ > highestBid.price) {
-            auctionHiggestBidder[tokenId_][epoch_] = bidder_;
+            higgestBidder[tokenId_][epoch_] = bidder_;
         }
     }
 
@@ -188,7 +204,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string calldata contentURI_,
         string calldata redirectURI_
     ) external isFromOperator {
-        Bid memory _bid = auctionBids[tokenId_][epoch_][bidder_];
+        Bid memory _bid = bids[tokenId_][epoch_][bidder_];
 
         _bid.contentURI = contentURI_;
         _bid.redirectURI = redirectURI_;
@@ -198,7 +214,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     /// @inheritdoc IBillboardRegistry
     function setBidWon(uint256 tokenId_, uint256 epoch_, address bidder_, bool isWon_) external isFromOperator {
-        auctionBids[tokenId_][epoch_][bidder_].isWon = isWon_;
+        bids[tokenId_][epoch_][bidder_].isWon = isWon_;
         emit BidWon(tokenId_, epoch_, bidder_);
     }
 
@@ -209,7 +225,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         address bidder_,
         bool isWithdrawn_
     ) external isFromOperator {
-        auctionBids[tokenId_][epoch_][bidder_].isWithdrawn = isWithdrawn_;
+        bids[tokenId_][epoch_][bidder_].isWithdrawn = isWithdrawn_;
         emit BidWithdrawn(tokenId_, epoch_, msg.sender);
     }
 

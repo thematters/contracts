@@ -88,7 +88,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function getBoard(uint256 tokenId_) external view returns (IBillboardRegistry.Board memory board) {
-        return registry.boards(tokenId_);
+        return registry.getBoard(tokenId_);
     }
 
     /// @inheritdoc IBillboard
@@ -108,68 +108,122 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function clearAuction(uint256 tokenId_) public returns (uint256 price, uint256 tax) {
-        // revert if board not found
+    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 price_) external payable isFromWhitelist(tokenId_) {
+        _placeBid(tokenId_, epoch_, price_, "", "", false);
+    }
+
+    /// @inheritdoc IBillboard
+    function placeBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        uint256 price_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external payable isFromWhitelist(tokenId_) {
+        _placeBid(tokenId_, epoch_, price_, contentURI_, redirectURI_, true);
+    }
+
+    function _placeBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        uint256 price_,
+        string memory contentURI_,
+        string memory redirectURI_,
+        bool hasURIs
+    ) private {
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
 
-        // revert if it's a new board
-        uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
-        require(_nextAuctionId != 0, "Auction not found");
+        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
 
-        IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
+        // clear auction if the auction is ended,
+        if (_endedAt >= block.number) {
+            _clearAuction(tokenId_, _board.creator, epoch_);
+            return;
+        }
+        // otherwise, create new bid or update bid
+        else {
+            IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
+
+            uint256 _tax = calculateTax(tokenId_, price_);
+
+            // create new bid
+            if (_bid.createdAt == 0) {
+                // transfer bid price and tax to the registry
+                SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), price_ + _tax);
+
+                // add new bid
+                registry.newBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_);
+            }
+            // update bid
+            else {
+                require(price_ > _bid.price, "Price too low");
+
+                // transfer diff amount to the registry
+                uint256 _priceDiff = price_ - _bid.price;
+                uint256 _taxDiff = _tax - _bid.tax;
+                SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), _priceDiff + _taxDiff);
+
+                if (hasURIs) {
+                    registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_, true);
+                } else {
+                    registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, "", "", false);
+                }
+            }
+        }
+    }
+
+    /// @inheritdoc IBillboard
+    function clearAuction(
+        uint256 tokenId_,
+        uint256 epoch_
+    ) public returns (address highestBidder, uint256 price, uint256 tax) {
+        // revert if board not found
+        IBillboardRegistry.Board memory _board = this.getBoard(tokenId_);
+        require(_board.creator != address(0), "Board not found");
 
         // revert if auction is still running
-        require(block.number >= _nextAuction.endAt, "Auction not ended");
+        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        require(block.number < _endedAt, "Auction not ended");
 
-        // reclaim ownership to board creator if no auction
-        address _prevOwner = registry.ownerOf(tokenId_);
-        if (_nextAuction.startAt == 0 && _prevOwner != _board.creator) {
-            registry.safeTransferByOperator(_prevOwner, _board.creator, tokenId_);
-            return (0, 0);
-        }
-
-        return _clearAuction(tokenId_, _board.creator, _nextAuctionId);
+        return _clearAuction(tokenId_, _board.creator, epoch_);
     }
 
     /// @inheritdoc IBillboard
     function clearAuctions(
-        uint256[] calldata tokenIds_
-    ) external returns (uint256[] memory prices, uint256[] memory taxes) {
+        uint256[] calldata tokenIds_,
+        uint256[] calldata epochs_
+    ) external returns (address[] memory highestBidders, uint256[] memory prices, uint256[] memory taxes) {
         uint256 _size = tokenIds_.length;
+        address[] memory _highestBidders = new address[](_size);
         uint256[] memory _prices = new uint256[](_size);
         uint256[] memory _taxes = new uint256[](_size);
 
         for (uint256 i = 0; i < _size; i++) {
-            (_prices[i], _taxes[i]) = clearAuction(tokenIds_[i]);
+            (_highestBidders[i], _prices[i], _taxes[i]) = clearAuction(tokenIds_[i], epochs_[i]);
         }
 
-        return (_prices, _taxes);
+        return (_highestBidders, _prices, _taxes);
     }
 
     function _clearAuction(
         uint256 tokenId_,
         address boardCreator_,
-        uint256 nextAuctionId_
-    ) private returns (uint256 price, uint256 tax) {
-        IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, nextAuctionId_);
+        uint256 epoch_
+    ) private returns (address highestBidder, uint256 price, uint256 tax) {
+        address _highestBidder = registry.higgestBidder(tokenId_, epoch_);
+        IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
 
         // skip if auction is already cleared
-        if (_nextAuction.leaseEndAt != 0) {
-            return (0, 0);
+        if (_highestBid.isWon) {
+            return (address(0), 0, 0);
         }
 
         address _prevOwner = registry.ownerOf(tokenId_);
 
-        IBillboardRegistry.Bid memory _highestBid = registry.getBid(
-            tokenId_,
-            nextAuctionId_,
-            _nextAuction.highestBidder
-        );
-
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
-            registry.transferAmount(_prevOwner, _highestBid.price);
+            registry.transferTokenByOperator(_prevOwner, _highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
             (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
@@ -177,73 +231,15 @@ contract Billboard is IBillboard {
         }
 
         // transfer ownership
-        registry.safeTransferByOperator(_prevOwner, _nextAuction.highestBidder, tokenId_);
+        registry.safeTransferByOperator(_prevOwner, _highestBidder, tokenId_);
 
         // mark highest bid as won
-        registry.setBidWon(tokenId_, nextAuctionId_, _nextAuction.highestBidder, true);
-
-        // set auction lease
-        uint64 leaseStartAt = uint64(block.number);
-        uint64 leaseEndAt = uint64(leaseStartAt + registry.leaseTerm());
-        registry.setAuctionLease(tokenId_, nextAuctionId_, leaseStartAt, leaseEndAt);
+        registry.setBidWon(tokenId_, epoch_, _highestBidder, true);
 
         // emit AuctionCleared
-        registry.emitAuctionCleared(tokenId_, nextAuctionId_, _nextAuction.highestBidder, leaseStartAt, leaseEndAt);
+        registry.emitAuctionCleared(tokenId_, epoch_, _highestBidder);
 
-        return (_highestBid.price, _highestBid.tax);
-    }
-
-    /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 amount_) external payable isFromWhitelist(tokenId_) {
-        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
-        require(_board.creator != address(0), "Board not found");
-
-        uint256 _nextAuctionId = registry.nextBoardAuctionId(tokenId_);
-        IBillboardRegistry.Auction memory _nextAuction = registry.getAuction(tokenId_, _nextAuctionId);
-
-        // if it's a new board without next auction,
-        // create new auction and new bid first,
-        // then clear auction and transfer ownership to the bidder immediately.
-        if (_nextAuction.startAt == 0) {
-            uint256 _auctionId = _newAuctionAndBid(tokenId_, amount_, uint64(block.number));
-            _clearAuction(tokenId_, _board.creator, _auctionId);
-            return;
-        }
-
-        // if next auction is ended,
-        // clear auction first,
-        // then create new auction and new bid
-        if (block.number >= _nextAuction.endAt) {
-            _clearAuction(tokenId_, _board.creator, _nextAuctionId);
-            _newAuctionAndBid(tokenId_, amount_, uint64(block.number + registry.leaseTerm()));
-            return;
-        }
-        // if next auction is not ended,
-        // push new bid to next auction
-        else {
-            require(registry.getBid(tokenId_, _nextAuctionId, msg.sender).placedAt == 0, "Bid already placed");
-
-            uint256 _tax = calculateTax(amount_);
-            registry.newBid(tokenId_, _nextAuctionId, msg.sender, amount_, _tax);
-
-            _lockBidPriceAndTax(amount_ + _tax);
-        }
-    }
-
-    function _newAuctionAndBid(uint256 tokenId_, uint256 amount_, uint64 endAt_) private returns (uint256 auctionId) {
-        uint64 _startAt = uint64(block.number);
-        uint256 _tax = calculateTax(amount_);
-
-        auctionId = registry.newAuction(tokenId_, _startAt, endAt_);
-
-        registry.newBid(tokenId_, auctionId, msg.sender, amount_, _tax);
-
-        _lockBidPriceAndTax(amount_ + _tax);
-    }
-
-    function _lockBidPriceAndTax(uint256 amount_) private {
-        // transfer bid price and tax to the registry
-        SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), amount_);
+        return (_highestBidder, _highestBid.price, _highestBid.tax);
     }
 
     /// @inheritdoc IBillboard
@@ -252,7 +248,7 @@ contract Billboard is IBillboard {
         uint256 epoch_,
         address bidder_
     ) external view returns (IBillboardRegistry.Bid memory bid) {
-        return registry.auctionBids(tokenId_, epoch_, bidder_);
+        return registry.getBid(tokenId_, epoch_, bidder_);
     }
 
     /// @inheritdoc IBillboard
@@ -278,11 +274,53 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Bid[] memory _bids = new IBillboardRegistry.Bid[](_size);
 
         for (uint256 i = 0; i < _size; i++) {
-            address _bidder = registry.auctionBidders(tokenId_, epoch_, offset_ + i);
-            _bids[i] = registry.auctionBids(tokenId_, epoch_, bidder_);
+            address _bidder = registry.bidders(tokenId_, epoch_, offset_ + i);
+            _bids[i] = registry.getBid(tokenId_, epoch_, _bidder);
         }
 
         return (_total, limit_, offset_, _bids);
+    }
+
+    /// @inheritdoc IBillboard
+    function withdrawBid(uint256 tokenId_, uint256 epoch_) external {
+        // revert if board not found
+        IBillboardRegistry.Board memory _board = this.getBoard(tokenId_);
+        require(_board.creator != address(0), "Board not found");
+
+        // revert if auction is not ended
+        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        require(block.number < _endedAt, "Auction not ended");
+
+        // revert if auction is not cleared
+        address _highestBidder = registry.higgestBidder(tokenId_, epoch_);
+        IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
+        require(!_highestBid.isWon, "Auction not cleared");
+
+        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
+        uint256 amount = _bid.price + _bid.tax;
+
+        require(_bid.createdAt != 0, "Bid not found");
+        require(!_bid.isWithdrawn, "Bid already withdrawn");
+        require(!_bid.isWon, "Bid already won");
+        require(amount > 0, "Zero amount");
+
+        // set bid.isWithdrawn to true first to prevent reentrancy
+        registry.setBidWithdrawn(tokenId_, epoch_, msg.sender, true);
+
+        // transfer bid price and tax back to the bidder
+        registry.transferTokenByOperator(msg.sender, amount);
+    }
+
+    /// @inheritdoc IBillboard
+    function getEpochFromBlock(uint256 block_, uint256 epochInterval_) public pure returns (uint256 epoch) {
+        // TODO: check overflow and underflow
+        return block_ / epochInterval_;
+    }
+
+    /// @inheritdoc IBillboard
+    function getBlockFromEpoch(uint256 epoch_, uint256 epochInterval_) public pure returns (uint256 blockNumber) {
+        // TODO: check overflow and underflow
+        return epoch_ * epochInterval_;
     }
 
     //////////////////////////////
@@ -291,7 +329,7 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function getTaxRate(uint256 tokenId_) external view returns (uint256 taxRate) {
-        return registry.boards(tokenId_).taxRate;
+        return registry.getBoard(tokenId_).taxRate;
     }
 
     function calculateTax(uint256 tokenId_, uint256 amount_) public view returns (uint256 tax) {
@@ -311,35 +349,11 @@ contract Billboard is IBillboard {
         registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
 
         // transfer tax to the owner
-        registry.transferAmount(msg.sender, amount);
+        registry.transferTokenByOperator(msg.sender, amount);
 
         // emit TaxWithdrawn
         registry.emitTaxWithdrawn(msg.sender, amount);
 
         return amount;
-    }
-
-    /// @inheritdoc IBillboard
-    function withdrawBid(uint256 tokenId_, uint256 auctionId_) external {
-        // revert if auction is still running
-        IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId_, auctionId_);
-        require(block.number >= _auction.endAt, "Auction not ended");
-
-        // revert if auction is not cleared
-        require(_auction.leaseEndAt != 0, "Auction not cleared");
-
-        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, auctionId_, msg.sender);
-        uint256 amount = _bid.price + _bid.tax;
-
-        require(_bid.placedAt != 0, "Bid not found");
-        require(!_bid.isWithdrawn, "Bid already withdrawn");
-        require(!_bid.isWon, "Bid already won");
-        require(amount > 0, "Zero amount");
-
-        // set bid.isWithdrawn to true first to prevent reentrancy
-        registry.setBidWithdrawn(tokenId_, auctionId_, msg.sender, true);
-
-        // transfer bid price and tax back to the bidder
-        registry.transferAmount(msg.sender, amount);
     }
 }

@@ -130,16 +130,33 @@ interface IBillboard {
     function clearAuctions(
         uint256[] calldata tokenIds_,
         uint256[] calldata epochs_
-    ) external returns (address[] memory highestBidders, uint256[] memory prices, uint256[] memory taxes);
+    ) external returns (address[] calldata highestBidders, uint256[] calldata prices, uint256[] calldata taxes);
 
     /**
      * @notice Place bid on a board auction.
      *
      * @param tokenId_ Token ID.
      * @param epoch_ Epoch.
-     * @param amount_ Amount of a bid.
+     * @param price_ Amount of a bid.
      */
-    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 amount_) external payable;
+    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 price_) external payable;
+
+    /**
+     * @notice Place bid on a board auction.
+     *
+     * @param tokenId_ Token ID.
+     * @param epoch_ Epoch.
+     * @param price_ Amount of a bid.
+     * @param contentURI_ Content URI of a bid.
+     * @param redirectURI_ Redirect URI of a bid.
+     */
+    function placeBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        uint256 price_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external payable;
 
     /**
      * @notice Get bid of a board auction.
@@ -176,6 +193,34 @@ interface IBillboard {
         uint256 offset_
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
 
+    /**
+     * @notice Withdraw bid that were not won by auction id;
+     *
+     * @param tokenId_ Token ID.
+     * @param epoch_ Epoch.
+     */
+    function withdrawBid(uint256 tokenId_, uint256 epoch_) external;
+
+    /**
+     * @notice Calculate epoch from block number.
+     *
+     * @param block_ Block number.
+     * @param epochInterval_ Epoch interval.
+     *
+     * @return epoch Epoch.
+     */
+    function getEpochFromBlock(uint256 block_, uint256 epochInterval_) external pure returns (uint256 epoch);
+
+    /**
+     * @notice Calculate block number from epoch.
+     *
+     * @param epoch_ Epoch.
+     * @param epochInterval_ Epoch interval.
+     *
+     * @return blockNumber Block number.
+     */
+    function getBlockFromEpoch(uint256 epoch_, uint256 epochInterval_) external pure returns (uint256 blockNumber);
+
     //////////////////////////////
     /// Tax & Withdraw
     //////////////////////////////
@@ -204,12 +249,4 @@ interface IBillboard {
      *
      */
     function withdrawTax() external returns (uint256 tax);
-
-    /**
-     * @notice Withdraw bid that were not won by auction id;
-     *
-     * @param tokenId_ Token ID.
-     * @param epoch_ Epoch.
-     */
-    function withdrawBid(uint256 tokenId_, uint256 epoch_) external;
 }

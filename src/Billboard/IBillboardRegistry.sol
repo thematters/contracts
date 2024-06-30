@@ -140,6 +140,13 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
 
     /**
+     * @notice Get a board
+     *
+     * @param tokenId_ Token ID of a board.
+     */
+    function getBoard(uint256 tokenId_) external view returns (Board memory board);
+
+    /**
      * @notice Mint a new board (NFT).
      *
      * @param to_ Address of the board owner.
@@ -170,6 +177,16 @@ interface IBillboardRegistry is IERC721 {
     //////////////////////////////
     /// Auction & Bid
     //////////////////////////////
+
+    /**
+     * @notice Get a bid of an auction
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param epoch_ Epoch of an auction.
+     * @param bidder_ Bidder of an auction.
+     */
+    function getBid(uint256 tokenId_, uint256 epoch_, address bidder_) external view returns (Bid memory bid);
+
     /**
      * @notice Get bid count of an auction
      *
@@ -211,6 +228,7 @@ interface IBillboardRegistry is IERC721 {
      * @param tax_ Tax of a bid.
      * @param contentURI_ Content URI of a bid.
      * @param redirectURI_ Redirect URI of a bid.
+     * @param hasURIs_ Whether `contentURI_` or `redirectURI_` is provided.
      */
     function setBid(
         uint256 tokenId_,
@@ -219,7 +237,8 @@ interface IBillboardRegistry is IERC721 {
         uint256 price_,
         uint256 tax_,
         string calldata contentURI_,
-        string calldata redirectURI_
+        string calldata redirectURI_,
+        bool hasURIs_
     ) external;
 
     /**
