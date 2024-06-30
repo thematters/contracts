@@ -13,8 +13,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
     address public operator;
 
-    // token to be used for auction
-    IERC20 public immutable token;
+    // currency to be used for auction
+    IERC20 public immutable currency;
 
     // tokenId => Board
     mapping(uint256 => Board) public boards;
@@ -34,11 +34,16 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //////////////////////////////
     /// Constructor
     //////////////////////////////
-    constructor(address token_, address operator_, string memory name_, string memory symbol_) ERC721(name_, symbol_) {
+    constructor(
+        address currency_,
+        address operator_,
+        string memory name_,
+        string memory symbol_
+    ) ERC721(name_, symbol_) {
         require(operator_ != address(0), "Zero address");
-        require(token_ != address(0), "Zero address");
+        require(currency_ != address(0), "Zero address");
         operator = operator_;
-        token = IERC20(token_);
+        currency = IERC20(currency_);
     }
 
     //////////////////////////////
@@ -205,6 +210,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string calldata redirectURI_
     ) external isFromOperator {
         Bid memory _bid = bids[tokenId_][epoch_][bidder_];
+        require(_bid.createdAt != 0, "Bid not found");
 
         _bid.contentURI = contentURI_;
         _bid.redirectURI = redirectURI_;
@@ -249,9 +255,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
-    function transferTokenByOperator(address to_, uint256 amount_) external isFromOperator {
+    function transferCurrencyByOperator(address to_, uint256 amount_) external isFromOperator {
         require(to_ != address(0), "Zero address");
-        require(token.transfer(to_, amount_), "Failed token transfer");
+        require(currency.transfer(to_, amount_), "Failed token transfer");
     }
 
     //////////////////////////////

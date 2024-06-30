@@ -13,7 +13,7 @@ contract Billboard is IBillboard {
     address public immutable admin;
 
     // tokenId => address => whitelisted
-    mapping(uint256 => mapping(address => bool)) public boardWhitelists;
+    mapping(uint256 => mapping(address => bool)) public boardWhitelist;
 
     constructor(address token_, address payable registry_, address admin_, string memory name_, string memory symbol_) {
         require(admin_ != address(0), "Zero address");
@@ -39,17 +39,17 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromWhitelist(uint256 tokenId_) {
-        require(boardWhitelists[tokenId_][msg.sender], "Whitelist");
+        require(boardWhitelist[tokenId_][msg.sender], "Whitelist");
         _;
     }
 
-    modifier isFromBoardCreator(uint256 tokenId_) {
+    modifier isFromCreator(uint256 tokenId_) {
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator == msg.sender, "Creator");
         _;
     }
 
-    modifier isFromBoardTenant(uint256 tokenId_) {
+    modifier isFromTenant(uint256 tokenId_) {
         require(msg.sender == registry.ownerOf(tokenId_), "Tenant");
         _;
     }
@@ -68,13 +68,13 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function addToWhitelist(uint256 tokenId_, address value_) external isFromAdmin {
-        boardWhitelists[tokenId_][value_] = true;
+    function addToWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
+        boardWhitelist[tokenId_][account_] = true;
     }
 
     /// @inheritdoc IBillboard
-    function removeFromWhitelist(uint256 tokenId_, address value_) external isFromAdmin {
-        boardWhitelists[tokenId_][value_] = false;
+    function removeFromWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
+        boardWhitelist[tokenId_][account_] = false;
     }
 
     //////////////////////////////
@@ -82,8 +82,10 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function mintBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId) {
-        tokenId = registry.newBoard(to_, taxRate_, epochInterval_);
+    function mintBoard(uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId) {
+        require(epochInterval_ > 0, "Zero epoch interval");
+
+        tokenId = registry.newBoard(msg.sender, taxRate_, epochInterval_);
     }
 
     /// @inheritdoc IBillboard
@@ -92,14 +94,13 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-
     function setBoard(
         uint256 tokenId_,
         string calldata name_,
         string calldata description_,
         string calldata imageURI_,
         string calldata location_
-    ) external isFromBoardCreator(tokenId_) {
+    ) external isFromCreator(tokenId_) {
         registry.setBoard(tokenId_, name_, description_, imageURI_, location_);
     }
 
@@ -135,42 +136,45 @@ contract Billboard is IBillboard {
         require(_board.creator != address(0), "Board not found");
 
         uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        require(_endedAt >= block.number, "Auction ended");
 
-        // clear auction if the auction is ended,
-        if (_endedAt >= block.number) {
-            _clearAuction(tokenId_, _board.creator, epoch_);
-            return;
+        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
+
+        uint256 _tax = calculateTax(tokenId_, price_);
+
+        // create new bid if no bid exists
+        if (_bid.createdAt == 0) {
+            // transfer bid price and tax to the registry
+            SafeERC20.safeTransferFrom(registry.currency(), msg.sender, address(registry), price_ + _tax);
+
+            // add new bid
+            registry.newBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_);
         }
-        // otherwise, create new bid or update bid
+        // update bid if exists
         else {
-            IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
+            require(price_ > _bid.price, "Price too low");
 
-            uint256 _tax = calculateTax(tokenId_, price_);
+            // transfer diff amount to the registry
+            uint256 _priceDiff = price_ - _bid.price;
+            uint256 _taxDiff = _tax - _bid.tax;
+            SafeERC20.safeTransferFrom(registry.currency(), msg.sender, address(registry), _priceDiff + _taxDiff);
 
-            // create new bid
-            if (_bid.createdAt == 0) {
-                // transfer bid price and tax to the registry
-                SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), price_ + _tax);
-
-                // add new bid
-                registry.newBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_);
-            }
-            // update bid
-            else {
-                require(price_ > _bid.price, "Price too low");
-
-                // transfer diff amount to the registry
-                uint256 _priceDiff = price_ - _bid.price;
-                uint256 _taxDiff = _tax - _bid.tax;
-                SafeERC20.safeTransferFrom(registry.token(), msg.sender, address(registry), _priceDiff + _taxDiff);
-
-                if (hasURIs) {
-                    registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_, true);
-                } else {
-                    registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, "", "", false);
-                }
+            if (hasURIs) {
+                registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, contentURI_, redirectURI_, true);
+            } else {
+                registry.setBid(tokenId_, epoch_, msg.sender, price_, _tax, "", "", false);
             }
         }
+    }
+
+    /// @inheritdoc IBillboard
+    function setBidURIs(
+        uint256 tokenId_,
+        uint256 epoch_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) public {
+        registry.setBidURIs(tokenId_, epoch_, msg.sender, contentURI_, redirectURI_);
     }
 
     /// @inheritdoc IBillboard
@@ -223,7 +227,7 @@ contract Billboard is IBillboard {
 
         if (_highestBid.price > 0) {
             // transfer bid price to board owner (previous tenant or creator)
-            registry.transferTokenByOperator(_prevOwner, _highestBid.price);
+            registry.transferCurrencyByOperator(_prevOwner, _highestBid.price);
 
             // transfer bid tax to board creator's tax treasury
             (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
@@ -308,18 +312,16 @@ contract Billboard is IBillboard {
         registry.setBidWithdrawn(tokenId_, epoch_, msg.sender, true);
 
         // transfer bid price and tax back to the bidder
-        registry.transferTokenByOperator(msg.sender, amount);
+        registry.transferCurrencyByOperator(msg.sender, amount);
     }
 
     /// @inheritdoc IBillboard
     function getEpochFromBlock(uint256 block_, uint256 epochInterval_) public pure returns (uint256 epoch) {
-        // TODO: check overflow and underflow
         return block_ / epochInterval_;
     }
 
     /// @inheritdoc IBillboard
     function getBlockFromEpoch(uint256 epoch_, uint256 epochInterval_) public pure returns (uint256 blockNumber) {
-        // TODO: check overflow and underflow
         return epoch_ * epochInterval_;
     }
 
@@ -349,7 +351,7 @@ contract Billboard is IBillboard {
         registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
 
         // transfer tax to the owner
-        registry.transferTokenByOperator(msg.sender, amount);
+        registry.transferCurrencyByOperator(msg.sender, amount);
 
         // emit TaxWithdrawn
         registry.emitTaxWithdrawn(msg.sender, amount);

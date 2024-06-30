@@ -8,19 +8,20 @@ import "./IBillboardRegistry.sol";
  * @notice The on-chain billboard system transforms platform attention into NFT billboards based on Harberger tax auctions. Empowering creators with a fair share of tax revenue through quadratic voting.
  *
  * ## Billboard
- * - User (whitelisted) can mint a billboard: call `mintBoard`.
- * - Owner of a billboard can set the AD data of a billboard: call `setBoardName`, `setBoardDescription` and `setBoardLocation`.
- * - Tenant of a billboard can set the AD data of a billboard: call `setBoardContentURI` and `setBoardRedirectURI`.
+ * - User can mint a billboard: `mintBoard`.
+ * - Creator, who mints the billboard, can set the metadata: `setBoard`.
+ * - Tenant, who wins the auction, can set the AD data: `setBidURIs`.
  *
  * ## Auction & Bid
- * - User needs to call `approve` on currency (USDT) contract before starting.
- * - User can place a bid on a billboard: call `placeBid`.
- * - User can clear auction on a billboard: call `clearAuction`.
- * - User can withdraw bid from a billboard: call `withdrawBid`.
+ * - Creator can set a epoch interval when `mintBoard`.
+ * - User needs to call `approve` on currency (e.g. USDT) contract before starting.
+ * - User can place a bid on a billboard: `placeBid`.
+ * - User can clear auction on a billboard: `clearAuction`.
+ * - User can withdraw a bid: `withdrawBid`.
  *
  * ## Tax
- * - Admin of this contract can set global tax rate: call `setTaxRate`.
- * - Owner of a billbaord can withdraw tax: call `withdrawTax`.
+ * - Creator can set a tax rate when `mintBoard`.
+ * - Creator can withdraw tax: `withdrawTax`.
  *
  * @dev This contract holds the logic, while read from and write into {BillboardRegistry}, which is the storage contact.
  * @dev This contract use the {BillboardRegistry} contract for storage, and can be updated by transfering ownership to a new implementation contract.
@@ -45,17 +46,17 @@ interface IBillboard {
      * @notice Add address to whitelist.
      *
      * @param tokenId_ Token ID.
-     * @param address_ Address of user will be added into whitelist.
+     * @param account_ Address of user will be added into whitelist.
      */
-    function addToWhitelist(uint256 tokenId_, address address_) external;
+    function addToWhitelist(uint256 tokenId_, address account_) external;
 
     /**
      * @notice Remove address from whitelist.
      *
      * @param tokenId_ Token ID.
-     * @param address_ Address of user will be removed from whitelist.
+     * @param account_ Address of user will be removed from whitelist.
      */
-    function removeFromWhitelist(uint256 tokenId_, address address_) external;
+    function removeFromWhitelist(uint256 tokenId_, address account_) external;
 
     //////////////////////////////
     /// Board
@@ -64,13 +65,12 @@ interface IBillboard {
     /**
      * @notice Mint a new board (NFT).
      *
-     * @param to_ Address of the board owner.
-     * @param taxRate_ Tax rate of the new board.
-     * @param epochInterval_ Epoch interval of the new board.
+     * @param taxRate_ Tax rate per epoch. (e.g. 1024 for 10.24% per epoch)
+     * @param epochInterval_ Epoch interval in blocks (e.g. 100 for 100 blocks).
      *
      * @return tokenId Token ID of the new board.
      */
-    function mintBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
+    function mintBoard(uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
 
     /**
      * @notice Get metadata of a board .
@@ -157,6 +157,21 @@ interface IBillboard {
         string calldata contentURI_,
         string calldata redirectURI_
     ) external payable;
+
+    /**
+     * @notice Set the content URI and redirect URI of a board.
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param epoch_ Epoch.
+     * @param contentURI_ Content URI of a board.
+     * @param redirectURI_ Redirect URI of a board.
+     */
+    function setBidURIs(
+        uint256 tokenId_,
+        uint256 epoch_,
+        string calldata contentURI_,
+        string calldata redirectURI_
+    ) external;
 
     /**
      * @notice Get bid of a board auction.

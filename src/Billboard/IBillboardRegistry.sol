@@ -310,7 +310,7 @@ interface IBillboardRegistry is IERC721 {
      * @param to_ Address of a receiver.
      * @param amount_ Amount.
      */
-    function transferTokenByOperator(address to_, uint256 amount_) external;
+    function transferCurrencyByOperator(address to_, uint256 amount_) external;
 
     //////////////////////////////
     /// Event emission
