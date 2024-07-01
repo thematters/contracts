@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
 import "./BillboardRegistry.sol";
 import "./IBillboard.sol";
@@ -13,7 +14,7 @@ contract Billboard is IBillboard {
     address public immutable admin;
 
     // tokenId => address => whitelisted
-    mapping(uint256 => mapping(address => bool)) public boardWhitelist;
+    mapping(uint256 => mapping(address => bool)) public whitelist;
 
     constructor(address token_, address payable registry_, address admin_, string memory name_, string memory symbol_) {
         require(admin_ != address(0), "Zero address");
@@ -39,7 +40,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromWhitelist(uint256 tokenId_) {
-        require(boardWhitelist[tokenId_][msg.sender], "Whitelist");
+        require(whitelist[tokenId_][msg.sender], "Whitelist");
         _;
     }
 
@@ -69,12 +70,12 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function addToWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
-        boardWhitelist[tokenId_][account_] = true;
+        whitelist[tokenId_][account_] = true;
     }
 
     /// @inheritdoc IBillboard
     function removeFromWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
-        boardWhitelist[tokenId_][account_] = false;
+        whitelist[tokenId_][account_] = false;
     }
 
     //////////////////////////////
@@ -357,5 +358,39 @@ contract Billboard is IBillboard {
         registry.emitTaxWithdrawn(msg.sender, amount);
 
         return amount;
+    }
+
+    //////////////////////////////
+    /// ERC721 related
+    //////////////////////////////
+
+    /// @inheritdoc IBillboard
+    function _tokenURI(uint256 tokenId_) external view returns (string memory uri) {
+        require(msg.sender == address(registry), "Unauthorized");
+        require(registry.exists(tokenId_), "Token not found");
+
+        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
+
+        string memory tokenName = string(abi.encodePacked(registry.name(), " #", Strings.toString(tokenId_)));
+
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        tokenName,
+                        '", "description": "',
+                        _board.description,
+                        '", "location": "',
+                        _board.location,
+                        '", "image": "',
+                        _board.imageURI,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        uri = string(abi.encodePacked("data:application/json;base64,", json));
     }
 }

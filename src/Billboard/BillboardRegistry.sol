@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
+import "./IBillboard.sol";
 import "./IBillboardRegistry.sol";
 
 contract BillboardRegistry is IBillboardRegistry, ERC721 {
@@ -246,7 +247,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     //////////////////////////////
-    /// Transfer
+    /// ERC20 & ERC721 related
     //////////////////////////////
 
     /// @inheritdoc IBillboardRegistry
@@ -260,16 +261,16 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         require(currency.transfer(to_, amount_), "Failed token transfer");
     }
 
-    //////////////////////////////
-    /// ERC721 Overrides
-    //////////////////////////////
+    /// @inheritdoc IBillboardRegistry
+    function exists(uint256 tokenId_) external view returns (bool) {
+        return _exists(tokenId_);
+    }
 
     /**
      * @notice See {IERC721-tokenURI}.
      */
     function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory uri) {
-        // TODO
-        // return boards[tokenId_].contentURI;
+        uri = IBillboard(operator)._tokenURI(tokenId_);
     }
 
     /**

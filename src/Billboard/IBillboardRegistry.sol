@@ -292,27 +292,6 @@ interface IBillboardRegistry is IERC721 {
     function setTaxTreasury(address owner_, uint256 accumulated_, uint256 withdrawn_) external;
 
     //////////////////////////////
-    /// Transfer
-    //////////////////////////////
-
-    /**
-     * @notice Transfer a board (NFT).
-     *
-     * @param from_ Address of the board sender.
-     * @param to_ Address of the board receiver.
-     * @param tokenId_ Token ID of the board.
-     */
-    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external;
-
-    /**
-     * @notice Transfer amount of token to a receiver.
-     *
-     * @param to_ Address of a receiver.
-     * @param amount_ Amount.
-     */
-    function transferCurrencyByOperator(address to_, uint256 amount_) external;
-
-    //////////////////////////////
     /// Event emission
     //////////////////////////////
 
@@ -332,4 +311,30 @@ interface IBillboardRegistry is IERC721 {
      * @param amount_ Amount.
      */
     function emitTaxWithdrawn(address owner_, uint256 amount_) external;
+
+    //////////////////////////////
+    /// ERC20 & ERC721 related
+    //////////////////////////////
+
+    /**
+     * @notice Transfer a board (NFT).
+     *
+     * @param from_ Address of the board sender.
+     * @param to_ Address of the board receiver.
+     * @param tokenId_ Token ID of the board.
+     */
+    function safeTransferByOperator(address from_, address to_, uint256 tokenId_) external;
+
+    /**
+     * @notice Transfer amount of token to a receiver.
+     *
+     * @param to_ Address of a receiver.
+     * @param amount_ Amount.
+     */
+    function transferCurrencyByOperator(address to_, uint256 amount_) external;
+
+    /**
+     * @dev If an ERC721 token has been minted.
+     */
+    function exists(uint256 tokenId_) external view returns (bool);
 }

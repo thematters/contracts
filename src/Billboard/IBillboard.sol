@@ -264,4 +264,18 @@ interface IBillboard {
      *
      */
     function withdrawTax() external returns (uint256 tax);
+
+    //////////////////////////////
+    /// ERC721 related
+    //////////////////////////////
+
+    /**
+     * @notice Get token URI by registry contract.
+     *
+     * @dev Access: only registry.
+     *
+     * @param tokenId_ Token id to be transferred.
+     * @return uri Base64 encoded URI.
+     */
+    function _tokenURI(uint256 tokenId_) external view returns (string memory uri);
 }
