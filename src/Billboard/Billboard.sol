@@ -85,8 +85,8 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function mintBoard(uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId) {
         require(epochInterval_ > 0, "Zero epoch interval");
-
         tokenId = registry.newBoard(msg.sender, taxRate_, epochInterval_);
+        whitelist[tokenId][msg.sender] = true;
     }
 
     /// @inheritdoc IBillboard
@@ -216,7 +216,7 @@ contract Billboard is IBillboard {
         address boardCreator_,
         uint256 epoch_
     ) private returns (address highestBidder, uint256 price, uint256 tax) {
-        address _highestBidder = registry.higgestBidder(tokenId_, epoch_);
+        address _highestBidder = registry.highestBidder(tokenId_, epoch_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
 
         // skip if auction is already cleared
@@ -297,7 +297,7 @@ contract Billboard is IBillboard {
         require(block.number < _endedAt, "Auction not ended");
 
         // revert if auction is not cleared
-        address _highestBidder = registry.higgestBidder(tokenId_, epoch_);
+        address _highestBidder = registry.highestBidder(tokenId_, epoch_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
         require(!_highestBid.isWon, "Auction not cleared");
 

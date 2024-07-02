@@ -21,7 +21,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     mapping(uint256 => Board) public boards;
 
     // tokenId => epoch => bidder
-    mapping(uint256 => mapping(uint256 => address)) public higgestBidder;
+    mapping(uint256 => mapping(uint256 => address)) public highestBidder;
 
     // tokenId => epoch => bidders
     mapping(uint256 => mapping(uint256 => address[])) public bidders;
@@ -157,7 +157,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         // add to auction bidders if new bid
         bidders[tokenId_][epoch_].push(bidder_);
 
-        _setHiggestBidder(tokenId_, epoch_, price_, bidder_);
+        _sethighestBidder(tokenId_, epoch_, price_, bidder_);
 
         emit BidUpdated(tokenId_, epoch_, bidder_, price_, tax_, contentURI_, redirectURI_);
     }
@@ -185,7 +185,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             _bid.redirectURI = redirectURI_;
         }
 
-        _setHiggestBidder(tokenId_, epoch_, price_, bidder_);
+        _sethighestBidder(tokenId_, epoch_, price_, bidder_);
 
         emit BidUpdated(tokenId_, epoch_, bidder_, price_, tax_, contentURI_, redirectURI_);
     }
@@ -194,11 +194,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     //
     // Note: for same price, the first bidder will always be
     // the highest bidder since the block.number is always greater.
-    function _setHiggestBidder(uint256 tokenId_, uint256 epoch_, uint256 price_, address bidder_) internal {
-        address highestBidder = higgestBidder[tokenId_][epoch_];
-        Bid memory highestBid = bids[tokenId_][epoch_][highestBidder];
-        if (highestBidder == address(0) || price_ > highestBid.price) {
-            higgestBidder[tokenId_][epoch_] = bidder_;
+    function _sethighestBidder(uint256 tokenId_, uint256 epoch_, uint256 price_, address bidder_) internal {
+        address _highestBidder = highestBidder[tokenId_][epoch_];
+        Bid memory highestBid = bids[tokenId_][epoch_][_highestBidder];
+        if (_highestBidder == address(0) || price_ > highestBid.price) {
+            highestBidder[tokenId_][epoch_] = bidder_;
         }
     }
 
