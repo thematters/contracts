@@ -62,4 +62,17 @@ contract BillboardTestBase is Test {
         tokenId = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
         board = registry.getBoard(tokenId);
     }
+
+    function _placeBid(uint256 _tokenId, uint256 _epoch, address _bidder, uint256 _price) public {
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
+
+        deal(address(usdt), _bidder, _total);
+
+        vm.prank(ADMIN);
+        operator.addToWhitelist(_tokenId, _bidder);
+
+        vm.prank(_bidder);
+        operator.placeBid(_tokenId, _epoch, _price);
+    }
 }

@@ -137,7 +137,7 @@ contract Billboard is IBillboard {
         require(_board.creator != address(0), "Board not found");
 
         uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
-        require(_endedAt >= block.number, "Auction ended");
+        require(block.number < _endedAt, "Auction ended");
 
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
 
@@ -189,9 +189,40 @@ contract Billboard is IBillboard {
 
         // revert if auction is still running
         uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
-        require(block.number < _endedAt, "Auction not ended");
+        require(block.number >= _endedAt, "Auction not ended");
 
-        return _clearAuction(tokenId_, _board.creator, epoch_);
+        address _highestBidder = registry.highestBidder(tokenId_, epoch_);
+        IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
+
+        // revert if no bid
+        require(_highestBid.createdAt != 0, "No bid");
+
+        // skip if auction is already cleared
+        if (_highestBid.isWon) {
+            return (address(0), 0, 0);
+        }
+
+        address _prevOwner = registry.ownerOf(tokenId_);
+
+        if (_highestBid.price > 0) {
+            // transfer bid price to board owner (previous tenant or creator)
+            registry.transferCurrencyByOperator(_prevOwner, _highestBid.price);
+
+            // transfer bid tax to board creator's tax treasury
+            (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(_board.creator);
+            registry.setTaxTreasury(_board.creator, _taxAccumulated + _highestBid.tax, _taxWithdrawn);
+        }
+
+        // transfer ownership
+        registry.safeTransferByOperator(_prevOwner, _highestBidder, tokenId_);
+
+        // mark highest bid as won
+        registry.setBidWon(tokenId_, epoch_, _highestBidder, true);
+
+        // emit AuctionCleared
+        registry.emitAuctionCleared(tokenId_, epoch_, _highestBidder);
+
+        return (_highestBidder, _highestBid.price, _highestBid.tax);
     }
 
     /// @inheritdoc IBillboard
@@ -209,42 +240,6 @@ contract Billboard is IBillboard {
         }
 
         return (_highestBidders, _prices, _taxes);
-    }
-
-    function _clearAuction(
-        uint256 tokenId_,
-        address boardCreator_,
-        uint256 epoch_
-    ) private returns (address highestBidder, uint256 price, uint256 tax) {
-        address _highestBidder = registry.highestBidder(tokenId_, epoch_);
-        IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
-
-        // skip if auction is already cleared
-        if (_highestBid.isWon) {
-            return (address(0), 0, 0);
-        }
-
-        address _prevOwner = registry.ownerOf(tokenId_);
-
-        if (_highestBid.price > 0) {
-            // transfer bid price to board owner (previous tenant or creator)
-            registry.transferCurrencyByOperator(_prevOwner, _highestBid.price);
-
-            // transfer bid tax to board creator's tax treasury
-            (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(boardCreator_);
-            registry.setTaxTreasury(boardCreator_, _taxAccumulated + _highestBid.tax, _taxWithdrawn);
-        }
-
-        // transfer ownership
-        registry.safeTransferByOperator(_prevOwner, _highestBidder, tokenId_);
-
-        // mark highest bid as won
-        registry.setBidWon(tokenId_, epoch_, _highestBidder, true);
-
-        // emit AuctionCleared
-        registry.emitAuctionCleared(tokenId_, epoch_, _highestBidder);
-
-        return (_highestBidder, _highestBid.price, _highestBid.tax);
     }
 
     /// @inheritdoc IBillboard
@@ -294,7 +289,7 @@ contract Billboard is IBillboard {
 
         // revert if auction is not ended
         uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
-        require(block.number < _endedAt, "Auction not ended");
+        require(block.number >= _endedAt, "Auction not ended");
 
         // revert if auction is not cleared
         address _highestBidder = registry.highestBidder(tokenId_, epoch_);

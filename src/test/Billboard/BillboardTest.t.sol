@@ -191,8 +191,10 @@ contract BillboardTest is BillboardTestBase {
         uint256 _prevOperatorBalance = usdt.balanceOf(address(operator));
         uint256 _prevRegistryBalance = usdt.balanceOf(address(registry));
 
-        vm.prank(ADMIN);
+        vm.startPrank(ADMIN);
         operator.addToWhitelist(_tokenId, USER_A);
+        operator.addToWhitelist(_tokenId, USER_B);
+        vm.stopPrank();
 
         vm.expectEmit(true, true, true, true);
         emit IBillboardRegistry.BidUpdated(_tokenId, _epoch, USER_A, _price, _tax, "", "");
@@ -214,6 +216,15 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.updatedAt, block.number);
         assertEq(_bid.isWon, false);
         assertEq(_bid.isWithdrawn, false);
+
+        // bid with AD data
+        string memory _contentURI = "content URI";
+        string memory _redirectURI = "redirect URI";
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.BidUpdated(_tokenId, _epoch, USER_B, 0, 0, _contentURI, _redirectURI);
+
+        vm.prank(USER_B);
+        operator.placeBid(_tokenId, _epoch, 0, _contentURI, _redirectURI);
     }
 
     function testPlaceBidWithSamePrices(uint96 _price) public {
@@ -222,21 +233,12 @@ contract BillboardTest is BillboardTestBase {
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
 
-        vm.startPrank(ADMIN);
-        operator.addToWhitelist(_tokenId, USER_A);
-        operator.addToWhitelist(_tokenId, USER_B);
-        vm.stopPrank();
-
         // bid with USER_A
-        deal(address(usdt), USER_A, _total);
-        vm.prank(USER_A);
-        operator.placeBid(_tokenId, _epoch, _price);
+        _placeBid(_tokenId, _epoch, USER_A, _price);
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_A);
 
         // bid with USER_B
-        deal(address(usdt), USER_B, _total);
-        vm.prank(USER_B);
-        operator.placeBid(_tokenId, _epoch, _price);
+        _placeBid(_tokenId, _epoch, USER_B, _price);
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_A); // USER_A is still the same highest bidder
 
         // check bids
@@ -258,35 +260,21 @@ contract BillboardTest is BillboardTestBase {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
         uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
-        uint256 _total = _price + _tax;
-
-        vm.startPrank(ADMIN);
-        operator.addToWhitelist(_tokenId, USER_A);
-        operator.addToWhitelist(_tokenId, USER_B);
-        vm.stopPrank();
 
         // bid with USER_A
-        deal(address(usdt), USER_A, _total);
-        vm.prank(USER_A);
-        operator.placeBid(_tokenId, _epoch, _price);
+        _placeBid(_tokenId, _epoch, USER_A, _price);
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_A);
 
         // bid with USER_B
         uint256 _priceB = _price * 2;
-        uint256 _taxB = operator.calculateTax(_tokenId, _priceB);
-        uint256 _totalB = _priceB + _taxB;
-        deal(address(usdt), USER_B, _totalB);
-        vm.startPrank(USER_B);
-        operator.placeBid(_tokenId, _epoch, _priceB);
+        _placeBid(_tokenId, _epoch, USER_B, _priceB);
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_B);
 
         // bid with USER_A
         uint256 _priceA = _price * 4;
         uint256 _taxA = operator.calculateTax(_tokenId, _priceA);
         uint256 _totalA = _priceA + _taxA;
-        deal(address(usdt), USER_A, _totalA);
-        vm.startPrank(USER_A);
-        operator.placeBid(_tokenId, _epoch, _priceA);
+        _placeBid(_tokenId, _epoch, USER_A, _priceA);
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_A);
 
         // check balance of USER_A
@@ -321,21 +309,19 @@ contract BillboardTest is BillboardTestBase {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
         uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
         uint256 _price = 1 ether;
-        uint256 _tax = operator.calculateTax(_tokenId, _price);
-        uint256 _total = _price + _tax;
-        deal(address(usdt), USER_A, _total);
+
+        uint256 _endedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
 
         vm.prank(ADMIN);
         operator.addToWhitelist(_tokenId, USER_A);
 
         vm.startPrank(USER_A);
-        operator.placeBid(_tokenId, _epoch, _price);
 
-        vm.roll(block.number + _board.epochInterval);
+        vm.roll(_endedAt);
         vm.expectRevert("Auction ended");
         operator.placeBid(_tokenId, _epoch, _price);
 
-        vm.roll(block.number + _board.epochInterval + 1);
+        vm.roll(_endedAt + 1);
         vm.expectRevert("Auction ended");
         operator.placeBid(_tokenId, _epoch, _price);
     }
@@ -354,210 +340,151 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid(_tokenId, _epoch, _price);
     }
 
-    //     function testClearAuctionIfAuctionEnded(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
+    function testClearAuction(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
 
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _placedAt = block.number;
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
 
-    //         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
-    //         uint64 _placedAt = uint64(block.number);
-    //         uint64 _clearedAt = uint64(block.number) + registry.leaseTerm() + 1;
+        // place bid
+        _placeBid(_tokenId, _epoch, USER_A, _price);
 
-    //         // place a bid
-    //         vm.startPrank(USER_A);
-    //         deal(address(usdt), USER_A, _total);
-    //         operator.placeBid(_tokenId, _price);
+        // clear auction
+        vm.expectEmit(true, true, true, false);
+        emit IBillboardRegistry.AuctionCleared(_tokenId, _epoch, USER_A);
 
-    //         // clear auction
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.AuctionCleared(
-    //             _tokenId,
-    //             _prevAuctionId + 1,
-    //             USER_A,
-    //             _clearedAt,
-    //             _clearedAt + registry.leaseTerm()
-    //         );
+        vm.roll(_clearedAt);
+        (address _highestBidder, uint256 _price1, uint256 _tax1) = operator.clearAuction(_tokenId, _epoch);
 
-    //         vm.roll(_clearedAt);
-    //         (uint256 _price1, uint256 _tax1) = operator.clearAuction(_tokenId);
-    //         assertEq(_price1, _price);
-    //         assertEq(_tax1, _tax);
+        assertEq(_price1, _price);
+        assertEq(_tax1, _tax);
+        assertEq(_highestBidder, registry.highestBidder(_tokenId, _epoch));
+        assertEq(_highestBidder, USER_A);
 
-    //         // check auction
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-    //         assertEq(_auction.startAt, _placedAt);
-    //         assertEq(_auction.endAt, _placedAt + registry.leaseTerm());
-    //         assertEq(_auction.leaseStartAt, _clearedAt);
-    //         assertEq(_auction.leaseEndAt, _clearedAt + registry.leaseTerm());
-    //         assertEq(_auction.highestBidder, USER_A);
+        // check auction & bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bid.price, _price);
+        assertEq(_bid.tax, _tax);
+        assertEq(_bid.createdAt, _placedAt);
+        assertEq(_bid.isWon, true);
+        assertEq(_bid.isWithdrawn, false);
 
-    //         // check bid
-    //         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-    //         assertEq(_bid.price, _price);
-    //         assertEq(_bid.tax, _tax);
-    //         assertEq(_bid.placedAt, _placedAt);
-    //         assertEq(_bid.isWon, true);
-    //         assertEq(_bid.isWithdrawn, false);
-    //     }
+        // check balances
+        assertEq(usdt.balanceOf(address(registry)), _tax);
+        assertEq(usdt.balanceOf(ADMIN), _price);
+        assertEq(usdt.balanceOf(USER_A), 0);
+    }
 
-    //     function testClearAuctionsIfAuctionEnded() public {
-    //         (uint256 _tokenId, uint256 _prevAuctionId) = _mintBoardAndPlaceBid();
-    //         (uint256 _tokenId2, uint256 _prevAuctionId2) = _mintBoardAndPlaceBid();
+    function testClearAuctions() public {
+        (uint256 _tokenId1, IBillboardRegistry.Board memory _board1) = _mintBoard();
+        (uint256 _tokenId2, IBillboardRegistry.Board memory _board2) = _mintBoard();
+        uint256 _epoch1 = operator.getEpochFromBlock(block.number, _board1.epochInterval);
+        uint256 _epoch2 = operator.getEpochFromBlock(block.number, _board2.epochInterval);
+        _placeBid(_tokenId1, _epoch1, USER_A, 1 ether);
+        _placeBid(_tokenId2, _epoch2, USER_B, 1 ether);
 
-    //         uint64 _placedAt = uint64(block.number);
-    //         uint64 _clearedAt = uint64(block.number) + registry.leaseTerm() + 1;
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch1 + 1, _board1.epochInterval);
 
-    //         // place bids
-    //         vm.startPrank(USER_A);
-    //         deal(address(usdt), USER_A, 0);
-    //         operator.placeBid(_tokenId, 0);
+        // clear auctions
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(_tokenId1, _epoch1, USER_A);
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(_tokenId2, _epoch2, USER_B);
 
-    //         vm.startPrank(USER_B);
-    //         deal(address(usdt), USER_B, 0);
-    //         operator.placeBid(_tokenId2, 0);
+        vm.roll(_clearedAt);
 
-    //         // clear auction
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.AuctionCleared(
-    //             _tokenId,
-    //             _prevAuctionId + 1,
-    //             USER_A,
-    //             _clearedAt,
-    //             _clearedAt + registry.leaseTerm()
-    //         );
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.AuctionCleared(
-    //             _tokenId2,
-    //             _prevAuctionId2 + 1,
-    //             USER_B,
-    //             _clearedAt,
-    //             _clearedAt + registry.leaseTerm()
-    //         );
+        uint256[] memory _tokenIds = new uint256[](2);
+        uint256[] memory _epochs = new uint256[](2);
+        _tokenIds[0] = _tokenId1;
+        _tokenIds[1] = _tokenId2;
+        _epochs[0] = _epoch1;
+        _epochs[1] = _epoch2;
+        (address[] memory highestBidders, , ) = operator.clearAuctions(_tokenIds, _epochs);
+        assertEq(highestBidders[0], USER_A);
+        assertEq(highestBidders[1], USER_B);
 
-    //         vm.roll(_clearedAt);
+        // check auction & bids
+        IBillboardRegistry.Bid memory _bid1 = registry.getBid(_tokenId1, _epoch1, USER_A);
+        assertEq(_bid1.isWon, true);
 
-    //         uint256[] memory _tokenIds = new uint256[](2);
-    //         _tokenIds[0] = _tokenId;
-    //         _tokenIds[1] = _tokenId2;
-    //         (uint256[] memory prices, uint256[] memory taxes) = operator.clearAuctions(_tokenIds);
-    //         assertEq(prices[0], 0);
-    //         assertEq(prices[1], 0);
-    //         assertEq(taxes[0], 0);
-    //         assertEq(taxes[1], 0);
+        IBillboardRegistry.Bid memory _bid2 = registry.getBid(_tokenId2, _epoch2, USER_B);
+        assertEq(_bid2.isWon, true);
+    }
 
-    //         // check auction
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-    //         assertEq(_auction.startAt, _placedAt);
-    //         assertEq(_auction.endAt, _placedAt + registry.leaseTerm());
-    //         assertEq(_auction.leaseStartAt, _clearedAt);
-    //         assertEq(_auction.leaseEndAt, _clearedAt + registry.leaseTerm());
-    //         assertEq(_auction.highestBidder, USER_A);
+    function testCannotClearAuctionIfAuctionNotEnded() public {
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _endedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
 
-    //         uint256 _nextAuctionId2 = registry.nextBoardAuctionId(_tokenId2);
-    //         IBillboardRegistry.Auction memory _auction2 = registry.getAuction(_tokenId2, _nextAuctionId2);
-    //         assertEq(_auction2.startAt, _placedAt);
-    //         assertEq(_auction2.endAt, _placedAt + registry.leaseTerm());
-    //         assertEq(_auction2.leaseStartAt, _clearedAt);
-    //         assertEq(_auction2.leaseEndAt, _clearedAt + registry.leaseTerm());
-    //         assertEq(_auction2.highestBidder, USER_B);
+        vm.expectRevert("Auction not ended");
+        operator.clearAuction(_tokenId, _epoch);
 
-    //         // check bid
-    //         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-    //         assertEq(_bid.price, 0);
-    //         assertEq(_bid.tax, 0);
-    //         assertEq(_bid.placedAt, _placedAt);
-    //         assertEq(_bid.isWon, true);
-    //         assertEq(_bid.isWithdrawn, false);
+        vm.roll(_endedAt - 1);
+        vm.expectRevert("Auction not ended");
+        operator.clearAuction(_tokenId, _epoch);
+    }
 
-    //         IBillboardRegistry.Bid memory _bid2 = registry.getBid(_tokenId2, _nextAuctionId2, USER_B);
-    //         assertEq(_bid2.price, 0);
-    //         assertEq(_bid2.tax, 0);
-    //         assertEq(_bid2.placedAt, _placedAt);
-    //         assertEq(_bid2.isWon, true);
-    //         assertEq(_bid2.isWithdrawn, false);
-    //     }
+    function testCannotClearAuctionIfNoBid() public {
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
 
-    //     function testCannotClearAuctionOnNewBoard() public {
-    //         uint256 _mintedAt = block.number;
-    //         uint256 _clearedAt = _mintedAt + 1;
-    //         (uint256 _tokenId,) = _mintBoard();
+        vm.roll(_clearedAt);
+        vm.expectRevert("No bid");
+        operator.clearAuction(_tokenId, _epoch);
+    }
 
-    //         vm.startPrank(ADMIN);
+    function testGetBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
+        vm.assume(_bidCount > 0);
+        vm.assume(_bidCount <= 64);
+        vm.assume(_limit <= _bidCount);
+        vm.assume(_offset <= _limit);
 
-    //         // clear auction
-    //         vm.roll(_clearedAt);
-    //         vm.expectRevert("Auction not found");
-    //         operator.clearAuction(_tokenId);
-    //     }
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
 
-    //     function testCannotClearAuctionIfAuctionNotEnded() public {
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
+        for (uint8 i = 0; i < _bidCount; i++) {
+            address _bidder = address(uint160(2000 + i));
 
-    //         // place a bid
-    //         vm.startPrank(USER_A);
-    //         deal(address(usdt), USER_A, 0);
-    //         operator.placeBid(_tokenId, 0);
+            vm.prank(ADMIN);
+            operator.addToWhitelist(_tokenId, _bidder);
 
-    //         // try to clear auction
-    //         vm.expectRevert("Auction not ended");
-    //         operator.clearAuction(_tokenId);
+            uint256 _price = 1 ether + i;
+            uint256 _tax = operator.calculateTax(_tokenId, _price);
+            uint256 _totalAmount = _price + _tax;
 
-    //         vm.roll(block.number + registry.leaseTerm() - 1);
-    //         vm.expectRevert("Auction not ended");
-    //         operator.clearAuction(_tokenId);
-    //     }
+            deal(address(usdt), _bidder, _totalAmount);
+            vm.startPrank(_bidder);
+            usdt.approve(address(operator), _totalAmount);
+            operator.placeBid(_tokenId, _epoch, _price);
+            vm.stopPrank();
+        }
 
-    //     function testGetBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
-    //         vm.assume(_bidCount > 0);
-    //         vm.assume(_bidCount <= 64);
-    //         vm.assume(_limit <= _bidCount);
-    //         vm.assume(_offset <= _limit);
+        // get bids
+        (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBids(
+            _tokenId,
+            _epoch,
+            _limit,
+            _offset
+        );
+        uint256 _left = _t - _offset;
+        uint256 _size = _left > _limit ? _limit : _left;
+        assertEq(_t, _bidCount);
+        assertEq(_l, _limit);
+        assertEq(_bids.length, _size);
+        assertEq(_o, _offset);
+        for (uint256 i = 0; i < _size; i++) {
+            uint256 _price = 1 ether + _offset + i;
+            assertEq(_bids[i].price, _price);
+        }
+    }
 
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-
-    //         for (uint8 i = 0; i < _bidCount; i++) {
-    //             address _bidder = address(uint160(2000 + i));
-
-    //             vm.prank(ADMIN);
-    //             operator.addToWhitelist(_bidder);
-
-    //             uint256 _price = 1 ether + i;
-    //             uint256 _tax = operator.calculateTax(_price);
-    //             uint256 _totalAmount = _price + _tax;
-
-    //             deal(address(usdt), _bidder, _totalAmount);
-    //             vm.startPrank(_bidder);
-    //             usdt.approve(address(operator), _totalAmount);
-    //             operator.placeBid(_tokenId, _price);
-    //             vm.stopPrank();
-    //         }
-
-    //         // get bids
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBids(
-    //             _tokenId,
-    //             _nextAuctionId,
-    //             _limit,
-    //             _offset
-    //         );
-    //         uint256 _left = _t - _offset;
-    //         uint256 _size = _left > _limit ? _limit : _left;
-    //         assertEq(_t, _bidCount);
-    //         assertEq(_l, _limit);
-    //         assertEq(_bids.length, _size);
-    //         assertEq(_o, _offset);
-    //         for (uint256 i = 0; i < _size; i++) {
-    //             uint256 _price = 1 ether + _offset + i;
-    //             assertEq(_bids[i].price, _price);
-    //         }
-    //     }
-
-    //     //////////////////////////////
-    //     /// Tax & Withdraw
-    //     //////////////////////////////
+    //////////////////////////////
+    /// Tax & Withdraw
+    //////////////////////////////
 
     //     function testCalculateTax() public {
     //         uint256 _price = 100;
