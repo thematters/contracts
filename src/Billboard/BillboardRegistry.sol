@@ -233,7 +233,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         bool isWithdrawn_
     ) external isFromOperator {
         bids[tokenId_][epoch_][bidder_].isWithdrawn = isWithdrawn_;
-        emit BidWithdrawn(tokenId_, epoch_, msg.sender);
+        emit BidWithdrawn(tokenId_, epoch_, bidder_);
     }
 
     //////////////////////////////

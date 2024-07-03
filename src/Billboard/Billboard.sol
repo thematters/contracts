@@ -294,7 +294,7 @@ contract Billboard is IBillboard {
         // revert if auction is not cleared
         address _highestBidder = registry.highestBidder(tokenId_, epoch_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
-        require(!_highestBid.isWon, "Auction not cleared");
+        require(_highestBid.isWon, "Auction not cleared");
 
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
         uint256 amount = _bid.price + _bid.tax;

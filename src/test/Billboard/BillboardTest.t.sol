@@ -482,8 +482,138 @@ contract BillboardTest is BillboardTestBase {
         }
     }
 
+    function testWithdrawBid(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+
+        // new bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // new bid with USER_B
+        _placeBid(_tokenId, _epoch, USER_B, _price);
+
+        // clear auction
+        vm.roll(_clearedAt);
+        operator.clearAuction(_tokenId, _epoch);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bidA.isWon, true);
+        IBillboardRegistry.Bid memory _bidB = registry.getBid(_tokenId, _epoch, USER_B);
+        assertEq(_bidB.isWon, false);
+
+        // withdraw bid
+        vm.expectEmit(true, true, true, false);
+        emit IBillboardRegistry.BidWithdrawn(_tokenId, _epoch, USER_B);
+
+        vm.prank(USER_B);
+        operator.withdrawBid(_tokenId, _epoch);
+
+        // check balances
+        assertEq(usdt.balanceOf(USER_A), 0);
+        assertEq(usdt.balanceOf(USER_B), _total);
+    }
+
+    function testCannotWithdrawBidTwice(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+
+        // new bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // new bid with USER_B
+        _placeBid(_tokenId, _epoch, USER_B, _price);
+
+        // clear auction
+        vm.roll(_clearedAt);
+        operator.clearAuction(_tokenId, _epoch);
+
+        // withdraw bid
+        vm.prank(USER_B);
+        operator.withdrawBid(_tokenId, _epoch);
+        assertEq(usdt.balanceOf(USER_B), _total);
+
+        // withdraw bid again
+        vm.prank(USER_B);
+        vm.expectRevert("Bid already withdrawn");
+        operator.withdrawBid(_tokenId, _epoch);
+    }
+
+    function testCannotWithdrawBidIfWon(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+
+        // new bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // new bid with USER_B
+        _placeBid(_tokenId, _epoch, USER_B, _price);
+
+        // clear auction
+        vm.roll(_clearedAt);
+        operator.clearAuction(_tokenId, _epoch);
+
+        // withdraw bid
+        vm.prank(USER_A);
+        vm.expectRevert("Bid already won");
+        operator.withdrawBid(_tokenId, _epoch);
+    }
+
+    function testCannotWithdrawBidIfAuctionNotEndedOrCleared(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+
+        // new bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // auction is not ended
+        vm.roll(_clearedAt - 1);
+        vm.expectRevert("Auction not ended");
+        operator.withdrawBid(_tokenId, _epoch);
+
+        // auction is ended but not cleared
+        vm.roll(_clearedAt);
+        vm.expectRevert("Auction not cleared");
+        operator.withdrawBid(_tokenId, _epoch);
+    }
+
+    function testCannotWithdrawBidIfNotFound(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+
+        // new bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // clear auction
+        vm.roll(_clearedAt);
+        operator.clearAuction(_tokenId, _epoch);
+
+        vm.prank(USER_B);
+        vm.expectRevert("Bid not found");
+        operator.withdrawBid(_tokenId, _epoch);
+    }
+
     //////////////////////////////
-    /// Tax & Withdraw
+    /// Tax
     //////////////////////////////
 
     //     function testCalculateTax() public {
@@ -584,168 +714,6 @@ contract BillboardTest is BillboardTestBase {
 
     //         vm.expectRevert("Zero amount");
     //         operator.withdrawTax();
-    //     }
-
-    //     function testWithdrawBid(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
-
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
-
-    //         // new auction and new bid with USER_A
-    //         deal(address(usdt), USER_A, _total);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // new bid with USER_B
-    //         deal(address(usdt), USER_B, _total);
-    //         vm.prank(USER_B);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // clear auction
-    //         vm.roll(block.number + registry.leaseTerm() + 1);
-    //         operator.clearAuction(_tokenId);
-
-    //         // check auction
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-    //         assertEq(_auction.highestBidder, USER_A);
-
-    //         // check bid
-    //         IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _nextAuctionId, USER_A);
-    //         assertEq(_bidA.isWon, true);
-    //         IBillboardRegistry.Bid memory _bidB = registry.getBid(_tokenId, _nextAuctionId, USER_B);
-    //         assertEq(_bidB.isWon, false);
-
-    //         // withdraw bid
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.BidWithdrawn(_tokenId, _nextAuctionId, USER_B, _price, _tax);
-
-    //         vm.prank(USER_B);
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //         assertEq(usdt.balanceOf(USER_B), _total);
-    //     }
-
-    //     function testCannotWithBidTwice(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
-
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
-
-    //         // new auction and new bid with USER_A
-    //         deal(address(usdt), USER_A, _total);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // new bid with USER_B
-    //         deal(address(usdt), USER_B, _total);
-    //         vm.prank(USER_B);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // clear auction
-    //         vm.roll(block.number + registry.leaseTerm() + 1);
-    //         operator.clearAuction(_tokenId);
-
-    //         // check auction
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-    //         assertEq(_auction.highestBidder, USER_A);
-
-    //         // withdraw bid
-    //         vm.prank(USER_B);
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //         assertEq(usdt.balanceOf(USER_B), _total);
-
-    //         // withdraw bid again
-    //         vm.prank(USER_B);
-    //         vm.expectRevert("Bid already withdrawn");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //     }
-
-    //     function testCannotWithdrawBidIfWon(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
-
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
-
-    //         // new auction and new bid with USER_A
-    //         deal(address(usdt), USER_A, _total);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // clear auction
-    //         vm.roll(block.number + registry.leaseTerm() + 1);
-    //         operator.clearAuction(_tokenId);
-
-    //         // check auction
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         IBillboardRegistry.Auction memory _auction = registry.getAuction(_tokenId, _nextAuctionId);
-    //         assertEq(_auction.highestBidder, USER_A);
-
-    //         // withdraw bid
-    //         vm.prank(USER_A);
-    //         vm.expectRevert("Bid already won");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //     }
-
-    //     function testCannotWithdrawBidIfAuctionNotEnded(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
-
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
-
-    //         // new auction and new bid with USER_A
-    //         vm.startPrank(USER_A);
-    //         deal(address(usdt), USER_A, _total);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // auction is not ended
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         vm.expectRevert("Auction not ended");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-
-    //         // auction is ended but not cleared
-    //         vm.roll(block.number + registry.leaseTerm() + 1);
-    //         vm.expectRevert("Auction not cleared");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //     }
-
-    //     function testCannotWithdrawBidIfAuctionNotCleared(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
-
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
-
-    //         // new auction and new bid with USER_A
-    //         deal(address(usdt), USER_A, _total);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // new bid with USER_B
-    //         deal(address(usdt), USER_B, _total);
-    //         vm.prank(USER_B);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         // auction is ended but not cleared
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-    //         vm.roll(block.number + registry.leaseTerm() + 1);
-    //         vm.prank(USER_B);
-    //         vm.expectRevert("Auction not cleared");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
-    //     }
-
-    //     function testCannotWithdrawBidIfNotFound() public {
-    //         (uint256 _tokenId, ) = _mintBoardAndPlaceBid();
-    //         uint256 _nextAuctionId = registry.nextBoardAuctionId(_tokenId);
-
-    //         vm.prank(USER_A);
-    //         vm.expectRevert("Bid not found");
-    //         operator.withdrawBid(_tokenId, _nextAuctionId);
     //     }
 
     //////////////////////////////
