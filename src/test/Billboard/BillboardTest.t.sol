@@ -707,77 +707,48 @@ contract BillboardTest is BillboardTestBase {
         operator.calculateTax(_tokenId, _price);
     }
 
-    //     function testWithdrawTax(uint96 _price) public {
-    //         vm.assume(_price > 0.001 ether);
+    function testWithdrawTax(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
 
-    //         (uint256 _tokenId,) = _mintBoard();
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         uint256 _total = _price + _tax;
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
 
-    //         vm.prank(ADMIN);
-    //         operator.addToWhitelist(USER_A);
+        // place bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
 
-    //         // place a bid and win auction
-    //         deal(address(usdt), USER_A, _total);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
+        // clear auction
+        vm.roll(_clearedAt);
+        operator.clearAuction(_tokenId, _epoch);
 
-    //         uint256 _prevRegistryBalance = usdt.balanceOf(address(registry));
-    //         uint256 _prevAdminBalance = usdt.balanceOf(ADMIN);
+        uint256 _prevRegistryBalance = usdt.balanceOf(address(registry));
+        uint256 _prevAdminBalance = usdt.balanceOf(ADMIN);
+        (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(ADMIN);
+        assertEq(_taxAccumulated, _tax);
+        assertEq(_taxWithdrawn, 0);
 
-    //         // withdraw tax
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.TaxWithdrawn(ADMIN, _tax);
+        // withdraw tax
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.TaxWithdrawn(ADMIN, _tax);
 
-    //         vm.prank(ADMIN);
-    //         operator.withdrawTax();
+        vm.prank(ADMIN);
+        operator.withdrawTax();
 
-    //         // check balances
-    //         assertEq(usdt.balanceOf(address(registry)), _prevRegistryBalance - _tax);
-    //         assertEq(usdt.balanceOf(ADMIN), _prevAdminBalance + _tax);
-    //     }
+        // check balances
+        assertEq(usdt.balanceOf(address(registry)), _prevRegistryBalance - _tax);
+        assertEq(usdt.balanceOf(ADMIN), _prevAdminBalance + _tax);
+    }
 
-    //     function testCannnotWithdrawTaxIfZero() public {
-    //         (uint256 _tokenId,) = _mintBoard();
+    function testCannnotWithdrawTaxIfZero() public {
+        (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(ADMIN);
+        assertEq(_taxAccumulated, 0);
+        assertEq(_taxWithdrawn, 0);
 
-    //         vm.prank(ADMIN);
-    //         operator.addToWhitelist(USER_A);
-
-    //         // place a bid and win auction
-    //         deal(address(usdt), USER_A, 0);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, 0);
-
-    //         vm.prank(ADMIN);
-    //         vm.expectRevert("Zero amount");
-    //         operator.withdrawTax();
-    //     }
-
-    //     function testCannnotWithdrawTaxIfSmallAmount(uint8 _price) public {
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         vm.assume(_tax <= 0);
-
-    //         (uint256 _tokenId,) = _mintBoard();
-
-    //         vm.prank(ADMIN);
-    //         operator.addToWhitelist(USER_A);
-
-    //         // place a bid and win auction
-    //         deal(address(usdt), USER_A, _price);
-    //         vm.prank(USER_A);
-    //         operator.placeBid(_tokenId, _price);
-
-    //         vm.prank(ADMIN);
-    //         vm.expectRevert("Zero amount");
-    //         operator.withdrawTax();
-    //     }
-
-    //     function testCannotWithdrawTaxByAttacker() public {
-    //         vm.startPrank(ATTACKER);
-
-    //         vm.expectRevert("Zero amount");
-    //         operator.withdrawTax();
-    //     }
+        vm.prank(ADMIN);
+        vm.expectRevert("Zero amount");
+        operator.withdrawTax();
+    }
 
     //////////////////////////////
     /// ERC20 & ERC721 related
