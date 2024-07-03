@@ -612,6 +612,65 @@ contract BillboardTest is BillboardTestBase {
         operator.withdrawBid(_tokenId, _epoch);
     }
 
+    function testGetEpochFromBlock() public {
+        // epoch interval = 1
+        assertEq(operator.getEpochFromBlock(0, 1), 0);
+        assertEq(operator.getEpochFromBlock(1, 1), 1);
+
+        // epoch interval = 101
+        assertEq(operator.getEpochFromBlock(0, 101), 0);
+        assertEq(operator.getEpochFromBlock(1, 101), 0);
+        assertEq(operator.getEpochFromBlock(100, 101), 0);
+        assertEq(operator.getEpochFromBlock(101, 101), 1);
+        assertEq(operator.getEpochFromBlock(203, 101), 2);
+
+        // epoch interval = MAX
+        assertEq(operator.getEpochFromBlock(0, type(uint256).max), 0);
+        assertEq(operator.getEpochFromBlock(1, type(uint256).max), 0);
+        assertEq(operator.getEpochFromBlock(type(uint256).max, type(uint256).max), 1);
+    }
+
+    function testCannotGetEpochFromBlock() public {
+        // panic: division or modulo by zero
+        vm.expectRevert();
+        assertEq(operator.getEpochFromBlock(0, 0), 0);
+        vm.expectRevert();
+        assertEq(operator.getEpochFromBlock(1, 0), 0);
+        vm.expectRevert();
+        assertEq(operator.getEpochFromBlock(0, type(uint256).min), 0);
+
+        // panic: arithmetic underflow or overflow
+        vm.expectRevert();
+        assertEq(operator.getEpochFromBlock(type(uint256).max + 1, type(uint256).max), 1);
+        vm.expectRevert();
+        assertEq(operator.getEpochFromBlock(type(uint256).min - 1, type(uint256).min), 1);
+    }
+
+    function testGetBlockFromEpoch() public {
+        // epoch interval = 1
+        assertEq(operator.getBlockFromEpoch(0, 1), 0);
+        assertEq(operator.getBlockFromEpoch(1, 1), 1);
+
+        // epoch interval = 101
+        assertEq(operator.getBlockFromEpoch(0, 101), 0);
+        assertEq(operator.getBlockFromEpoch(1, 101), 101);
+        assertEq(operator.getBlockFromEpoch(2, 101), 202);
+
+        // epoch interval = MAX
+        assertEq(operator.getBlockFromEpoch(0, type(uint256).max), 0);
+        assertEq(operator.getBlockFromEpoch(1, type(uint256).max), type(uint256).max);
+
+        // epoch interval = MIN
+        assertEq(operator.getBlockFromEpoch(0, type(uint256).min), 0);
+        assertEq(operator.getBlockFromEpoch(1, type(uint256).min), 0);
+    }
+
+    function testCannotGetBlockFromEpoch() public {
+        // panic: arithmetic underflow or overflow
+        vm.expectRevert();
+        assertEq(operator.getBlockFromEpoch(2, type(uint256).max), 0);
+    }
+
     //////////////////////////////
     /// Tax
     //////////////////////////////
