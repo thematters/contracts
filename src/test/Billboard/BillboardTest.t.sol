@@ -675,33 +675,37 @@ contract BillboardTest is BillboardTestBase {
     /// Tax
     //////////////////////////////
 
-    //     function testCalculateTax() public {
-    //         uint256 _price = 100;
-    //         uint256 _taxRate = 10; // 10% per lease term
+    function testCalculateTax() public {
+        vm.prank(ADMIN);
+        uint256 _price = 1000;
+        uint256 _taxRate = 2;
+        uint256 _tokenId = operator.mintBoard(_taxRate, EPOCH_INTERVAL);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        assertEq(_tax, 2);
 
-    //         vm.startPrank(ADMIN);
-    //         operator.setTaxRate(_taxRate);
+        vm.prank(ADMIN);
+        uint256 _price1 = 1007;
+        uint256 _taxRate1 = 2;
+        uint256 _tokenId1 = operator.mintBoard(_taxRate1, EPOCH_INTERVAL);
+        uint256 _tax1 = operator.calculateTax(_tokenId1, _price1);
+        assertEq(_tax1, 2);
 
-    //         uint256 _tax = operator.calculateTax(_price);
-    //         assertEq(_tax, (_price * _taxRate) / 1000);
-    //     }
+        vm.prank(ADMIN);
+        uint256 _price2 = 0;
+        uint256 _taxRate2 = 100;
+        uint256 _tokenId2 = operator.mintBoard(_taxRate2, EPOCH_INTERVAL);
+        uint256 _tax2 = operator.calculateTax(_tokenId2, _price2);
+        assertEq(_tax2, 0);
+    }
 
-    //     function testSetTaxRate() public {
-    //         vm.startPrank(ADMIN);
-
-    //         vm.expectEmit(true, true, true, true);
-    //         emit IBillboardRegistry.TaxRateUpdated(2);
-
-    //         operator.setTaxRate(2);
-    //         assertEq(operator.getTaxRate(), 2);
-    //     }
-
-    //     function testCannotSetTaxRateByAttacker() public {
-    //         vm.startPrank(ATTACKER);
-
-    //         vm.expectRevert("Admin");
-    //         operator.setTaxRate(2);
-    //     }
+    function testCannotCalculateTax() public {
+        vm.prank(ADMIN);
+        uint256 _price = 1000;
+        uint256 _taxRate = type(uint256).max;
+        uint256 _tokenId = operator.mintBoard(_taxRate, EPOCH_INTERVAL);
+        vm.expectRevert();
+        operator.calculateTax(_tokenId, _price);
+    }
 
     //     function testWithdrawTax(uint96 _price) public {
     //         vm.assume(_price > 0.001 ether);
