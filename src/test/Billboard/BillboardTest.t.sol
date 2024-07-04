@@ -37,45 +37,51 @@ contract BillboardTest is BillboardTestBase {
     /// Access control
     //////////////////////////////
 
-    function testAddToWhitelist() public {
+    function testSetWhitelist() public {
         (uint256 _tokenId, ) = _mintBoard();
 
         vm.startPrank(ADMIN);
 
-        operator.addToWhitelist(_tokenId, USER_A);
+        // add to whitelist
+        operator.setWhitelist(_tokenId, USER_A, true);
         assertEq(operator.whitelist(_tokenId, USER_A), true);
-
         assertEq(operator.whitelist(_tokenId, USER_B), false);
-    }
 
-    function testCannotAddToWhitelistByAttacker() public {
-        (uint256 _tokenId, ) = _mintBoard();
-
-        vm.startPrank(ATTACKER);
-
-        vm.expectRevert("Creator");
-        operator.addToWhitelist(_tokenId, USER_A);
-    }
-
-    function testRemoveToWhitelist() public {
-        (uint256 _tokenId, ) = _mintBoard();
-
-        vm.startPrank(ADMIN);
-
-        operator.addToWhitelist(_tokenId, USER_A);
-        assertEq(operator.whitelist(_tokenId, USER_A), true);
-
-        operator.removeFromWhitelist(_tokenId, USER_A);
+        // remove from whitelist
+        operator.setWhitelist(_tokenId, USER_A, false);
         assertEq(operator.whitelist(_tokenId, USER_A), false);
     }
 
-    function testCannotRemoveToWhitelistByAttacker() public {
+    function testCannotSetWhitelistByAttacker() public {
         (uint256 _tokenId, ) = _mintBoard();
 
         vm.startPrank(ATTACKER);
 
         vm.expectRevert("Creator");
-        operator.removeFromWhitelist(_tokenId, USER_B);
+        operator.setWhitelist(_tokenId, USER_B, false);
+    }
+
+    function testSetClosed() public {
+        (uint256 _tokenId, ) = _mintBoard();
+
+        vm.startPrank(ADMIN);
+
+        // set closed
+        operator.setClosed(_tokenId, true);
+        assertEq(operator.closed(_tokenId), true);
+
+        // set open
+        operator.setClosed(_tokenId, false);
+        assertEq(operator.closed(_tokenId), false);
+    }
+
+    function testCannotSetClosedByAttacker() public {
+        (uint256 _tokenId, ) = _mintBoard();
+
+        vm.startPrank(ATTACKER);
+
+        vm.expectRevert("Creator");
+        operator.setClosed(_tokenId, true);
     }
 
     //////////////////////////////
@@ -198,8 +204,8 @@ contract BillboardTest is BillboardTestBase {
         uint256 _prevRegistryBalance = usdt.balanceOf(address(registry));
 
         vm.startPrank(ADMIN);
-        operator.addToWhitelist(_tokenId, USER_A);
-        operator.addToWhitelist(_tokenId, USER_B);
+        operator.setWhitelist(_tokenId, USER_A, true);
+        operator.setWhitelist(_tokenId, USER_B, true);
         vm.stopPrank();
 
         vm.expectEmit(true, true, true, true);
@@ -322,6 +328,17 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid.isWon, false);
     }
 
+    function testCannotPlaceBidIfClosed() public {
+        (uint256 _tokenId, ) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, block.number, 1);
+
+        vm.startPrank(ADMIN);
+        operator.setClosed(_tokenId, true);
+
+        vm.expectRevert("Closed");
+        operator.placeBid(_tokenId, _epoch, 1 ether);
+    }
+
     function testCannotPlaceBidIfAuctionEnded() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
         uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
@@ -330,7 +347,7 @@ contract BillboardTest is BillboardTestBase {
         uint256 _endedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         vm.prank(ADMIN);
-        operator.addToWhitelist(_tokenId, USER_A);
+        operator.setWhitelist(_tokenId, USER_A, true);
 
         vm.startPrank(USER_A);
 
@@ -454,6 +471,17 @@ contract BillboardTest is BillboardTestBase {
         assertEq(_bid2.isWon, true);
     }
 
+    function testCannotClearAuctionIfClosed() public {
+        (uint256 _tokenId, ) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(block.number, block.number, 1);
+
+        vm.startPrank(ADMIN);
+        operator.setClosed(_tokenId, true);
+
+        vm.expectRevert("Closed");
+        operator.clearAuction(_tokenId, _epoch);
+    }
+
     function testCannotClearAuctionIfAuctionNotEnded() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
         uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
@@ -490,7 +518,7 @@ contract BillboardTest is BillboardTestBase {
             address _bidder = address(uint160(2000 + i));
 
             vm.prank(ADMIN);
-            operator.addToWhitelist(_tokenId, _bidder);
+            operator.setWhitelist(_tokenId, _bidder, true);
 
             uint256 _price = 1 ether + i;
             uint256 _tax = operator.calculateTax(_tokenId, _price);
@@ -557,6 +585,36 @@ contract BillboardTest is BillboardTestBase {
         // check balances
         assertEq(usdt.balanceOf(USER_A), 0);
         assertEq(usdt.balanceOf(USER_B), _total);
+    }
+
+    function testWithdrawBidIfClosed(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
+
+        // bid with USER_A
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // set closed
+        vm.prank(ADMIN);
+        operator.setClosed(_tokenId, true);
+
+        // withdraw bid
+        vm.expectEmit(true, true, true, false);
+        emit IBillboardRegistry.BidWithdrawn(_tokenId, _epoch, USER_A);
+
+        vm.prank(USER_A);
+        operator.withdrawBid(_tokenId, _epoch, USER_A);
+
+        // check balances
+        assertEq(usdt.balanceOf(USER_A), _total);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bid.isWithdrawn, true);
     }
 
     function testCannotWithdrawBidTwice(uint96 _price) public {

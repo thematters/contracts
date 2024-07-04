@@ -70,7 +70,7 @@ contract BillboardTestBase is Test {
         deal(address(usdt), _bidder, _total);
 
         vm.prank(ADMIN);
-        operator.addToWhitelist(_tokenId, _bidder);
+        operator.setWhitelist(_tokenId, _bidder, true);
 
         vm.prank(_bidder);
         operator.placeBid(_tokenId, _epoch, _price);

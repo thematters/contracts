@@ -43,20 +43,21 @@ interface IBillboard {
     //////////////////////////////
 
     /**
-     * @notice Add address to whitelist.
+     * @notice Add or remove whitelist address.
      *
      * @param tokenId_ Token ID.
      * @param account_ Address of user will be added into whitelist.
+     * @param whitelisted Whitelisted or not.
      */
-    function addToWhitelist(uint256 tokenId_, address account_) external;
+    function setWhitelist(uint256 tokenId_, address account_, bool whitelisted) external;
 
     /**
-     * @notice Remove address from whitelist.
+     * @notice Open or close a board.
      *
      * @param tokenId_ Token ID.
-     * @param account_ Address of user will be removed from whitelist.
+     * @param closed Closed or not.
      */
-    function removeFromWhitelist(uint256 tokenId_, address account_) external;
+    function setClosed(uint256 tokenId_, bool closed) external;
 
     //////////////////////////////
     /// Board

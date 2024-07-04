@@ -16,6 +16,9 @@ contract Billboard is IBillboard {
     // tokenId => address => whitelisted
     mapping(uint256 => mapping(address => bool)) public whitelist;
 
+    // tokenId => closed
+    mapping(uint256 => bool) public closed;
+
     constructor(address token_, address payable registry_, address admin_, string memory name_, string memory symbol_) {
         require(admin_ != address(0), "Zero address");
         admin = admin_;
@@ -44,6 +47,11 @@ contract Billboard is IBillboard {
         _;
     }
 
+    modifier isNotClosed(uint256 tokenId_) {
+        require(closed[tokenId_] != true, "Closed");
+        _;
+    }
+
     modifier isFromCreator(uint256 tokenId_) {
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator == msg.sender, "Creator");
@@ -69,13 +77,13 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function addToWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
-        whitelist[tokenId_][account_] = true;
+    function setWhitelist(uint256 tokenId_, address account_, bool whitelisted) external isFromCreator(tokenId_) {
+        whitelist[tokenId_][account_] = whitelisted;
     }
 
     /// @inheritdoc IBillboard
-    function removeFromWhitelist(uint256 tokenId_, address account_) external isFromCreator(tokenId_) {
-        whitelist[tokenId_][account_] = false;
+    function setClosed(uint256 tokenId_, bool closed_) external isFromCreator(tokenId_) {
+        closed[tokenId_] = closed_;
     }
 
     //////////////////////////////
@@ -121,7 +129,11 @@ contract Billboard is IBillboard {
     //////////////////////////////
 
     /// @inheritdoc IBillboard
-    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 price_) external payable isFromWhitelist(tokenId_) {
+    function placeBid(
+        uint256 tokenId_,
+        uint256 epoch_,
+        uint256 price_
+    ) external payable isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
         _placeBid(tokenId_, epoch_, price_, "", "", false);
     }
 
@@ -132,7 +144,7 @@ contract Billboard is IBillboard {
         uint256 price_,
         string calldata contentURI_,
         string calldata redirectURI_
-    ) external payable isFromWhitelist(tokenId_) {
+    ) external payable isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
         _placeBid(tokenId_, epoch_, price_, contentURI_, redirectURI_, true);
     }
 
@@ -193,7 +205,7 @@ contract Billboard is IBillboard {
     function clearAuction(
         uint256 tokenId_,
         uint256 epoch_
-    ) public returns (address highestBidder, uint256 price, uint256 tax) {
+    ) public isNotClosed(tokenId_) returns (address highestBidder, uint256 price, uint256 tax) {
         // revert if board not found
         IBillboardRegistry.Board memory _board = this.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
@@ -294,18 +306,20 @@ contract Billboard is IBillboard {
 
     /// @inheritdoc IBillboard
     function withdrawBid(uint256 tokenId_, uint256 epoch_, address bidder_) external {
+        bool _isClosed = closed[tokenId_];
+
         // revert if board not found
         IBillboardRegistry.Board memory _board = this.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
 
         // revert if auction is not ended
         uint256 _endedAt = this.getBlockFromEpoch(_board.startedAt, epoch_ + 1, _board.epochInterval);
-        require(block.number >= _endedAt, "Auction not ended");
+        require(_isClosed || block.number >= _endedAt, "Auction not ended");
 
         // revert if auction is not cleared
         address _highestBidder = registry.highestBidder(tokenId_, epoch_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
-        require(_highestBid.isWon, "Auction not cleared");
+        require(_isClosed || _highestBid.isWon, "Auction not cleared");
 
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, bidder_);
         uint256 amount = _bid.price + _bid.tax;
