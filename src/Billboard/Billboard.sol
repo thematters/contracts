@@ -85,7 +85,18 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function mintBoard(uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId) {
         require(epochInterval_ > 0, "Zero epoch interval");
-        tokenId = registry.newBoard(msg.sender, taxRate_, epochInterval_);
+        tokenId = registry.newBoard(msg.sender, taxRate_, epochInterval_, block.number);
+        whitelist[tokenId][msg.sender] = true;
+    }
+
+    /// @inheritdoc IBillboard
+    function mintBoard(
+        uint256 taxRate_,
+        uint256 epochInterval_,
+        uint256 startedAt_
+    ) external returns (uint256 tokenId) {
+        require(epochInterval_ > 0, "Zero epoch interval");
+        tokenId = registry.newBoard(msg.sender, taxRate_, epochInterval_, startedAt_);
         whitelist[tokenId][msg.sender] = true;
     }
 
@@ -136,7 +147,7 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
 
-        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        uint256 _endedAt = this.getBlockFromEpoch(_board.startedAt, epoch_ + 1, _board.epochInterval);
         require(block.number < _endedAt, "Auction ended");
 
         IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
@@ -144,7 +155,7 @@ contract Billboard is IBillboard {
         uint256 _tax = calculateTax(tokenId_, price_);
 
         // create new bid if no bid exists
-        if (_bid.createdAt == 0) {
+        if (_bid.placedAt == 0) {
             // transfer bid price and tax to the registry
             SafeERC20.safeTransferFrom(registry.currency(), msg.sender, address(registry), price_ + _tax);
 
@@ -188,14 +199,14 @@ contract Billboard is IBillboard {
         require(_board.creator != address(0), "Board not found");
 
         // revert if auction is still running
-        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        uint256 _endedAt = this.getBlockFromEpoch(_board.startedAt, epoch_ + 1, _board.epochInterval);
         require(block.number >= _endedAt, "Auction not ended");
 
         address _highestBidder = registry.highestBidder(tokenId_, epoch_);
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
 
         // revert if no bid
-        require(_highestBid.createdAt != 0, "No bid");
+        require(_highestBid.placedAt != 0, "No bid");
 
         // skip if auction is already cleared
         if (_highestBid.isWon) {
@@ -282,13 +293,13 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function withdrawBid(uint256 tokenId_, uint256 epoch_) external {
+    function withdrawBid(uint256 tokenId_, uint256 epoch_, address bidder_) external {
         // revert if board not found
         IBillboardRegistry.Board memory _board = this.getBoard(tokenId_);
         require(_board.creator != address(0), "Board not found");
 
         // revert if auction is not ended
-        uint256 _endedAt = this.getBlockFromEpoch(epoch_ + 1, _board.epochInterval);
+        uint256 _endedAt = this.getBlockFromEpoch(_board.startedAt, epoch_ + 1, _board.epochInterval);
         require(block.number >= _endedAt, "Auction not ended");
 
         // revert if auction is not cleared
@@ -296,29 +307,37 @@ contract Billboard is IBillboard {
         IBillboardRegistry.Bid memory _highestBid = registry.getBid(tokenId_, epoch_, _highestBidder);
         require(_highestBid.isWon, "Auction not cleared");
 
-        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, msg.sender);
+        IBillboardRegistry.Bid memory _bid = registry.getBid(tokenId_, epoch_, bidder_);
         uint256 amount = _bid.price + _bid.tax;
 
-        require(_bid.createdAt != 0, "Bid not found");
+        require(_bid.placedAt != 0, "Bid not found");
         require(!_bid.isWithdrawn, "Bid already withdrawn");
         require(!_bid.isWon, "Bid already won");
         require(amount > 0, "Zero amount");
 
         // set bid.isWithdrawn to true first to prevent reentrancy
-        registry.setBidWithdrawn(tokenId_, epoch_, msg.sender, true);
+        registry.setBidWithdrawn(tokenId_, epoch_, bidder_, true);
 
         // transfer bid price and tax back to the bidder
-        registry.transferCurrencyByOperator(msg.sender, amount);
+        registry.transferCurrencyByOperator(bidder_, amount);
     }
 
     /// @inheritdoc IBillboard
-    function getEpochFromBlock(uint256 block_, uint256 epochInterval_) public pure returns (uint256 epoch) {
-        return block_ / epochInterval_;
+    function getEpochFromBlock(
+        uint256 startedAt_,
+        uint256 block_,
+        uint256 epochInterval_
+    ) public pure returns (uint256 epoch) {
+        return (block_ - startedAt_) / epochInterval_;
     }
 
     /// @inheritdoc IBillboard
-    function getBlockFromEpoch(uint256 epoch_, uint256 epochInterval_) public pure returns (uint256 blockNumber) {
-        return epoch_ * epochInterval_;
+    function getBlockFromEpoch(
+        uint256 startedAt_,
+        uint256 epoch_,
+        uint256 epochInterval_
+    ) public pure returns (uint256 blockNumber) {
+        return startedAt_ + (epoch_ * epochInterval_);
     }
 
     //////////////////////////////
@@ -335,8 +354,8 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
-    function withdrawTax() external returns (uint256 tax) {
-        (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(msg.sender);
+    function withdrawTax(address creator_) external returns (uint256 tax) {
+        (uint256 _taxAccumulated, uint256 _taxWithdrawn) = registry.taxTreasury(creator_);
 
         uint256 amount = _taxAccumulated - _taxWithdrawn;
 
@@ -344,13 +363,13 @@ contract Billboard is IBillboard {
 
         // set taxTreasury.withdrawn to taxTreasury.accumulated first
         // to prevent reentrancy
-        registry.setTaxTreasury(msg.sender, _taxAccumulated, _taxAccumulated);
+        registry.setTaxTreasury(creator_, _taxAccumulated, _taxAccumulated);
 
         // transfer tax to the owner
-        registry.transferCurrencyByOperator(msg.sender, amount);
+        registry.transferCurrencyByOperator(creator_, amount);
 
         // emit TaxWithdrawn
-        registry.emitTaxWithdrawn(msg.sender, amount);
+        registry.emitTaxWithdrawn(creator_, amount);
 
         return amount;
     }

@@ -73,6 +73,17 @@ interface IBillboard {
     function mintBoard(uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
 
     /**
+     * @notice Mint a new board (NFT).
+     *
+     * @param taxRate_ Tax rate per epoch. (e.g. 1024 for 10.24% per epoch)
+     * @param epochInterval_ Epoch interval in blocks (e.g. 100 for 100 blocks).
+     * @param startedAt_ Block number when the board starts the first epoch.
+     *
+     * @return tokenId Token ID of the new board.
+     */
+    function mintBoard(uint256 taxRate_, uint256 epochInterval_, uint256 startedAt_) external returns (uint256 tokenId);
+
+    /**
      * @notice Get metadata of a board .
      *
      * @param tokenId_ Token ID of a board.
@@ -213,28 +224,39 @@ interface IBillboard {
      *
      * @param tokenId_ Token ID.
      * @param epoch_ Epoch.
+     * @param bidder_ Address of bidder.
      */
-    function withdrawBid(uint256 tokenId_, uint256 epoch_) external;
+    function withdrawBid(uint256 tokenId_, uint256 epoch_, address bidder_) external;
 
     /**
      * @notice Calculate epoch from block number.
      *
+     * @param startedAt_ Started at block number.
      * @param block_ Block number.
      * @param epochInterval_ Epoch interval.
      *
      * @return epoch Epoch.
      */
-    function getEpochFromBlock(uint256 block_, uint256 epochInterval_) external pure returns (uint256 epoch);
+    function getEpochFromBlock(
+        uint256 startedAt_,
+        uint256 block_,
+        uint256 epochInterval_
+    ) external pure returns (uint256 epoch);
 
     /**
      * @notice Calculate block number from epoch.
      *
+     * @param startedAt_ Started at block number.
      * @param epoch_ Epoch.
      * @param epochInterval_ Epoch interval.
      *
      * @return blockNumber Block number.
      */
-    function getBlockFromEpoch(uint256 epoch_, uint256 epochInterval_) external pure returns (uint256 blockNumber);
+    function getBlockFromEpoch(
+        uint256 startedAt_,
+        uint256 epoch_,
+        uint256 epochInterval_
+    ) external pure returns (uint256 blockNumber);
 
     //////////////////////////////
     /// Tax & Withdraw
@@ -262,8 +284,10 @@ interface IBillboard {
     /**
      * @notice Withdraw accumulated taxation.
      *
+     * @param creator_ Address of board creator.
+     *
      */
-    function withdrawTax() external returns (uint256 tax);
+    function withdrawTax(address creator_) external returns (uint256 tax);
 
     //////////////////////////////
     /// ERC721 related

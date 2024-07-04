@@ -88,22 +88,22 @@ contract BillboardTest is BillboardTestBase {
         // mint
         vm.expectEmit(true, true, true, true);
         emit IERC721.Transfer(address(0), ADMIN, 1);
-        operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
+        uint256 _tokenId = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
 
         // ownership
         assertEq(registry.balanceOf(ADMIN), 1);
-        assertEq(registry.ownerOf(1), ADMIN);
+        assertEq(registry.ownerOf(_tokenId), ADMIN);
 
         // data
-        IBillboardRegistry.Board memory board = operator.getBoard(1);
-        assertEq(board.creator, ADMIN);
-        assertEq(board.name, "");
-        assertEq(board.description, "");
-        assertEq(board.imageURI, "");
-        assertEq(board.location, "");
-        assertEq(board.taxRate, TAX_RATE);
-        assertEq(board.epochInterval, EPOCH_INTERVAL);
-        assertEq(board.createdAt, block.number);
+        IBillboardRegistry.Board memory _board = operator.getBoard(_tokenId);
+        assertEq(_board.creator, ADMIN);
+        assertEq(_board.name, "");
+        assertEq(_board.description, "");
+        assertEq(_board.imageURI, "");
+        assertEq(_board.location, "");
+        assertEq(_board.taxRate, TAX_RATE);
+        assertEq(_board.epochInterval, EPOCH_INTERVAL);
+        assertEq(_board.startedAt, block.number);
 
         vm.stopPrank();
         vm.startPrank(USER_A);
@@ -112,11 +112,17 @@ contract BillboardTest is BillboardTestBase {
         uint256 _newTokenId = 2;
         vm.expectEmit(true, true, true, true);
         emit IERC721.Transfer(address(0), USER_A, _newTokenId);
-        uint256 _tokenId = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
-        assertEq(_tokenId, _newTokenId);
+        uint256 _tokenId2 = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
+        assertEq(_tokenId2, _newTokenId);
         assertEq(registry.balanceOf(USER_A), 1);
-        board = operator.getBoard(_tokenId);
-        assertEq(board.creator, USER_A);
+        IBillboardRegistry.Board memory _board2 = operator.getBoard(_tokenId2);
+        assertEq(_board2.creator, USER_A);
+
+        // mint with startedAt
+        uint256 _startedAt = block.number + 100;
+        uint256 _tokenId3 = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL, _startedAt);
+        IBillboardRegistry.Board memory _board3 = operator.getBoard(_tokenId3);
+        assertEq(_board3.startedAt, _startedAt);
     }
 
     function testSetBoardByCreator() public {
@@ -181,7 +187,7 @@ contract BillboardTest is BillboardTestBase {
 
     function testPlaceBid(uint96 _price) public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
         deal(address(usdt), USER_A, _total);
@@ -212,7 +218,7 @@ contract BillboardTest is BillboardTestBase {
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
         assertEq(_bid.price, _price);
         assertEq(_bid.tax, _tax);
-        assertEq(_bid.createdAt, block.number);
+        assertEq(_bid.placedAt, block.number);
         assertEq(_bid.updatedAt, block.number);
         assertEq(_bid.isWon, false);
         assertEq(_bid.isWithdrawn, false);
@@ -229,7 +235,7 @@ contract BillboardTest is BillboardTestBase {
 
     function testPlaceBidWithSamePrices(uint96 _price) public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
 
@@ -243,10 +249,10 @@ contract BillboardTest is BillboardTestBase {
 
         // check bids
         IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _epoch, USER_A);
-        assertEq(_bidA.createdAt, block.number);
+        assertEq(_bidA.placedAt, block.number);
         assertEq(_bidA.isWon, false);
         IBillboardRegistry.Bid memory _bidB = registry.getBid(_tokenId, _epoch, USER_A);
-        assertEq(_bidB.createdAt, block.number);
+        assertEq(_bidB.placedAt, block.number);
         assertEq(_bidB.isWon, false);
 
         // check registry balance
@@ -258,8 +264,11 @@ contract BillboardTest is BillboardTestBase {
         vm.assume(_price < type(uint96).max / 4);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
+
+        uint256 _placedAt = block.number;
+        uint256 _updatedAt = block.number + 1;
 
         // bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -271,6 +280,7 @@ contract BillboardTest is BillboardTestBase {
         assertEq(registry.highestBidder(_tokenId, _epoch), USER_B);
 
         // bid with USER_A
+        vm.roll(_updatedAt);
         uint256 _priceA = _price * 4;
         uint256 _taxA = operator.calculateTax(_tokenId, _priceA);
         uint256 _totalA = _priceA + _taxA;
@@ -282,11 +292,18 @@ contract BillboardTest is BillboardTestBase {
         uint256 _taxDiff = _taxA - _tax;
         uint256 _totalDiff = _priceDiff + _taxDiff;
         assertEq(usdt.balanceOf(USER_A), _totalA - _totalDiff);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bidA = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bidA.price, _priceA);
+        assertEq(_bidA.tax, _taxA);
+        assertEq(_bidA.placedAt, _placedAt);
+        assertEq(_bidA.updatedAt, _updatedAt);
     }
 
     function testPlaceBidZeroPrice() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _prevBalance = usdt.balanceOf(ADMIN);
 
         vm.startPrank(ADMIN);
@@ -301,16 +318,16 @@ contract BillboardTest is BillboardTestBase {
 
         // check bid
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, ADMIN);
-        assertEq(_bid.createdAt, block.number);
+        assertEq(_bid.placedAt, block.number);
         assertEq(_bid.isWon, false);
     }
 
     function testCannotPlaceBidIfAuctionEnded() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _price = 1 ether;
 
-        uint256 _endedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _endedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         vm.prank(ADMIN);
         operator.addToWhitelist(_tokenId, USER_A);
@@ -328,7 +345,7 @@ contract BillboardTest is BillboardTestBase {
 
     function testCannotPlaceBidByAttacker() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _price = 1 ether;
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
@@ -340,14 +357,37 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid(_tokenId, _epoch, _price);
     }
 
+    function testSetBidURIs() public {
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+
+        _placeBid(_tokenId, _epoch, USER_A, 1 ether);
+
+        // check bid
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bid.contentURI, "");
+        assertEq(_bid.redirectURI, "");
+
+        // set bid AD data
+        string memory _contentURI = "content URI";
+        string memory _redirectURI = "redirect URI";
+
+        vm.prank(USER_A);
+        operator.setBidURIs(_tokenId, _epoch, _contentURI, _redirectURI);
+
+        IBillboardRegistry.Bid memory _newBid = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_newBid.contentURI, _contentURI);
+        assertEq(_newBid.redirectURI, _redirectURI);
+    }
+
     function testClearAuction(uint96 _price) public {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _placedAt = block.number;
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // place bid
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -368,7 +408,7 @@ contract BillboardTest is BillboardTestBase {
         IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
         assertEq(_bid.price, _price);
         assertEq(_bid.tax, _tax);
-        assertEq(_bid.createdAt, _placedAt);
+        assertEq(_bid.placedAt, _placedAt);
         assertEq(_bid.isWon, true);
         assertEq(_bid.isWithdrawn, false);
 
@@ -381,12 +421,12 @@ contract BillboardTest is BillboardTestBase {
     function testClearAuctions() public {
         (uint256 _tokenId1, IBillboardRegistry.Board memory _board1) = _mintBoard();
         (uint256 _tokenId2, IBillboardRegistry.Board memory _board2) = _mintBoard();
-        uint256 _epoch1 = operator.getEpochFromBlock(block.number, _board1.epochInterval);
-        uint256 _epoch2 = operator.getEpochFromBlock(block.number, _board2.epochInterval);
+        uint256 _epoch1 = operator.getEpochFromBlock(_board1.startedAt, block.number, _board1.epochInterval);
+        uint256 _epoch2 = operator.getEpochFromBlock(_board2.startedAt, block.number, _board2.epochInterval);
         _placeBid(_tokenId1, _epoch1, USER_A, 1 ether);
         _placeBid(_tokenId2, _epoch2, USER_B, 1 ether);
 
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch1 + 1, _board1.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board1.startedAt, _epoch1 + 1, _board1.epochInterval);
 
         // clear auctions
         vm.expectEmit(true, true, true, true);
@@ -416,8 +456,8 @@ contract BillboardTest is BillboardTestBase {
 
     function testCannotClearAuctionIfAuctionNotEnded() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
-        uint256 _endedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _endedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         vm.expectRevert("Auction not ended");
         operator.clearAuction(_tokenId, _epoch);
@@ -429,8 +469,8 @@ contract BillboardTest is BillboardTestBase {
 
     function testCannotClearAuctionIfNoBid() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         vm.roll(_clearedAt);
         vm.expectRevert("No bid");
@@ -444,7 +484,7 @@ contract BillboardTest is BillboardTestBase {
         vm.assume(_offset <= _limit);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
 
         for (uint8 i = 0; i < _bidCount; i++) {
             address _bidder = address(uint160(2000 + i));
@@ -486,10 +526,10 @@ contract BillboardTest is BillboardTestBase {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // new bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -512,7 +552,7 @@ contract BillboardTest is BillboardTestBase {
         emit IBillboardRegistry.BidWithdrawn(_tokenId, _epoch, USER_B);
 
         vm.prank(USER_B);
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_B);
 
         // check balances
         assertEq(usdt.balanceOf(USER_A), 0);
@@ -523,10 +563,10 @@ contract BillboardTest is BillboardTestBase {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
         uint256 _total = _price + _tax;
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // new bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -540,21 +580,21 @@ contract BillboardTest is BillboardTestBase {
 
         // withdraw bid
         vm.prank(USER_B);
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_B);
         assertEq(usdt.balanceOf(USER_B), _total);
 
         // withdraw bid again
         vm.prank(USER_B);
         vm.expectRevert("Bid already withdrawn");
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_B);
     }
 
     function testCannotWithdrawBidIfWon(uint96 _price) public {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // new bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -569,15 +609,15 @@ contract BillboardTest is BillboardTestBase {
         // withdraw bid
         vm.prank(USER_A);
         vm.expectRevert("Bid already won");
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_A);
     }
 
     function testCannotWithdrawBidIfAuctionNotEndedOrCleared(uint96 _price) public {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // new bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -585,20 +625,20 @@ contract BillboardTest is BillboardTestBase {
         // auction is not ended
         vm.roll(_clearedAt - 1);
         vm.expectRevert("Auction not ended");
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_A);
 
         // auction is ended but not cleared
         vm.roll(_clearedAt);
         vm.expectRevert("Auction not cleared");
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_A);
     }
 
     function testCannotWithdrawBidIfNotFound(uint96 _price) public {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // new bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -609,66 +649,66 @@ contract BillboardTest is BillboardTestBase {
 
         vm.prank(USER_B);
         vm.expectRevert("Bid not found");
-        operator.withdrawBid(_tokenId, _epoch);
+        operator.withdrawBid(_tokenId, _epoch, USER_B);
     }
 
     function testGetEpochFromBlock() public {
         // epoch interval = 1
-        assertEq(operator.getEpochFromBlock(0, 1), 0);
-        assertEq(operator.getEpochFromBlock(1, 1), 1);
+        assertEq(operator.getEpochFromBlock(0, 0, 1), 0);
+        assertEq(operator.getEpochFromBlock(0, 1, 1), 1);
 
         // epoch interval = 101
-        assertEq(operator.getEpochFromBlock(0, 101), 0);
-        assertEq(operator.getEpochFromBlock(1, 101), 0);
-        assertEq(operator.getEpochFromBlock(100, 101), 0);
-        assertEq(operator.getEpochFromBlock(101, 101), 1);
-        assertEq(operator.getEpochFromBlock(203, 101), 2);
+        assertEq(operator.getEpochFromBlock(0, 0, 101), 0);
+        assertEq(operator.getEpochFromBlock(0, 1, 101), 0);
+        assertEq(operator.getEpochFromBlock(0, 100, 101), 0);
+        assertEq(operator.getEpochFromBlock(0, 101, 101), 1);
+        assertEq(operator.getEpochFromBlock(0, 203, 101), 2);
 
         // epoch interval = MAX
-        assertEq(operator.getEpochFromBlock(0, type(uint256).max), 0);
-        assertEq(operator.getEpochFromBlock(1, type(uint256).max), 0);
-        assertEq(operator.getEpochFromBlock(type(uint256).max, type(uint256).max), 1);
+        assertEq(operator.getEpochFromBlock(0, 0, type(uint256).max), 0);
+        assertEq(operator.getEpochFromBlock(0, 1, type(uint256).max), 0);
+        assertEq(operator.getEpochFromBlock(0, type(uint256).max, type(uint256).max), 1);
     }
 
     function testCannotGetEpochFromBlock() public {
         // panic: division or modulo by zero
         vm.expectRevert();
-        assertEq(operator.getEpochFromBlock(0, 0), 0);
+        assertEq(operator.getEpochFromBlock(0, 0, 0), 0);
         vm.expectRevert();
-        assertEq(operator.getEpochFromBlock(1, 0), 0);
+        assertEq(operator.getEpochFromBlock(0, 1, 0), 0);
         vm.expectRevert();
-        assertEq(operator.getEpochFromBlock(0, type(uint256).min), 0);
+        assertEq(operator.getEpochFromBlock(0, 0, type(uint256).min), 0);
 
         // panic: arithmetic underflow or overflow
         vm.expectRevert();
-        assertEq(operator.getEpochFromBlock(type(uint256).max + 1, type(uint256).max), 1);
+        assertEq(operator.getEpochFromBlock(0, type(uint256).max + 1, type(uint256).max), 1);
         vm.expectRevert();
-        assertEq(operator.getEpochFromBlock(type(uint256).min - 1, type(uint256).min), 1);
+        assertEq(operator.getEpochFromBlock(0, type(uint256).min - 1, type(uint256).min), 1);
     }
 
     function testGetBlockFromEpoch() public {
         // epoch interval = 1
-        assertEq(operator.getBlockFromEpoch(0, 1), 0);
-        assertEq(operator.getBlockFromEpoch(1, 1), 1);
+        assertEq(operator.getBlockFromEpoch(0, 0, 1), 0);
+        assertEq(operator.getBlockFromEpoch(0, 1, 1), 1);
 
         // epoch interval = 101
-        assertEq(operator.getBlockFromEpoch(0, 101), 0);
-        assertEq(operator.getBlockFromEpoch(1, 101), 101);
-        assertEq(operator.getBlockFromEpoch(2, 101), 202);
+        assertEq(operator.getBlockFromEpoch(0, 0, 101), 0);
+        assertEq(operator.getBlockFromEpoch(0, 1, 101), 101);
+        assertEq(operator.getBlockFromEpoch(0, 2, 101), 202);
 
         // epoch interval = MAX
-        assertEq(operator.getBlockFromEpoch(0, type(uint256).max), 0);
-        assertEq(operator.getBlockFromEpoch(1, type(uint256).max), type(uint256).max);
+        assertEq(operator.getBlockFromEpoch(0, 0, type(uint256).max), 0);
+        assertEq(operator.getBlockFromEpoch(0, 1, type(uint256).max), type(uint256).max);
 
         // epoch interval = MIN
-        assertEq(operator.getBlockFromEpoch(0, type(uint256).min), 0);
-        assertEq(operator.getBlockFromEpoch(1, type(uint256).min), 0);
+        assertEq(operator.getBlockFromEpoch(0, 0, type(uint256).min), 0);
+        assertEq(operator.getBlockFromEpoch(0, 1, type(uint256).min), 0);
     }
 
     function testCannotGetBlockFromEpoch() public {
         // panic: arithmetic underflow or overflow
         vm.expectRevert();
-        assertEq(operator.getBlockFromEpoch(2, type(uint256).max), 0);
+        assertEq(operator.getBlockFromEpoch(0, 2, type(uint256).max), 0);
     }
 
     //////////////////////////////
@@ -711,9 +751,9 @@ contract BillboardTest is BillboardTestBase {
         vm.assume(_price > 0.001 ether);
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
-        uint256 _epoch = operator.getEpochFromBlock(block.number, _board.epochInterval);
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
         uint256 _tax = operator.calculateTax(_tokenId, _price);
-        uint256 _clearedAt = operator.getBlockFromEpoch(_epoch + 1, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
 
         // place bid with USER_A
         _placeBid(_tokenId, _epoch, USER_A, _price);
@@ -733,7 +773,7 @@ contract BillboardTest is BillboardTestBase {
         emit IBillboardRegistry.TaxWithdrawn(ADMIN, _tax);
 
         vm.prank(ADMIN);
-        operator.withdrawTax();
+        operator.withdrawTax(ADMIN);
 
         // check balances
         assertEq(usdt.balanceOf(address(registry)), _prevRegistryBalance - _tax);
@@ -747,7 +787,7 @@ contract BillboardTest is BillboardTestBase {
 
         vm.prank(ADMIN);
         vm.expectRevert("Zero amount");
-        operator.withdrawTax();
+        operator.withdrawTax(ADMIN);
     }
 
     //////////////////////////////

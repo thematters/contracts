@@ -104,7 +104,7 @@ interface IBillboardRegistry is IERC721 {
         address creator;
         uint256 taxRate;
         uint256 epochInterval; // in blocks
-        uint256 createdAt; // gensis epoch, block number
+        uint256 startedAt; // gensis epoch, block number
         // mutable data
         string name;
         string description;
@@ -117,7 +117,7 @@ interface IBillboardRegistry is IERC721 {
         uint256 tax;
         string contentURI;
         string redirectURI;
-        uint256 createdAt; // block number
+        uint256 placedAt; // block number
         uint256 updatedAt; // block number
         bool isWon;
         bool isWithdrawn;
@@ -152,10 +152,16 @@ interface IBillboardRegistry is IERC721 {
      * @param to_ Address of the board owner.
      * @param taxRate_ Tax rate of the new board.
      * @param epochInterval_ Epoch interval of the new board.
+     * @param startedAt_ Block number when the board starts the first epoch.
      *
      * @return tokenId Token ID of the new board.
      */
-    function newBoard(address to_, uint256 taxRate_, uint256 epochInterval_) external returns (uint256 tokenId);
+    function newBoard(
+        address to_,
+        uint256 taxRate_,
+        uint256 epochInterval_,
+        uint256 startedAt_
+    ) external returns (uint256 tokenId);
 
     /**
      * @notice Set metadata of a board.

@@ -80,7 +80,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     function newBoard(
         address to_,
         uint256 taxRate_,
-        uint256 epochInterval_
+        uint256 epochInterval_,
+        uint256 startedAt_
     ) external isFromOperator returns (uint256 tokenId) {
         lastTokenId.increment();
         tokenId = lastTokenId.current();
@@ -95,7 +96,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             location: "",
             taxRate: taxRate_,
             epochInterval: epochInterval_,
-            createdAt: block.number
+            startedAt: startedAt_
         });
 
         emit BoardCreated(tokenId, to_, taxRate_, epochInterval_);
@@ -145,7 +146,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
             tax: tax_,
             contentURI: contentURI_,
             redirectURI: redirectURI_,
-            createdAt: block.number,
+            placedAt: block.number,
             updatedAt: block.number,
             isWithdrawn: false,
             isWon: false
@@ -173,8 +174,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string calldata redirectURI_,
         bool hasURIs
     ) external isFromOperator {
-        Bid memory _bid = bids[tokenId_][epoch_][bidder_];
-        require(_bid.createdAt != 0, "Bid not found");
+        Bid storage _bid = bids[tokenId_][epoch_][bidder_];
+        require(_bid.placedAt != 0, "Bid not found");
 
         _bid.price = price_;
         _bid.tax = tax_;
@@ -196,7 +197,7 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // the highest bidder since the block.number is always greater.
     function _sethighestBidder(uint256 tokenId_, uint256 epoch_, uint256 price_, address bidder_) internal {
         address _highestBidder = highestBidder[tokenId_][epoch_];
-        Bid memory highestBid = bids[tokenId_][epoch_][_highestBidder];
+        Bid storage highestBid = bids[tokenId_][epoch_][_highestBidder];
         if (_highestBidder == address(0) || price_ > highestBid.price) {
             highestBidder[tokenId_][epoch_] = bidder_;
         }
@@ -210,8 +211,8 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
         string calldata contentURI_,
         string calldata redirectURI_
     ) external isFromOperator {
-        Bid memory _bid = bids[tokenId_][epoch_][bidder_];
-        require(_bid.createdAt != 0, "Bid not found");
+        Bid storage _bid = bids[tokenId_][epoch_][bidder_];
+        require(_bid.placedAt != 0, "Bid not found");
 
         _bid.contentURI = contentURI_;
         _bid.redirectURI = redirectURI_;
