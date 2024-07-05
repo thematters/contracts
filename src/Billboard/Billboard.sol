@@ -19,7 +19,13 @@ contract Billboard is IBillboard {
     // tokenId => closed
     mapping(uint256 => bool) public closed;
 
-    constructor(address token_, address payable registry_, address admin_, string memory name_, string memory symbol_) {
+    constructor(
+        address currency_,
+        address payable registry_,
+        address admin_,
+        string memory name_,
+        string memory symbol_
+    ) {
         require(admin_ != address(0), "Zero address");
         admin = admin_;
 
@@ -29,7 +35,7 @@ contract Billboard is IBillboard {
         }
         // deploy operator and registry
         else {
-            registry = new BillboardRegistry(token_, address(this), name_, symbol_);
+            registry = new BillboardRegistry(currency_, address(this), name_, symbol_);
         }
     }
 
