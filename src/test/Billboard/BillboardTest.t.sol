@@ -435,6 +435,30 @@ contract BillboardTest is BillboardTestBase {
         assertEq(usdt.balanceOf(USER_A), 0);
     }
 
+    function testClearAuctionIfAlreadyCleared() public {
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
+        uint256 _price = 1 ether;
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+
+        // place bid
+        _placeBid(_tokenId, _epoch, USER_A, 1 ether);
+
+        // clear auction
+        vm.roll(_clearedAt);
+        (address _highestBidder1, uint256 _price1, uint256 _tax1) = operator.clearAuction(_tokenId, _epoch);
+        assertEq(_highestBidder1, USER_A);
+        assertEq(_price1, _price);
+        assertEq(_tax1, _tax);
+
+        // clear auction again
+        (address _highestBidder2, uint256 _price2, uint256 _tax2) = operator.clearAuction(_tokenId, _epoch);
+        assertEq(_highestBidder2, USER_A);
+        assertEq(_price2, _price);
+        assertEq(_tax2, _tax);
+    }
+
     function testClearAuctions() public {
         (uint256 _tokenId1, IBillboardRegistry.Board memory _board1) = _mintBoard();
         (uint256 _tokenId2, IBillboardRegistry.Board memory _board2) = _mintBoard();

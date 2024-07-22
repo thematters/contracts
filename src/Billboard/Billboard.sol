@@ -228,7 +228,7 @@ contract Billboard is IBillboard {
 
         // skip if auction is already cleared
         if (_highestBid.isWon) {
-            return (address(0), 0, 0);
+            return (_highestBidder, _highestBid.price, _highestBid.tax);
         }
 
         address _prevOwner = registry.ownerOf(tokenId_);
