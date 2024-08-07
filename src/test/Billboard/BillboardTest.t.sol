@@ -574,6 +574,50 @@ contract BillboardTest is BillboardTestBase {
         }
     }
 
+    function testGetBidderBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
+        vm.assume(_bidCount > 0);
+        vm.assume(_bidCount <= 10);
+        vm.assume(_limit <= _bidCount);
+        vm.assume(_offset <= _limit);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+
+        for (uint8 i = 0; i < _bidCount; i++) {
+            uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval) + i;
+
+            vm.prank(ADMIN);
+            operator.setWhitelist(_tokenId, USER_A, true);
+
+            uint256 _price = 1 ether + i;
+            uint256 _tax = operator.calculateTax(_tokenId, _price);
+            uint256 _totalAmount = _price + _tax;
+
+            deal(address(usdt), USER_A, _totalAmount);
+            vm.startPrank(USER_A);
+            usdt.approve(address(operator), _totalAmount);
+            operator.placeBid(_tokenId, _epoch, _price);
+            vm.stopPrank();
+        }
+
+        // get bidder bids
+        (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBidderBids(
+            _tokenId,
+            USER_A,
+            _limit,
+            _offset
+        );
+        uint256 _left = _t - _offset;
+        uint256 _size = _left > _limit ? _limit : _left;
+        assertEq(_t, _bidCount);
+        assertEq(_l, _limit);
+        assertEq(_bids.length, _size);
+        assertEq(_o, _offset);
+        for (uint256 i = 0; i < _size; i++) {
+            uint256 _price = 1 ether + _offset + i;
+            assertEq(_bids[i].price, _price);
+        }
+    }
+
     function testWithdrawBid(uint96 _price) public {
         vm.assume(_price > 0.001 ether);
 

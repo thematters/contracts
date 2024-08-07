@@ -29,6 +29,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     // tokenId => epoch => bidder => Bid
     mapping(uint256 => mapping(uint256 => mapping(address => Bid))) public bids;
 
+    // tokenId => address => epoches
+    mapping(uint256 => mapping(address => uint256[])) public bidderBids;
+
     // board creator => TaxTreasury
     mapping(address => TaxTreasury) public taxTreasury;
 
@@ -132,6 +135,11 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
     }
 
     /// @inheritdoc IBillboardRegistry
+    function getBidderBidCount(uint256 tokenId_, address bidder_) external view returns (uint256 count) {
+        count = bidderBids[tokenId_][bidder_].length;
+    }
+
+    /// @inheritdoc IBillboardRegistry
     function newBid(
         uint256 tokenId_,
         uint256 epoch_,
@@ -154,6 +162,9 @@ contract BillboardRegistry is IBillboardRegistry, ERC721 {
 
         // add to auction bids
         bids[tokenId_][epoch_][bidder_] = _bid;
+
+        // add to bidder's bids
+        bidderBids[tokenId_][bidder_].push(epoch_);
 
         // add to auction bidders if new bid
         bidders[tokenId_][epoch_].push(bidder_);

@@ -289,25 +289,47 @@ contract Billboard is IBillboard {
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
         uint256 _total = registry.getBidCount(tokenId_, epoch_);
 
-        if (limit_ == 0) {
-            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
-        }
-
-        if (offset_ >= _total) {
+        if (limit_ == 0 || offset_ >= _total) {
             return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
         }
 
         uint256 _left = _total - offset_;
         uint256 _size = _left > limit_ ? limit_ : _left;
 
-        IBillboardRegistry.Bid[] memory _bids = new IBillboardRegistry.Bid[](_size);
+        bids = new IBillboardRegistry.Bid[](_size);
 
         for (uint256 i = 0; i < _size; i++) {
             address _bidder = registry.bidders(tokenId_, epoch_, offset_ + i);
-            _bids[i] = registry.getBid(tokenId_, epoch_, _bidder);
+            bids[i] = registry.getBid(tokenId_, epoch_, _bidder);
         }
 
-        return (_total, limit_, offset_, _bids);
+        return (_total, limit_, offset_, bids);
+    }
+
+    /// @inheritdoc IBillboard
+    function getBidderBids(
+        uint256 tokenId_,
+        address bidder_,
+        uint256 limit_,
+        uint256 offset_
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
+        uint256 _total = registry.getBidderBidCount(tokenId_, bidder_);
+
+        if (limit_ == 0 || offset_ >= _total) {
+            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
+        }
+
+        uint256 _left = _total - offset_;
+        uint256 _size = _left > limit_ ? limit_ : _left;
+
+        bids = new IBillboardRegistry.Bid[](_size);
+
+        for (uint256 i = 0; i < _size; i++) {
+            uint256 _epoch = registry.bidderBids(tokenId_, bidder_, offset_ + i);
+            bids[i] = registry.getBid(tokenId_, _epoch, bidder_);
+        }
+
+        return (_total, limit_, offset_, bids);
     }
 
     /// @inheritdoc IBillboard

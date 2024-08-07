@@ -221,6 +221,26 @@ interface IBillboard {
     ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
 
     /**
+     * @notice Get all bids of bidder by token ID.
+     *
+     * @param tokenId_ Token ID.
+     * @param bidder_ Address of bidder.
+     * @param limit_ Limit of returned bids.
+     * @param offset_ Offset of returned bids.
+     *
+     * @return total Total number of bids.
+     * @return limit Limit of returned bids.
+     * @return offset Offset of returned bids.
+     * @return bids Bids.
+     */
+    function getBidderBids(
+        uint256 tokenId_,
+        address bidder_,
+        uint256 limit_,
+        uint256 offset_
+    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids);
+
+    /**
      * @notice Withdraw bid that were not won by auction id;
      *
      * @param tokenId_ Token ID.

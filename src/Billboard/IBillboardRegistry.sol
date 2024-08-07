@@ -204,6 +204,16 @@ interface IBillboardRegistry is IERC721 {
     function getBidCount(uint256 tokenId_, uint256 epoch_) external view returns (uint256 count);
 
     /**
+     * @notice Get the count of bidder bids
+     *
+     * @param tokenId_ Token ID of a board.
+     * @param bidder_ Bidder of an auction.
+     *
+     * @return count Count of bids.
+     */
+    function getBidderBidCount(uint256 tokenId_, address bidder_) external view returns (uint256 count);
+
+    /**
      * @notice Create a bid
      *
      * @param tokenId_ Token ID of a board.
