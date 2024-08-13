@@ -312,24 +312,45 @@ contract Billboard is IBillboard {
         address bidder_,
         uint256 limit_,
         uint256 offset_
-    ) external view returns (uint256 total, uint256 limit, uint256 offset, IBillboardRegistry.Bid[] memory bids) {
+    )
+        external
+        view
+        returns (
+            uint256 total,
+            uint256 limit,
+            uint256 offset,
+            IBillboardRegistry.Bid[] memory bids,
+            uint256[] memory epochs
+        )
+    {
         uint256 _total = registry.getBidderBidCount(tokenId_, bidder_);
 
         if (limit_ == 0 || offset_ >= _total) {
-            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0));
+            return (_total, limit_, offset_, new IBillboardRegistry.Bid[](0), new uint256[](0));
         }
 
         uint256 _left = _total - offset_;
         uint256 _size = _left > limit_ ? limit_ : _left;
 
-        bids = new IBillboardRegistry.Bid[](_size);
+        (bids, epochs) = _getBidsAndEpochs(tokenId_, bidder_, offset_, _size);
 
-        for (uint256 i = 0; i < _size; i++) {
+        return (_total, limit_, offset_, bids, epochs);
+    }
+
+    function _getBidsAndEpochs(
+        uint256 tokenId_,
+        address bidder_,
+        uint256 offset_,
+        uint256 size_
+    ) internal view returns (IBillboardRegistry.Bid[] memory bids, uint256[] memory epochs) {
+        bids = new IBillboardRegistry.Bid[](size_);
+        epochs = new uint256[](size_);
+
+        for (uint256 i = 0; i < size_; i++) {
             uint256 _epoch = registry.bidderBids(tokenId_, bidder_, offset_ + i);
             bids[i] = registry.getBid(tokenId_, _epoch, bidder_);
+            epochs[i] = _epoch;
         }
-
-        return (_total, limit_, offset_, bids);
     }
 
     /// @inheritdoc IBillboard

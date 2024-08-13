@@ -574,6 +574,7 @@ contract BillboardTest is BillboardTestBase {
         }
     }
 
+    // Main function to test getting bidder bids
     function testGetBidderBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
         vm.assume(_bidCount > 0);
         vm.assume(_bidCount <= 10);
@@ -582,6 +583,22 @@ contract BillboardTest is BillboardTestBase {
 
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
 
+        _placeBids(_bidCount, _tokenId, _board);
+
+        // Get bidder bids
+        (
+            uint256 totalBids,
+            uint256 limit,
+            uint256 offset,
+            IBillboardRegistry.Bid[] memory bids,
+            uint256[] memory epoches
+        ) = operator.getBidderBids(_tokenId, USER_A, _limit, _offset);
+
+        _assertBidderBids(_bidCount, _limit, _offset, totalBids, limit, offset, bids, epoches, _board);
+    }
+
+    // Helper function to place bids
+    function _placeBids(uint8 _bidCount, uint256 _tokenId, IBillboardRegistry.Board memory _board) internal {
         for (uint8 i = 0; i < _bidCount; i++) {
             uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval) + i;
 
@@ -598,23 +615,36 @@ contract BillboardTest is BillboardTestBase {
             operator.placeBid(_tokenId, _epoch, _price);
             vm.stopPrank();
         }
+    }
 
-        // get bidder bids
-        (uint256 _t, uint256 _l, uint256 _o, IBillboardRegistry.Bid[] memory _bids) = operator.getBidderBids(
-            _tokenId,
-            USER_A,
-            _limit,
-            _offset
-        );
-        uint256 _left = _t - _offset;
-        uint256 _size = _left > _limit ? _limit : _left;
-        assertEq(_t, _bidCount);
-        assertEq(_l, _limit);
-        assertEq(_bids.length, _size);
-        assertEq(_o, _offset);
-        for (uint256 i = 0; i < _size; i++) {
-            uint256 _price = 1 ether + _offset + i;
-            assertEq(_bids[i].price, _price);
+    // Helper function to assert bidder bids
+    function _assertBidderBids(
+        uint8 _bidCount,
+        uint8 _limit,
+        uint8 _offset,
+        uint256 totalBids,
+        uint256 limit,
+        uint256 offset,
+        IBillboardRegistry.Bid[] memory bids,
+        uint256[] memory epoches,
+        IBillboardRegistry.Board memory _board
+    ) internal {
+        uint256 remainingBids = totalBids - offset;
+        uint256 size = remainingBids > limit ? limit : remainingBids;
+
+        assertEq(totalBids, _bidCount);
+        assertEq(limit, _limit);
+        assertEq(bids.length, size);
+        assertEq(offset, _offset);
+
+        for (uint256 i = 0; i < size; i++) {
+            uint256 expectedPrice = 1 ether + _offset + i;
+            uint256 expectedEpoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval) +
+                _offset +
+                i;
+
+            assertEq(bids[i].price, expectedPrice);
+            assertEq(epoches[i], expectedEpoch);
         }
     }
 
