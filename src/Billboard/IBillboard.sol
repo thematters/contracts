@@ -52,6 +52,14 @@ interface IBillboard {
     function setWhitelist(uint256 tokenId_, address account_, bool whitelisted) external;
 
     /**
+     * @notice Enable or disable a board whitelist feature
+     *
+     * @param tokenId_ Token ID.
+     * @param disabled Disabled or not.
+     */
+    function setBoardWhitelistDisabled(uint256 tokenId_, bool disabled) external;
+
+    /**
      * @notice Open or close a board.
      *
      * @param tokenId_ Token ID.

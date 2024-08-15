@@ -16,6 +16,9 @@ contract Billboard is IBillboard {
     // tokenId => address => whitelisted
     mapping(uint256 => mapping(address => bool)) public whitelist;
 
+    // tokenId => disabled
+    mapping(uint256 => bool) public isBoardWhitelistDisabled;
+
     // tokenId => closed
     mapping(uint256 => bool) public closed;
 
@@ -49,7 +52,7 @@ contract Billboard is IBillboard {
     }
 
     modifier isFromWhitelist(uint256 tokenId_) {
-        require(whitelist[tokenId_][msg.sender], "Whitelist");
+        require(isBoardWhitelistDisabled[tokenId_] || whitelist[tokenId_][msg.sender], "Whitelist");
         _;
     }
 
@@ -85,6 +88,11 @@ contract Billboard is IBillboard {
     /// @inheritdoc IBillboard
     function setWhitelist(uint256 tokenId_, address account_, bool whitelisted) external isFromCreator(tokenId_) {
         whitelist[tokenId_][account_] = whitelisted;
+    }
+
+    /// @inheritdoc IBillboard
+    function setBoardWhitelistDisabled(uint256 tokenId_, bool disabled) external isFromCreator(tokenId_) {
+        isBoardWhitelistDisabled[tokenId_] = disabled;
     }
 
     /// @inheritdoc IBillboard

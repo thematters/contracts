@@ -61,6 +61,22 @@ contract BillboardTest is BillboardTestBase {
         operator.setWhitelist(_tokenId, USER_B, false);
     }
 
+    function testSetBoardWhitelistDisabled() public {
+        (uint256 _tokenId, ) = _mintBoard();
+
+        vm.startPrank(ADMIN);
+
+        assertEq(operator.isBoardWhitelistDisabled(_tokenId), false);
+
+        // disable
+        operator.setBoardWhitelistDisabled(_tokenId, true);
+        assertEq(operator.isBoardWhitelistDisabled(_tokenId), true);
+
+        // enable
+        operator.setBoardWhitelistDisabled(_tokenId, false);
+        assertEq(operator.whitelist(_tokenId, USER_A), false);
+    }
+
     function testSetClosed() public {
         (uint256 _tokenId, ) = _mintBoard();
 
