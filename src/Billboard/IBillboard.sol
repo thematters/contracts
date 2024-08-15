@@ -138,7 +138,7 @@ interface IBillboard {
     ) external returns (address highestBidder, uint256 price, uint256 tax);
 
     /**
-     * @notice Clear the next auction of mutiple boards.
+     * @notice Clear auctions by given epochs.
      *
      * @param tokenIds_ Token IDs of boards.
      * @param epochs_ Epochs of auctions.
@@ -150,6 +150,30 @@ interface IBillboard {
     function clearAuctions(
         uint256[] calldata tokenIds_,
         uint256[] calldata epochs_
+    ) external returns (address[] calldata highestBidders, uint256[] calldata prices, uint256[] calldata taxes);
+
+    /**
+     * @notice Clear an auction from the last epoch.
+     *
+     * @param tokenId_ Token ID.
+     *
+     * @return highestBidder Address of the highest bidder.
+     * @return price Price of the highest bid.
+     * @return tax Tax of the highest bid.
+     */
+    function clearLastAuction(uint256 tokenId_) external returns (address highestBidder, uint256 price, uint256 tax);
+
+    /**
+     * @notice Clear auctions from the last epoch.
+     *
+     * @param tokenIds_ Token IDs of boards.
+     *
+     * @return highestBidders Addresses of the highest bidders.
+     * @return prices Prices of the highest bids.
+     * @return taxes Taxes of the highest bids.
+     */
+    function clearLastAuctions(
+        uint256[] calldata tokenIds_
     ) external returns (address[] calldata highestBidders, uint256[] calldata prices, uint256[] calldata taxes);
 
     /**
@@ -296,6 +320,15 @@ interface IBillboard {
         uint256 epoch_,
         uint256 epochInterval_
     ) external pure returns (uint256 blockNumber);
+
+    /**
+     * @notice Get the latest epoch based on current block number.
+     *
+     * @param tokenId_ Token ID.
+     *
+     * @return epoch Epoch.
+     */
+    function getLatestEpoch(uint256 tokenId_) external view returns (uint256 epoch);
 
     //////////////////////////////
     /// Tax & Withdraw

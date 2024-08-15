@@ -564,6 +564,61 @@ contract BillboardTest is BillboardTestBase {
         operator.clearAuction(_tokenId, _epoch);
     }
 
+    function testClearLastAuction(uint96 _price) public {
+        vm.assume(_price > 0.001 ether);
+
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board.startedAt, _epoch + 1, _board.epochInterval);
+
+        // place bid
+        _placeBid(_tokenId, _epoch, USER_A, _price);
+
+        // clear auction
+        vm.expectEmit(true, true, true, false);
+        emit IBillboardRegistry.AuctionCleared(_tokenId, _epoch, USER_A);
+
+        vm.roll(_clearedAt);
+        operator.clearLastAuction(_tokenId);
+
+        // check balances
+        assertEq(usdt.balanceOf(address(registry)), _tax);
+        assertEq(usdt.balanceOf(ADMIN), _price);
+        assertEq(usdt.balanceOf(USER_A), 0);
+    }
+
+    function testClearLastAuctions() public {
+        (uint256 _tokenId1, IBillboardRegistry.Board memory _board1) = _mintBoard();
+        (uint256 _tokenId2, IBillboardRegistry.Board memory _board2) = _mintBoard();
+        uint256 _epoch1 = operator.getEpochFromBlock(_board1.startedAt, block.number, _board1.epochInterval);
+        uint256 _epoch2 = operator.getEpochFromBlock(_board2.startedAt, block.number, _board2.epochInterval);
+        _placeBid(_tokenId1, _epoch1, USER_A, 1 ether);
+        _placeBid(_tokenId2, _epoch2, USER_B, 1 ether);
+
+        uint256 _clearedAt = operator.getBlockFromEpoch(_board1.startedAt, _epoch1 + 1, _board1.epochInterval);
+
+        // clear auctions
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(_tokenId1, _epoch1, USER_A);
+        vm.expectEmit(true, true, true, true);
+        emit IBillboardRegistry.AuctionCleared(_tokenId2, _epoch2, USER_B);
+
+        vm.roll(_clearedAt);
+
+        uint256[] memory _tokenIds = new uint256[](2);
+        _tokenIds[0] = _tokenId1;
+        _tokenIds[1] = _tokenId2;
+        operator.clearLastAuctions(_tokenIds);
+
+        // check auction & bids
+        IBillboardRegistry.Bid memory _bid1 = registry.getBid(_tokenId1, _epoch1, USER_A);
+        assertEq(_bid1.isWon, true);
+
+        IBillboardRegistry.Bid memory _bid2 = registry.getBid(_tokenId2, _epoch2, USER_B);
+        assertEq(_bid2.isWon, true);
+    }
+
     function testGetBids(uint8 _bidCount, uint8 _limit, uint8 _offset) public {
         vm.assume(_bidCount > 0);
         vm.assume(_bidCount <= 64);

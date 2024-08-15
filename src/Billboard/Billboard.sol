@@ -280,6 +280,28 @@ contract Billboard is IBillboard {
     }
 
     /// @inheritdoc IBillboard
+    function clearLastAuction(uint256 tokenId_) external returns (address highestBidder, uint256 price, uint256 tax) {
+        uint256 _lastEpoch = getLatestEpoch(tokenId_) - 1;
+        return clearAuction(tokenId_, _lastEpoch);
+    }
+
+    /// @inheritdoc IBillboard
+    function clearLastAuctions(
+        uint256[] calldata tokenIds_
+    ) external returns (address[] memory highestBidders, uint256[] memory prices, uint256[] memory taxes) {
+        uint256 _size = tokenIds_.length;
+        address[] memory _highestBidders = new address[](_size);
+        uint256[] memory _prices = new uint256[](_size);
+        uint256[] memory _taxes = new uint256[](_size);
+
+        for (uint256 i = 0; i < _size; i++) {
+            (_highestBidders[i], _prices[i], _taxes[i]) = this.clearLastAuction(tokenIds_[i]);
+        }
+
+        return (_highestBidders, _prices, _taxes);
+    }
+
+    /// @inheritdoc IBillboard
     function getBid(
         uint256 tokenId_,
         uint256 epoch_,
@@ -409,6 +431,12 @@ contract Billboard is IBillboard {
         uint256 epochInterval_
     ) public pure returns (uint256 blockNumber) {
         return startedAt_ + (epoch_ * epochInterval_);
+    }
+
+    /// @inheritdoc IBillboard
+    function getLatestEpoch(uint256 tokenId_) public view returns (uint256 epoch) {
+        IBillboardRegistry.Board memory _board = registry.getBoard(tokenId_);
+        return this.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
     }
 
     //////////////////////////////
