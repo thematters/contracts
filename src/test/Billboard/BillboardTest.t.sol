@@ -390,6 +390,25 @@ contract BillboardTest is BillboardTestBase {
         operator.placeBid(_tokenId, _epoch, _price);
     }
 
+    function testPlaceBidIfBoardWhitelistDisabled() public {
+        (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
+
+        vm.prank(ADMIN);
+        operator.setBoardWhitelistDisabled(_tokenId, true);
+
+        uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
+        uint256 _price = 1 ether;
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
+        deal(address(usdt), USER_A, _total);
+
+        vm.startPrank(USER_A);
+        operator.placeBid(_tokenId, _epoch, _price);
+        IBillboardRegistry.Bid memory _bid = registry.getBid(_tokenId, _epoch, USER_A);
+        assertEq(_bid.price, _price);
+        assertEq(_bid.tax, _tax);
+    }
+
     function testSetBidURIs() public {
         (uint256 _tokenId, IBillboardRegistry.Board memory _board) = _mintBoard();
         uint256 _epoch = operator.getEpochFromBlock(_board.startedAt, block.number, _board.epochInterval);
