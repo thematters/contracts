@@ -147,7 +147,7 @@ contract Billboard is IBillboard {
         uint256 tokenId_,
         uint256 epoch_,
         uint256 price_
-    ) external payable isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
+    ) external isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
         _placeBid(tokenId_, epoch_, price_, "", "", false);
     }
 
@@ -158,7 +158,7 @@ contract Billboard is IBillboard {
         uint256 price_,
         string calldata contentURI_,
         string calldata redirectURI_
-    ) external payable isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
+    ) external isNotClosed(tokenId_) isFromWhitelist(tokenId_) {
         _placeBid(tokenId_, epoch_, price_, contentURI_, redirectURI_, true);
     }
 

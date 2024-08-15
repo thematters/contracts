@@ -183,7 +183,7 @@ interface IBillboard {
      * @param epoch_ Epoch.
      * @param price_ Amount of a bid.
      */
-    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 price_) external payable;
+    function placeBid(uint256 tokenId_, uint256 epoch_, uint256 price_) external;
 
     /**
      * @notice Place bid on a board auction.
@@ -200,7 +200,7 @@ interface IBillboard {
         uint256 price_,
         string calldata contentURI_,
         string calldata redirectURI_
-    ) external payable;
+    ) external;
 
     /**
      * @notice Set the content URI and redirect URI of a board.
