@@ -16,8 +16,8 @@ contract BillboardTestBase is Test {
     BillboardRegistry internal registry;
     USDT internal usdt;
 
-    uint256 constant TAX_RATE = 1; // 1% per lease term
-    uint64 constant LEASE_TERM = 100; // 100 blocks
+    uint256 constant TAX_RATE = 1024; // 10.24% per epoch
+    uint256 constant EPOCH_INTERVAL = 100; // 100 blocks
 
     address constant ZERO_ADDRESS = address(0);
     address constant FAKE_CONTRACT = address(1);
@@ -36,7 +36,7 @@ contract BillboardTestBase is Test {
         usdt = new USDT(ADMIN, 0);
 
         // deploy operator & registry
-        operator = new Billboard(address(usdt), payable(address(0)), ADMIN, TAX_RATE, LEASE_TERM, "Billboard", "BLBD");
+        operator = new Billboard(address(usdt), payable(address(0)), ADMIN, "Billboard", "BLBD");
         registry = operator.registry();
         assertEq(operator.admin(), ADMIN);
         assertEq(registry.operator(), address(operator));
@@ -57,25 +57,22 @@ contract BillboardTestBase is Test {
         usdt.approve(address(operator), MAX_ALLOWANCE);
     }
 
-    function _mintBoard() public returns (uint256 tokenId) {
+    function _mintBoard() public returns (uint256 tokenId, IBillboardRegistry.Board memory board) {
         vm.prank(ADMIN);
-        tokenId = operator.mintBoard(ADMIN);
+        tokenId = operator.mintBoard(TAX_RATE, EPOCH_INTERVAL);
+        board = registry.getBoard(tokenId);
     }
 
-    function _mintBoardAndPlaceBid() public returns (uint256 tokenId, uint256 _nextAuctionId) {
-        tokenId = _mintBoard();
+    function _placeBid(uint256 _tokenId, uint256 _epoch, address _bidder, uint256 _price) public {
+        uint256 _tax = operator.calculateTax(_tokenId, _price);
+        uint256 _total = _price + _tax;
 
-        // (new board) ADMIN places first bid and takes the ownership
-        vm.startPrank(ADMIN);
-        operator.placeBid(tokenId, 0);
-        _nextAuctionId = registry.nextBoardAuctionId(tokenId);
-        IBillboardRegistry.Auction memory _auction = registry.getAuction(tokenId, _nextAuctionId);
-        assertEq(_nextAuctionId, 1);
-        assertEq(_auction.highestBidder, ADMIN);
+        deal(address(usdt), _bidder, _total);
 
-        // add USER_A and USER_B to whitelist
-        operator.addToWhitelist(USER_A);
-        operator.addToWhitelist(USER_B);
-        vm.stopPrank();
+        vm.prank(ADMIN);
+        operator.setWhitelist(_tokenId, _bidder, true);
+
+        vm.prank(_bidder);
+        operator.placeBid(_tokenId, _epoch, _price);
     }
 }

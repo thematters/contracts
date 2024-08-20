@@ -447,7 +447,7 @@ contract TheSpaceTest is BaseTheSpaceTest {
         assertEq(thespace.getPrice(PIXEL_ID), price);
     }
 
-    function testSetPriceByOperator(uint256 price) public {
+    function testSetPriceByOperator(uint96 price) public {
         vm.assume(price <= registry.currency().totalSupply());
         vm.assume(price > 0);
 

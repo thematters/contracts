@@ -47,7 +47,7 @@ deploy-curation: clean
 
 ## Billboard
 deploy-billboard: clean
-	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_ERC20_TOKEN} ${BILLBOARD_REGISTRY_ADDRESS} ${BILLBOARD_ADMIN_ADDRESS} 504 ${BILLBOARD_LEASE_TERM} "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
+	@forge create Billboard --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_CURRENCY_TOKEN} ${BILLBOARD_REGISTRY_ADDRESS} ${BILLBOARD_ADMIN_ADDRESS} "Billboard" "BLBD" --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
 
 deploy-billboard-distribution: clean
-	@forge create Distribution --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_ERC20_TOKEN} ${BILLBOARD_ADMIN_ADDRESS} --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
+	@forge create Distribution --rpc-url ${ETH_RPC_URL} --private-key ${DEPLOYER_PRIVATE_KEY} --constructor-args ${BILLBOARD_CURRENCY_TOKEN} ${BILLBOARD_ADMIN_ADDRESS} --legacy --verify --etherscan-api-key ${ETHERSCAN_API_KEY}
