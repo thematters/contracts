@@ -14,8 +14,8 @@
 | Curation                 | Polygon Mumbai  | [0xa219C6722008aa22828B31A13ab9Ba93bB91222c](https://mumbai.polygonscan.com/address/0xa219c6722008aa22828b31a13ab9ba93bb91222c)        |
 | Curation                 | OP Sepolia      | [0x92a117aea74963cd0cedf9c50f99435451a291f7](https://sepolia-optimism.etherscan.io/address/0x92a117aea74963cd0cedf9c50f99435451a291f7) |
 | Curation                 | OP Mainnet      | [0x5edebbdae7B5C79a69AaCF7873796bb1Ec664DB8](https://optimistic.etherscan.io/address/0x5edebbdae7b5c79a69aacf7873796bb1ec664db8#code)  |
-| Billboard (Operator)     | OP Mainnet      | [0x88ea16c2a69f50b9bc2e8f7684d425f33f29225f](https://optimistic.etherscan.io/address/0x88ea16c2a69f50b9bc2e8f7684d425f33f29225f)       |
-| Billboard (Registry)     | OP Mainnet      | [0x031Dc7C68D4A7057D28814dCc8c61e6f83c7DF25](https://optimistic.etherscan.io/address/0x031Dc7C68D4A7057D28814dCc8c61e6f83c7DF25)       |
+| Billboard (Operator)     | OP Mainnet      | [0x92a117aeA74963Cd0CEdF9C50f99435451a291F7](https://optimistic.etherscan.io/address/0x92a117aeA74963Cd0CEdF9C50f99435451a291F7)       |
+| Billboard (Registry)     | OP Mainnet      | [0x95bEFe8E08a56dCEBBa8d40BE3e9c3cb2fF81806](https://optimistic.etherscan.io/address/0x95bEFe8E08a56dCEBBa8d40BE3e9c3cb2fF81806)       |
 | Billboard (Distribution) | OP Mainnet      | [0xad5caac6910f5a737ec53847000c13122b09eada](https://optimistic.etherscan.io/address/0xad5caac6910f5a737ec53847000c13122b09eada)       |
 | Billboard (Operator)     | OP Sepolia      | [0x2412316A9fA929CA5D476b9160Fd2688C76614Fe](https://sepolia-optimism.etherscan.io/address/0x2412316A9fA929CA5D476b9160Fd2688C76614Fe) |
 | Billboard (Registry)     | OP Sepolia      | [0xF28e390E51ef279170E2Ccbd3Ffcd9c069A9332d](https://sepolia-optimism.etherscan.io/address/0xF28e390E51ef279170E2Ccbd3Ffcd9c069A9332d) |
