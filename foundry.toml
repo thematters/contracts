@@ -5,7 +5,8 @@ optimizer = true
 optimizer_runs = 200
 remappings = [
   "@openzeppelin/=lib/openzeppelin-contracts/",
-  "forge-std/=lib/forge-std/src/"
+  "forge-std/=lib/forge-std/src/",
+  "@gelatonetwork/relay-context/=lib/relay-context-contracts/contracts/"
 ]
 verbosity = 3
 gas_reports = ["*"]
