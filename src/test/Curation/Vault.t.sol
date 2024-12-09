@@ -21,10 +21,10 @@ contract VaultTest is Test {
     CurationVault internal vault;
     USDT internal usdt;
 
-    event Curation(address indexed from, string indexed uid, IERC20 indexed token, string uri, uint256 amount);
-    event Curation(address indexed from, string indexed uid, string uri, uint256 amount);
-    event Withdraw(address indexed to, string indexed uid, IERC20 indexed token, uint256 amount);
-    event Withdraw(address indexed to, string indexed uid, uint256 amount);
+    event Curation(address indexed from, string uid, IERC20 indexed token, string uri, uint256 amount);
+    event Curation(address indexed from, string uid, string uri, uint256 amount);
+    event Withdraw(address indexed to, string uid, uint256 amount);
+    event Withdraw(address indexed to, string uid, IERC20 indexed token, uint256 amount);
     event SignerChanged(address indexed newSigner);
 
     address constant DEPLOYER = address(176);
